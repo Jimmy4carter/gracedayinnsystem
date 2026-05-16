@@ -1,0 +1,129 @@
+{% extends 'frontend/base.html' %}
+{% block title %}Guests - Graceday Inn{% endblock %}
+{% block nav_guests %}active{% endblock %}
+{% block page_heading %}Guests{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Guest Management</h1>
+<p class="page-subtitle">Manage hotel guests and profiles</p>
+
+<div class="table-container">
+  <div class="table-header">
+    <input type="text" id="search-input" class="form-control" placeholder="Search guests..." style="width:240px;">
+    <button class="btn btn-primary" onclick="openModal('guest-modal')">+ Add Guest</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Username</th><th>Email</th><th>Phone</th><th>Nationality</th><th>Status</th></tr>
+    </thead>
+    <tbody id="guests-table"></tbody>
+  </table>
+  <div style="padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08);" id="pagination"></div>
+</div>
+
+<div class="modal-overlay" id="guest-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Guest</h3>
+      <button class="modal-close" onclick="closeModal('guest-modal')">✕</button>
+    </div>
+    <form id="guest-form">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" id="g-first" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" id="g-last" class="form-control" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" id="g-username" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="g-email" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="g-password" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input type="password" id="g-password2" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input type="text" id="g-phone" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nationality</label>
+        <input type="text" id="g-nationality" class="form-control">
+      </div>
+      <div class="flex gap-2" style="justify-content:flex-end; margin-top:20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('guest-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Guest</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+if (!requireAuth()) window.location.href = '/login/';
+
+async function loadGuests(page=1) {
+  const search = document.getElementById('search-input').value;
+  let url = `/accounts/users/?role=guest&page=${page}`;
+  if (search) url += `&search=${search}`;
+  try {
+    const data = await api.get(url);
+    const tbody = document.getElementById('guests-table');
+    tbody.innerHTML = (data.results||[]).map(g => `
+      <tr>
+        <td><strong>${(g.first_name+' '+g.last_name).trim()||'-'}</strong></td>
+        <td>${g.username}</td>
+        <td>${g.email}</td>
+        <td>${g.phone||'-'}</td>
+        <td>${g.nationality||'-'}</td>
+        <td>${g.is_active?'<span class="badge badge-success">Active</span>':'<span class="badge badge-danger">Inactive</span>'}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">No guests found</td></tr>';
+    const total = Math.ceil((data.count||0)/20);
+    let pg = total<=1?'':` <button class="btn btn-secondary btn-sm" onclick="loadGuests(${page>1?page-1:1})">← Prev</button> Page ${page}/${total} <button class="btn btn-secondary btn-sm" onclick="loadGuests(${page<total?page+1:total})">Next →</button>`;
+    document.getElementById('pagination').innerHTML = pg;
+  } catch(e) { toast.error('Failed to load guests'); }
+}
+
+document.getElementById('guest-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    first_name: document.getElementById('g-first').value,
+    last_name: document.getElementById('g-last').value,
+    username: document.getElementById('g-username').value,
+    email: document.getElementById('g-email').value,
+    password: document.getElementById('g-password').value,
+    password_confirm: document.getElementById('g-password2').value,
+    phone: document.getElementById('g-phone').value,
+    nationality: document.getElementById('g-nationality').value,
+    role: 'guest',
+  };
+  try {
+    await api.post('/accounts/users/', payload);
+    toast.success('Guest added successfully');
+    closeModal('guest-modal');
+    document.getElementById('guest-form').reset();
+    loadGuests();
+  } catch(e) {
+    const errMsg = e.message ? JSON.parse(e.message) : {};
+    toast.error(Object.values(errMsg).flat().join(' ') || 'Failed to add guest');
+  }
+});
+
+document.getElementById('search-input').addEventListener('input', ()=>loadGuests(1));
+loadGuests();
+</script>
+{% endblock %}

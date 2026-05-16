@@ -1,0 +1,1 @@
+*.pyc\n__pycache__/\n*.py[cod]\ndb.sqlite3\n.env\nstaticfiles/\nmedia/\n*.log

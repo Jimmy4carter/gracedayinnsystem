@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Graceday Inn{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'css/glassmorphism.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* extra base styles */
+  .notification-badge {
+    background: #ef4444; color: #fff; border-radius: 50%;
+    width: 18px; height: 18px; font-size: 10px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: 4px; vertical-align: middle;
+  }
+  .user-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 14px;
+  }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1>�� Graceday Inn</h1>
+    <p>Hotel Management System</p>
+  </div>
+  <nav class="sidebar-nav">
+    <span class="nav-section-title">Main</span>
+    <a href="/" class="nav-item {% block nav_dashboard %}{% endblock %}"><span>📊</span> Dashboard</a>
+    <a href="/reservations/" class="nav-item {% block nav_reservations %}{% endblock %}"><span>📅</span> Reservations</a>
+    <a href="/rooms/" class="nav-item {% block nav_rooms %}{% endblock %}"><span>🛏️</span> Rooms</a>
+    <a href="/guests/" class="nav-item {% block nav_guests %}{% endblock %}"><span>👥</span> Guests</a>
+
+    <span class="nav-section-title">Finance</span>
+    <a href="/billing/" class="nav-item {% block nav_billing %}{% endblock %}"><span>🧾</span> Billing</a>
+    <a href="/payments/" class="nav-item {% block nav_payments %}{% endblock %}"><span>💳</span> Payments</a>
+
+    <span class="nav-section-title">Operations</span>
+    <a href="/services/" class="nav-item {% block nav_services %}{% endblock %}"><span>🍽️</span> Services</a>
+    <a href="/housekeeping/" class="nav-item {% block nav_housekeeping %}{% endblock %}"><span>🧹</span> Housekeeping</a>
+  </nav>
+  <div style="padding:16px 20px; border-top: 1px solid rgba(255,255,255,0.08);">
+    <button id="logout-btn" class="btn btn-secondary" style="width:100%; justify-content:center;">
+      <span>🚪</span> Logout
+    </button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="flex gap-2" style="align-items:center;">
+      <button id="sidebar-toggle" class="btn btn-secondary btn-sm" style="display:none;">☰</button>
+      <h2 style="font-size:16px; font-weight:600;">{% block page_heading %}{% endblock %}</h2>
+    </div>
+    <div class="flex gap-3" style="align-items:center;">
+      <span style="font-size:20px; cursor:pointer; position:relative;">
+        🔔 <span id="notif-count" class="notification-badge" style="display:none;">0</span>
+      </span>
+      <div class="flex gap-2" style="align-items:center;">
+        <div class="user-avatar"><span id="user-initial">G</span></div>
+        <div>
+          <div style="font-size:13px; font-weight:600;" id="user-name">User</div>
+          <div style="font-size:11px; color:var(--text-secondary);" id="user-role">guest</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

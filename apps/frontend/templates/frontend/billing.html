@@ -1,0 +1,67 @@
+{% extends 'frontend/base.html' %}
+{% block title %}Billing - Graceday Inn{% endblock %}
+{% block nav_billing %}active{% endblock %}
+{% block page_heading %}Billing{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Billing & Invoices</h1>
+<p class="page-subtitle">Manage invoices and billing records</p>
+
+<div class="table-container">
+  <div class="table-header">
+    <div class="flex gap-2">
+      <input type="text" id="search-input" class="form-control" placeholder="Search invoices..." style="width:200px;">
+      <select id="status-filter" class="form-control" style="width:160px;">
+        <option value="">All Statuses</option>
+        <option value="draft">Draft</option>
+        <option value="sent">Sent</option>
+        <option value="paid">Paid</option>
+        <option value="partially_paid">Partially Paid</option>
+        <option value="overdue">Overdue</option>
+      </select>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Invoice #</th><th>Guest</th><th>Subtotal</th><th>Tax</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr>
+    </thead>
+    <tbody id="invoices-table"></tbody>
+  </table>
+  <div style="padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08);" id="pagination"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+if (!requireAuth()) window.location.href = '/login/';
+async function loadInvoices(page=1) {
+  const search = document.getElementById('search-input').value;
+  const status = document.getElementById('status-filter').value;
+  let url = `/billing/invoices/?page=${page}`;
+  if (search) url += `&search=${search}`;
+  if (status) url += `&status=${status}`;
+  try {
+    const data = await api.get(url);
+    const tbody = document.getElementById('invoices-table');
+    tbody.innerHTML = (data.results||[]).map(inv => `
+      <tr>
+        <td><strong>${inv.invoice_number}</strong></td>
+        <td>${inv.guest||'-'}</td>
+        <td>${formatCurrency(inv.subtotal)}</td>
+        <td>${formatCurrency(inv.tax_amount)}</td>
+        <td>${formatCurrency(inv.total)}</td>
+        <td style="color:#10b981;">${formatCurrency(inv.amount_paid)}</td>
+        <td style="color:${inv.balance>0?'#ef4444':'#10b981'};">${formatCurrency(inv.balance)}</td>
+        <td>${statusBadge(inv.status)}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);">No invoices found</td></tr>';
+    const total = Math.ceil((data.count||0)/20);
+    let pg = total<=1?'':` <button class="btn btn-secondary btn-sm" onclick="loadInvoices(${page>1?page-1:1})">← Prev</button> Page ${page}/${total} <button class="btn btn-secondary btn-sm" onclick="loadInvoices(${page<total?page+1:total})">Next →</button>`;
+    document.getElementById('pagination').innerHTML = pg;
+  } catch(e) { toast.error('Failed to load invoices'); }
+}
+document.getElementById('search-input').addEventListener('input', ()=>loadInvoices(1));
+document.getElementById('status-filter').addEventListener('change', ()=>loadInvoices(1));
+loadInvoices();
+</script>
+{% endblock %}

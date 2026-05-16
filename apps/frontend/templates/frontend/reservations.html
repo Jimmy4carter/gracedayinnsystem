@@ -1,0 +1,186 @@
+{% extends 'frontend/base.html' %}
+{% block title %}Reservations - Graceday Inn{% endblock %}
+{% block nav_reservations %}active{% endblock %}
+{% block page_heading %}Reservations{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Reservation Management</h1>
+<p class="page-subtitle">Manage all guest reservations</p>
+
+<div class="table-container">
+  <div class="table-header">
+    <div class="flex gap-2">
+      <input type="text" id="search-input" class="form-control" placeholder="Search..." style="width:200px;">
+      <select id="status-filter" class="form-control" style="width:160px;">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="checked_in">Checked In</option>
+        <option value="checked_out">Checked Out</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('res-modal')">+ New Reservation</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Guest</th><th>Room</th><th>Check-In</th><th>Check-Out</th><th>Nights</th><th>Amount</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="reservations-table"></tbody>
+  </table>
+  <div style="padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08);" id="pagination"></div>
+</div>
+
+<!-- Reservation Modal -->
+<div class="modal-overlay" id="res-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="res-modal-title">New Reservation</h3>
+      <button class="modal-close" onclick="closeModal('res-modal')">✕</button>
+    </div>
+    <form id="res-form">
+      <input type="hidden" id="res-id">
+      <div class="form-group">
+        <label class="form-label">Guest</label>
+        <select id="res-guest" class="form-control" required></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Room</label>
+        <select id="res-room" class="form-control" required></select>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Check-In Date</label>
+          <input type="date" id="res-checkin" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Check-Out Date</label>
+          <input type="date" id="res-checkout" class="form-control" required>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Adults</label>
+          <input type="number" id="res-adults" class="form-control" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Children</label>
+          <input type="number" id="res-children" class="form-control" value="0" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Special Requests</label>
+        <textarea id="res-requests" class="form-control" rows="2"></textarea>
+      </div>
+      <div class="flex gap-2" style="justify-content:flex-end; margin-top:20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('res-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+if (!requireAuth()) window.location.href = '/login/';
+
+async function loadSelects() {
+  const [guests, rooms] = await Promise.all([
+    api.get('/accounts/users/?role=guest&page_size=100'),
+    api.get('/rooms/rooms/?status=available&page_size=100'),
+  ]);
+  document.getElementById('res-guest').innerHTML = (guests.results||[]).map(g =>
+    `<option value="${g.id}">${g.first_name} ${g.last_name} (${g.username})</option>`).join('');
+  document.getElementById('res-room').innerHTML = (rooms.results||[]).map(r =>
+    `<option value="${r.id}">Room ${r.number} - ${r.room_type_detail?.name||''}</option>`).join('');
+}
+
+async function loadReservations(page=1) {
+  const search = document.getElementById('search-input').value;
+  const status = document.getElementById('status-filter').value;
+  let url = `/reservations/?page=${page}`;
+  if (search) url += `&search=${search}`;
+  if (status) url += `&status=${status}`;
+  try {
+    const data = await api.get(url);
+    const tbody = document.getElementById('reservations-table');
+    tbody.innerHTML = (data.results||[]).map(r => `
+      <tr>
+        <td><span class="text-sm">${r.reservation_number}</span></td>
+        <td>${r.guest_detail?(r.guest_detail.first_name+' '+r.guest_detail.last_name).trim()||r.guest_detail.username:'-'}</td>
+        <td>${r.room_detail?'Room '+r.room_detail.number:'-'}</td>
+        <td class="text-sm">${formatDate(r.check_in_date)}</td>
+        <td class="text-sm">${formatDate(r.check_out_date)}</td>
+        <td>${r.nights||'-'}</td>
+        <td>${formatCurrency(r.total_amount)}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td>
+          ${r.status==='pending'?`<button class="btn btn-success btn-sm" onclick="confirmRes(${r.id})">Confirm</button>`:''}
+          ${r.status==='confirmed'?`<button class="btn btn-primary btn-sm" onclick="checkIn(${r.id})">Check In</button>`:''}
+          ${r.status==='checked_in'?`<button class="btn btn-warning btn-sm" onclick="checkOut(${r.id})">Check Out</button>`:''}
+          ${!['checked_in','checked_out'].includes(r.status)?`<button class="btn btn-danger btn-sm" onclick="cancelRes(${r.id})">Cancel</button>`:''}
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-secondary);">No reservations found</td></tr>';
+    renderPagination(data, page);
+  } catch (e) { toast.error('Failed to load reservations'); }
+}
+
+function renderPagination(data, page) {
+  const total = Math.ceil((data.count||0)/20);
+  if (total<=1) { document.getElementById('pagination').innerHTML=''; return; }
+  let html = '';
+  if (page>1) html+=`<button class="btn btn-secondary btn-sm" onclick="loadReservations(${page-1})">← Prev</button> `;
+  html+=`<span class="text-sm text-muted">Page ${page} of ${total}</span>`;
+  if (page<total) html+=` <button class="btn btn-secondary btn-sm" onclick="loadReservations(${page+1})">Next →</button>`;
+  document.getElementById('pagination').innerHTML = html;
+}
+
+async function confirmRes(id) {
+  try { await api.post(`/reservations/${id}/confirm/`,{}); toast.success('Confirmed'); loadReservations(); }
+  catch(e) { toast.error('Failed'); }
+}
+async function checkIn(id) {
+  try { await api.post(`/reservations/${id}/check_in/`,{}); toast.success('Checked in'); loadReservations(); }
+  catch(e) { toast.error('Failed'); }
+}
+async function checkOut(id) {
+  try { await api.post(`/reservations/${id}/check_out/`,{}); toast.success('Checked out'); loadReservations(); }
+  catch(e) { toast.error('Failed'); }
+}
+async function cancelRes(id) {
+  if (!confirm('Cancel this reservation?')) return;
+  try { await api.post(`/reservations/${id}/cancel/`,{}); toast.success('Cancelled'); loadReservations(); }
+  catch(e) { toast.error('Failed'); }
+}
+
+document.getElementById('res-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('res-id').value;
+  const payload = {
+    guest: document.getElementById('res-guest').value,
+    room: document.getElementById('res-room').value,
+    check_in_date: document.getElementById('res-checkin').value,
+    check_out_date: document.getElementById('res-checkout').value,
+    num_adults: document.getElementById('res-adults').value,
+    num_children: document.getElementById('res-children').value,
+    special_requests: document.getElementById('res-requests').value,
+  };
+  try {
+    if (id) await api.put(`/reservations/${id}/`, payload);
+    else await api.post('/reservations/', payload);
+    toast.success('Reservation saved');
+    closeModal('res-modal');
+    document.getElementById('res-form').reset();
+    loadReservations();
+  } catch(e) { toast.error('Failed to save reservation'); }
+});
+
+document.getElementById('search-input').addEventListener('input', () => loadReservations(1));
+document.getElementById('status-filter').addEventListener('change', () => loadReservations(1));
+
+loadSelects();
+loadReservations();
+</script>
+{% endblock %}
