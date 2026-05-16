@@ -22,7 +22,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return UserProfileSerializer
 
     def get_permissions(self):
-        if self.action in ('create', 'login'):
+        if self.action in ('create', 'login', 'register'):
             return [permissions.AllowAny()]
         return super().get_permissions()
 
@@ -46,6 +46,19 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         except Exception:
             pass
         return Response({'message': 'Logged out.'})
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def register(self, request):
+        serializer = UserCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        GuestProfile.objects.get_or_create(user=user)
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserProfileSerializer(user).data,
+        }, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def me(self, request):

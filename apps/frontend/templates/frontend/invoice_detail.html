@@ -1,0 +1,193 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+
+{% block title %}Invoice - Graceday Inn{% endblock %}
+{% block nav_billing %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  @media print {
+    .sidebar, .navbar, .page-header .d-flex, .btn, .no-print { display: none !important; }
+    .glass-card { background: #fff !important; color: #000 !important; border: 1px solid #ddd !important; box-shadow: none !important; }
+    body { background: #fff !important; color: #000 !important; }
+    .invoice-header { background: #f8f9fa !important; }
+    .text-muted-inv { color: #666 !important; }
+  }
+  .invoice-header { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15)); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+  .status-paid { color: #4ade80; }
+  .status-overdue { color: #f87171; }
+  .status-draft { color: #fbbf24; }
+  .status-sent { color: #60a5fa; }
+  .inv-table th { background: rgba(99,102,241,0.2); padding: 12px 16px; font-size:0.82rem; text-transform:uppercase; letter-spacing:1px; }
+  .inv-table td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .total-row { background: rgba(99,102,241,0.1); font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title" id="inv-number">Invoice</h1>
+    <p id="inv-status-display" class="page-subtitle"></p>
+  </div>
+  <div class="d-flex gap-2 no-print">
+    <a href="/billing/" class="btn btn-ghost">← Back</a>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ Print</button>
+    <button class="btn btn-primary" id="btn-finalize" style="display:none;" onclick="finalizeInvoice()">Send Invoice</button>
+  </div>
+</div>
+
+<div id="loading" class="text-center py-5">
+  <div class="spinner-border text-light" role="status"></div>
+</div>
+
+<div id="content" style="display:none;">
+  <div class="glass-card p-5">
+    <!-- Invoice Header -->
+    <div class="invoice-header">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <h2 style="font-size:2rem;font-weight:800;margin:0;">🏨 Graceday Inn</h2>
+          <p style="color:rgba(255,255,255,0.6);margin:8px 0 0;">Luxury Hotel & Resort</p>
+          <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin:4px 0;">123 Luxury Avenue, City · +1 (555) 123-4567 · info@gracedayinn.com</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <h3 style="font-size:1.5rem;font-weight:700;margin:0;" id="inv-num-display"></h3>
+          <p style="color:rgba(255,255,255,0.6);margin:8px 0 0;font-size:0.9rem;">Issue Date: <span id="issue-date"></span></p>
+          <p style="color:rgba(255,255,255,0.6);margin:4px 0;font-size:0.9rem;">Due Date: <span id="due-date"></span></p>
+          <div id="status-badge-display" class="mt-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Billing Info -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-6">
+        <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Bill To</div>
+        <div style="font-weight:600;font-size:1.05rem;" id="bill-name"></div>
+        <div style="color:rgba(255,255,255,0.6);font-size:0.9rem;" id="bill-email"></div>
+        <div style="color:rgba(255,255,255,0.6);font-size:0.9rem;" id="bill-phone"></div>
+      </div>
+      <div class="col-md-6 text-md-end">
+        <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Reservation</div>
+        <div style="font-weight:600;" id="res-number"></div>
+      </div>
+    </div>
+
+    <!-- Line Items -->
+    <table class="table inv-table" style="background:transparent;">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Category</th>
+          <th>Date</th>
+          <th class="text-end">Qty</th>
+          <th class="text-end">Unit Price</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody id="inv-items">
+        <tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);padding:24px;">Loading...</td></tr>
+      </tbody>
+      <tfoot id="inv-totals"></tfoot>
+    </table>
+
+    <!-- Payment History -->
+    <div id="payments-section" style="margin-top:32px;display:none;">
+      <h6 style="font-weight:600;margin-bottom:16px;color:rgba(255,255,255,0.7);">Payment History</h6>
+      <div id="payments-list"></div>
+    </div>
+
+    <!-- Notes -->
+    <div id="notes-section" style="margin-top:24px;border-top:1px solid rgba(255,255,255,0.1);padding-top:24px;display:none;">
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Notes</div>
+      <p style="color:rgba(255,255,255,0.6);font-size:0.9rem;" id="inv-notes"></p>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:40px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.1);text-align:center;color:rgba(255,255,255,0.3);font-size:0.8rem;">
+      Thank you for staying at Graceday Inn · www.gracedayinn.com
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const invoiceId = {{ invoice_id }};
+
+const statusColors = { draft:'#fbbf24', sent:'#60a5fa', paid:'#4ade80', overdue:'#f87171', cancelled:'#94a3b8' };
+
+function statusBadge(s) {
+  const c = statusColors[s] || '#fff';
+  return `<span style="background:${c}20;border:1px solid ${c}40;color:${c};border-radius:20px;padding:4px 14px;font-size:0.85rem;font-weight:600;text-transform:capitalize;">${s}</span>`;
+}
+
+async function loadInvoice() {
+  try {
+    const inv = await api.get(`/invoices/${invoiceId}/`);
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    document.getElementById('inv-number').textContent = inv.invoice_number;
+    document.getElementById('inv-num-display').textContent = inv.invoice_number;
+    document.getElementById('inv-status-display').innerHTML = statusBadge(inv.status);
+    document.getElementById('status-badge-display').innerHTML = statusBadge(inv.status);
+    document.getElementById('issue-date').textContent = formatDate(inv.issue_date);
+    document.getElementById('due-date').textContent = formatDate(inv.due_date);
+
+    const g = inv.guest;
+    document.getElementById('bill-name').textContent = `${g.first_name} ${g.last_name}`.trim() || g.username;
+    document.getElementById('bill-email').textContent = g.email;
+    document.getElementById('bill-phone').textContent = g.phone || '';
+    document.getElementById('res-number').textContent = `Reservation #${inv.reservation}`;
+
+    // Line items
+    const tbody = document.getElementById('inv-items');
+    if (inv.items && inv.items.length) {
+      tbody.innerHTML = inv.items.map(item => `
+        <tr>
+          <td>${item.description}</td>
+          <td><span style="font-size:0.8rem;background:rgba(255,255,255,0.08);border-radius:6px;padding:2px 8px;">${item.category}</span></td>
+          <td>${formatDate(item.date)}</td>
+          <td class="text-end">${item.quantity}</td>
+          <td class="text-end">${formatCurrency(item.unit_price)}</td>
+          <td class="text-end" style="font-weight:600;">${formatCurrency(item.total)}</td>
+        </tr>`).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);padding:24px;">No items added yet.</td></tr>';
+    }
+
+    // Totals
+    document.getElementById('inv-totals').innerHTML = `
+      <tr><td colspan="5" class="text-end" style="padding:8px 16px;color:rgba(255,255,255,0.6);">Subtotal</td><td class="text-end" style="padding:8px 16px;">${formatCurrency(inv.subtotal)}</td></tr>
+      <tr><td colspan="5" class="text-end" style="padding:8px 16px;color:rgba(255,255,255,0.6);">Tax (${(parseFloat(inv.tax_rate)*100).toFixed(0)}%)</td><td class="text-end" style="padding:8px 16px;">${formatCurrency(inv.tax_amount)}</td></tr>
+      ${parseFloat(inv.discount_amount) > 0 ? `<tr><td colspan="5" class="text-end" style="padding:8px 16px;color:#4ade80;">Discount</td><td class="text-end" style="padding:8px 16px;color:#4ade80;">-${formatCurrency(inv.discount_amount)}</td></tr>` : ''}
+      <tr class="total-row"><td colspan="5" class="text-end" style="padding:16px;">TOTAL</td><td class="text-end" style="padding:16px;font-size:1.2rem;color:#a78bfa;">${formatCurrency(inv.total_amount)}</td></tr>
+      <tr><td colspan="5" class="text-end" style="padding:8px 16px;color:rgba(255,255,255,0.6);">Amount Paid</td><td class="text-end" style="padding:8px 16px;color:#4ade80;">${formatCurrency(inv.amount_paid)}</td></tr>
+      <tr><td colspan="5" class="text-end" style="padding:8px 16px;font-weight:600;">Balance Due</td><td class="text-end" style="padding:8px 16px;font-weight:700;font-size:1.1rem;color:${parseFloat(inv.balance_due) > 0 ? '#f87171' : '#4ade80'};">${formatCurrency(inv.balance_due)}</td></tr>`;
+
+    if (inv.status === 'draft') document.getElementById('btn-finalize').style.display = 'block';
+
+    if (inv.notes) {
+      document.getElementById('inv-notes').textContent = inv.notes;
+      document.getElementById('notes-section').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '<p style="color:#fca5a5;">Failed to load invoice.</p>';
+  }
+}
+
+async function finalizeInvoice() {
+  try {
+    await api.post(`/invoices/${invoiceId}/finalize/`, {});
+    toast.success('Invoice finalized and sent!');
+    loadInvoice();
+    document.getElementById('btn-finalize').style.display = 'none';
+  } catch(e) { toast.error('Failed to finalize invoice'); }
+}
+
+loadInvoice();
+</script>
+{% endblock %}

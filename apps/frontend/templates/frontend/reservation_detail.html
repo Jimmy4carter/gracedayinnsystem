@@ -1,0 +1,250 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+
+{% block title %}Reservation Detail - Graceday Inn{% endblock %}
+{% block nav_reservations %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title" id="res-number">Reservation</h1>
+    <p class="page-subtitle" id="res-status-badge"></p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/reservations/" class="btn btn-ghost">← Back</a>
+    <button class="btn btn-outline" id="btn-confirm" style="display:none;" onclick="updateStatus('confirmed')">✅ Confirm</button>
+    <button class="btn btn-success" id="btn-checkin" style="display:none;" onclick="doCheckIn()">🔑 Check In</button>
+    <button class="btn btn-outline" id="btn-checkout" style="display:none;" onclick="doCheckOut()">🚪 Check Out</button>
+    <button class="btn btn-danger-outline" id="btn-cancel" style="display:none;" onclick="doCancel()">✕ Cancel</button>
+  </div>
+</div>
+
+<div id="loading" class="text-center py-5">
+  <div class="spinner-border text-light" role="status"></div>
+</div>
+
+<div id="content" style="display:none;">
+  <div class="row g-4">
+    <!-- Main Details -->
+    <div class="col-lg-8">
+      <!-- Guest & Room -->
+      <div class="glass-card p-4 mb-4">
+        <h5 style="font-weight:600;margin-bottom:20px;">Booking Summary</h5>
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Guest</div>
+            <div class="d-flex align-items-center gap-3">
+              <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.2rem;" id="guest-avatar"></div>
+              <div>
+                <div style="font-weight:600;" id="guest-name"></div>
+                <div style="font-size:0.85rem;color:rgba(255,255,255,0.5);" id="guest-email"></div>
+                <div style="font-size:0.82rem;color:rgba(255,255,255,0.5);" id="guest-phone"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Room</div>
+            <div style="font-size:2rem;margin-bottom:8px;">🛏️</div>
+            <div style="font-weight:600;" id="room-number"></div>
+            <div style="font-size:0.85rem;color:rgba(255,255,255,0.5);" id="room-type"></div>
+          </div>
+          <div class="col-md-6">
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Check-in</div>
+            <div style="font-weight:600;" id="checkin-date"></div>
+            <div style="font-size:0.82rem;color:rgba(255,255,255,0.5);" id="actual-checkin"></div>
+          </div>
+          <div class="col-md-6">
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Check-out</div>
+            <div style="font-weight:600;" id="checkout-date"></div>
+            <div style="font-size:0.82rem;color:rgba(255,255,255,0.5);" id="actual-checkout"></div>
+          </div>
+          <div class="col-md-4">
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Nights</div>
+            <div style="font-size:1.5rem;font-weight:700;color:#a78bfa;" id="nights-count"></div>
+          </div>
+          <div class="col-md-4">
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Guests</div>
+            <div style="font-weight:600;" id="guests-count"></div>
+          </div>
+          <div class="col-md-4">
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Room Total</div>
+            <div style="font-size:1.2rem;font-weight:700;color:#a78bfa;" id="room-total"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Special Requests -->
+      <div class="glass-card p-4 mb-4" id="requests-card">
+        <h5 style="font-weight:600;margin-bottom:16px;">Special Requests</h5>
+        <p style="color:rgba(255,255,255,0.7);line-height:1.7;" id="special-requests"></p>
+      </div>
+
+      <!-- Service Orders -->
+      <div class="glass-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 style="font-weight:600;margin:0;">Service Orders</h5>
+        </div>
+        <div id="service-orders">
+          <p style="color:rgba(255,255,255,0.4);font-size:0.9rem;">No service orders yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Status -->
+      <div class="glass-card p-4 mb-4">
+        <h6 style="font-weight:600;margin-bottom:16px;color:rgba(255,255,255,0.7);">Reservation Info</h6>
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex justify-content-between">
+            <span style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Status</span>
+            <span id="sidebar-status"></span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Source</span>
+            <span style="font-size:0.9rem;text-transform:capitalize;" id="source"></span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Created</span>
+            <span style="font-size:0.85rem;" id="created-at"></span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Created By</span>
+            <span style="font-size:0.85rem;" id="created-by"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Invoice -->
+      <div class="glass-card p-4 mb-4">
+        <h6 style="font-weight:600;margin-bottom:16px;color:rgba(255,255,255,0.7);">Billing</h6>
+        <div id="invoice-info">
+          <p style="color:rgba(255,255,255,0.4);font-size:0.85rem;">No invoice yet.</p>
+        </div>
+        <button class="btn btn-outline w-100 mt-3" id="create-invoice-btn" onclick="createInvoice()" style="display:none;">Create Invoice</button>
+      </div>
+
+      <!-- Notes -->
+      <div class="glass-card p-4">
+        <h6 style="font-weight:600;margin-bottom:16px;color:rgba(255,255,255,0.7);">Internal Notes</h6>
+        <p style="color:rgba(255,255,255,0.6);font-size:0.85rem;line-height:1.7;" id="notes"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .btn-success { background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.4);color:#4ade80; }
+  .btn-success:hover { background:rgba(34,197,94,0.35);color:#86efac; }
+  .btn-danger-outline { background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5; }
+  .btn-danger-outline:hover { background:rgba(239,68,68,0.25); }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const reservationId = {{ reservation_id }};
+let reservation = null;
+
+const statusColors = {
+  pending: '#fbbf24', confirmed: '#60a5fa', checked_in: '#4ade80',
+  checked_out: '#94a3b8', cancelled: '#f87171', no_show: '#a78bfa'
+};
+
+function statusBadge(s) {
+  const color = statusColors[s] || '#fff';
+  return `<span style="background:${color}20;border:1px solid ${color}40;color:${color};border-radius:20px;padding:3px 12px;font-size:0.8rem;font-weight:600;text-transform:capitalize;">${s.replace('_',' ')}</span>`;
+}
+
+async function loadReservation() {
+  try {
+    reservation = await api.get(`/reservations/${reservationId}/`);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    document.getElementById('res-number').textContent = reservation.reservation_number;
+    document.getElementById('res-status-badge').innerHTML = statusBadge(reservation.status);
+    document.getElementById('sidebar-status').innerHTML = statusBadge(reservation.status);
+
+    const g = reservation.guest;
+    document.getElementById('guest-avatar').textContent = (g.first_name?.[0] || g.username[0]).toUpperCase();
+    document.getElementById('guest-name').textContent = `${g.first_name} ${g.last_name}`.trim() || g.username;
+    document.getElementById('guest-email').textContent = g.email;
+    document.getElementById('guest-phone').textContent = g.phone || '';
+
+    const r = reservation.room;
+    document.getElementById('room-number').textContent = `Room ${r.room_number}`;
+    document.getElementById('room-type').textContent = `${r.room_type.name} · Floor ${r.floor}`;
+
+    document.getElementById('checkin-date').textContent = formatDate(reservation.check_in_date);
+    document.getElementById('checkout-date').textContent = formatDate(reservation.check_out_date);
+    document.getElementById('actual-checkin').textContent = reservation.actual_check_in ? 'Checked in: ' + formatDateTime(reservation.actual_check_in) : '';
+    document.getElementById('actual-checkout').textContent = reservation.actual_check_out ? 'Checked out: ' + formatDateTime(reservation.actual_check_out) : '';
+
+    document.getElementById('nights-count').textContent = reservation.nights + ' night(s)';
+    document.getElementById('guests-count').textContent = `${reservation.num_adults} adult(s), ${reservation.num_children} child(ren)`;
+    document.getElementById('room-total').textContent = formatCurrency(reservation.room_total);
+
+    document.getElementById('special-requests').textContent = reservation.special_requests || 'No special requests.';
+    document.getElementById('source').textContent = reservation.source;
+    document.getElementById('created-at').textContent = formatDate(reservation.created_at);
+    document.getElementById('notes').textContent = reservation.notes || '—';
+
+    // Show action buttons based on status
+    if (reservation.status === 'pending') {
+      document.getElementById('btn-confirm').style.display = 'block';
+      document.getElementById('btn-cancel').style.display = 'block';
+    } else if (reservation.status === 'confirmed') {
+      document.getElementById('btn-checkin').style.display = 'block';
+      document.getElementById('btn-cancel').style.display = 'block';
+    } else if (reservation.status === 'checked_in') {
+      document.getElementById('btn-checkout').style.display = 'block';
+    }
+
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '<p style="color:#fca5a5;">Failed to load reservation.</p>';
+  }
+}
+
+async function updateStatus(newStatus) {
+  try {
+    await api.post(`/reservations/${reservationId}/${newStatus === 'confirmed' ? 'confirm' : newStatus}/`, {});
+    toast.success('Status updated!');
+    loadReservation();
+  } catch(e) { toast.error('Failed to update status'); }
+}
+
+async function doCheckIn() {
+  if (!confirm('Confirm check-in for this guest?')) return;
+  try {
+    await api.post(`/reservations/${reservationId}/check_in/`, {});
+    toast.success('Guest checked in!');
+    setTimeout(() => location.reload(), 800);
+  } catch(e) { toast.error('Check-in failed'); }
+}
+
+async function doCheckOut() {
+  if (!confirm('Confirm check-out for this guest?')) return;
+  try {
+    await api.post(`/reservations/${reservationId}/check_out/`, {});
+    toast.success('Guest checked out!');
+    setTimeout(() => location.reload(), 800);
+  } catch(e) { toast.error('Check-out failed'); }
+}
+
+async function doCancel() {
+  if (!confirm('Cancel this reservation?')) return;
+  try {
+    await api.post(`/reservations/${reservationId}/cancel/`, {});
+    toast.success('Reservation cancelled');
+    setTimeout(() => location.reload(), 800);
+  } catch(e) { toast.error('Failed to cancel reservation'); }
+}
+
+function formatDateTime(dt) {
+  return new Date(dt).toLocaleString('en-US', {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+loadReservation();
+</script>
+{% endblock %}

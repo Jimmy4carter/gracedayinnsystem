@@ -45,7 +45,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   btn.textContent = 'Signing in...';
   btn.disabled = true;
   try {
-    const data = await api.post('/accounts/users/login/', {
+    const data = await api.post('/auth/login/', {
       username: document.getElementById('username').value,
       password: document.getElementById('password').value,
     });
