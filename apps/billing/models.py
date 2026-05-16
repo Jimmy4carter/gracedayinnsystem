@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.utils import timezone
 
@@ -59,7 +61,7 @@ class Invoice(models.Model):
         items = self.items.all() if self.pk else []
         self.subtotal = sum(item.total for item in items)
         self.tax_amount = (self.subtotal * self.tax_rate / 100).quantize(
-            __import__('decimal').Decimal('0.01'))
+            Decimal('0.01'))
         self.total = self.subtotal + self.tax_amount
         self.balance = self.total - self.amount_paid
 
