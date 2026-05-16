@@ -1,0 +1,121 @@
+{% extends 'frontend/base.html' %}
+{% block title %}Dashboard - Graceday Inn{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_heading %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Welcome to Graceday Inn</h1>
+<p class="page-subtitle">Hotel Management Dashboard</p>
+
+<div class="stats-grid" id="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon purple">🛏️</div>
+    <div><div class="stat-value" id="stat-total-rooms">-</div><div class="stat-label">Total Rooms</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green">✅</div>
+    <div><div class="stat-value" id="stat-available">-</div><div class="stat-label">Available</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red">🔴</div>
+    <div><div class="stat-value" id="stat-occupied">-</div><div class="stat-label">Occupied</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber">📅</div>
+    <div><div class="stat-value" id="stat-reservations">-</div><div class="stat-label">Active Reservations</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue">💳</div>
+    <div><div class="stat-value" id="stat-invoices">-</div><div class="stat-label">Pending Invoices</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green">🧹</div>
+    <div><div class="stat-value" id="stat-hk-tasks">-</div><div class="stat-label">HK Tasks Today</div></div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+  <div class="table-container">
+    <div class="table-header">
+      <h3 style="font-size:15px; font-weight:600;">Recent Reservations</h3>
+      <a href="/reservations/" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Guest</th><th>Room</th><th>Check-In</th><th>Status</th></tr></thead>
+      <tbody id="recent-reservations"></tbody>
+    </table>
+  </div>
+  <div class="table-container">
+    <div class="table-header">
+      <h3 style="font-size:15px; font-weight:600;">Room Status Overview</h3>
+    </div>
+    <div style="padding:20px;" id="room-status-chart">
+      <div id="room-status-bars"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function loadDashboard() {
+  if (!requireAuth()) return;
+  try {
+    const [rooms, reservations, invoices, hkTasks] = await Promise.all([
+      api.get('/rooms/rooms/?page_size=100'),
+      api.get('/reservations/?status=checked_in&page_size=5'),
+      api.get('/billing/invoices/?status=sent'),
+      api.get('/housekeeping/tasks/?status=pending'),
+    ]);
+
+    const roomResults = rooms.results || [];
+    const available = roomResults.filter(r => r.status === 'available').length;
+    const occupied = roomResults.filter(r => r.status === 'occupied').length;
+
+    document.getElementById('stat-total-rooms').textContent = rooms.count || 0;
+    document.getElementById('stat-available').textContent = available;
+    document.getElementById('stat-occupied').textContent = occupied;
+    document.getElementById('stat-reservations').textContent = reservations.count || 0;
+    document.getElementById('stat-invoices').textContent = invoices.count || 0;
+    document.getElementById('stat-hk-tasks').textContent = hkTasks.count || 0;
+
+    // Recent reservations
+    const tbody = document.getElementById('recent-reservations');
+    const recent = await api.get('/reservations/?page_size=5');
+    tbody.innerHTML = (recent.results || []).map(r => `
+      <tr>
+        <td><span class="text-sm">${r.reservation_number}</span></td>
+        <td>${r.guest_detail ? (r.guest_detail.first_name + ' ' + r.guest_detail.last_name).trim() || r.guest_detail.username : '-'}</td>
+        <td>${r.room_detail ? 'Room ' + r.room_detail.number : '-'}</td>
+        <td class="text-sm text-muted">${formatDate(r.check_in_date)}</td>
+        <td>${statusBadge(r.status)}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">No data</td></tr>';
+
+    // Room status bars
+    const statuses = ['available','occupied','housekeeping','maintenance'];
+    const colors = {'available':'#10b981','occupied':'#ef4444','housekeeping':'#f59e0b','maintenance':'#3b82f6'};
+    const total = roomResults.length || 1;
+    document.getElementById('room-status-bars').innerHTML = statuses.map(s => {
+      const count = roomResults.filter(r => r.status === s).length;
+      const pct = Math.round((count / total) * 100);
+      return `
+        <div style="margin-bottom:12px;">
+          <div class="flex-between mb-4" style="margin-bottom:6px;">
+            <span style="font-size:13px; text-transform:capitalize;">${s.replace('_',' ')}</span>
+            <span class="text-sm text-muted">${count} (${pct}%)</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05); border-radius:4px; height:8px; overflow:hidden;">
+            <div style="width:${pct}%; background:${colors[s]}; height:100%; border-radius:4px; transition:0.5s;"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch (e) {
+    console.error(e);
+    toast.error('Failed to load dashboard data');
+  }
+}
+loadDashboard();
+</script>
+{% endblock %}

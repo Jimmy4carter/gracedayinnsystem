@@ -1,0 +1,150 @@
+{% extends 'frontend/base.html' %}
+{% block title %}Housekeeping - Graceday Inn{% endblock %}
+{% block nav_housekeeping %}active{% endblock %}
+{% block page_heading %}Housekeeping{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Housekeeping Tasks</h1>
+<p class="page-subtitle">Manage room cleaning and maintenance tasks</p>
+
+<div class="table-container">
+  <div class="table-header">
+    <div class="flex gap-2">
+      <select id="status-filter" class="form-control" style="width:160px;">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="in_progress">In Progress</option>
+        <option value="completed">Completed</option>
+      </select>
+      <select id="priority-filter" class="form-control" style="width:140px;">
+        <option value="">All Priorities</option>
+        <option value="urgent">Urgent</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('hk-modal')">+ New Task</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Room</th><th>Task Type</th><th>Priority</th><th>Assigned To</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="hk-table"></tbody>
+  </table>
+</div>
+
+<div class="modal-overlay" id="hk-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">New Housekeeping Task</h3>
+      <button class="modal-close" onclick="closeModal('hk-modal')">✕</button>
+    </div>
+    <form id="hk-form">
+      <div class="form-group">
+        <label class="form-label">Room</label>
+        <select id="hk-room" class="form-control" required></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Task Type</label>
+        <select id="hk-type" class="form-control">
+          <option value="cleaning">Room Cleaning</option>
+          <option value="turndown">Turndown Service</option>
+          <option value="deep_clean">Deep Cleaning</option>
+          <option value="maintenance">Maintenance Check</option>
+          <option value="inspection">Inspection</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select id="hk-priority" class="form-control">
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="hk-notes" class="form-control" rows="2"></textarea>
+      </div>
+      <div class="flex gap-2" style="justify-content:flex-end; margin-top:20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('hk-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+if (!requireAuth()) window.location.href = '/login/';
+
+async function loadRooms() {
+  try {
+    const data = await api.get('/rooms/rooms/?page_size=200');
+    document.getElementById('hk-room').innerHTML = (data.results||[]).map(r =>
+      `<option value="${r.id}">Room ${r.number} (${r.status})</option>`).join('');
+  } catch(e) {}
+}
+
+async function loadTasks() {
+  const status = document.getElementById('status-filter').value;
+  const priority = document.getElementById('priority-filter').value;
+  let url = '/housekeeping/tasks/';
+  const params = [];
+  if (status) params.push(`status=${status}`);
+  if (priority) params.push(`priority=${priority}`);
+  if (params.length) url += '?' + params.join('&');
+  try {
+    const data = await api.get(url);
+    const tbody = document.getElementById('hk-table');
+    tbody.innerHTML = (data.results||[]).map(t => `
+      <tr>
+        <td>Room ${t.room||'-'}</td>
+        <td>${t.task_type.replace('_',' ')}</td>
+        <td><span class="badge ${t.priority==='urgent'?'badge-danger':t.priority==='high'?'badge-warning':'badge-secondary'}">${t.priority}</span></td>
+        <td>${t.assigned_to||'-'}</td>
+        <td>${statusBadge(t.status)}</td>
+        <td>
+          ${t.status==='pending'?`<button class="btn btn-info btn-sm" onclick="startTask(${t.id})">Start</button>`:''}
+          ${t.status==='in_progress'?`<button class="btn btn-success btn-sm" onclick="completeTask(${t.id})">Complete</button>`:''}
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">No tasks found</td></tr>';
+  } catch(e) { toast.error('Failed to load tasks'); }
+}
+
+async function startTask(id) {
+  try { await api.post(`/housekeeping/tasks/${id}/start/`,{}); toast.success('Task started'); loadTasks(); }
+  catch(e) { toast.error('Failed'); }
+}
+async function completeTask(id) {
+  try { await api.post(`/housekeeping/tasks/${id}/complete/`,{}); toast.success('Task completed'); loadTasks(); }
+  catch(e) { toast.error('Failed'); }
+}
+
+document.getElementById('hk-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    room: document.getElementById('hk-room').value,
+    task_type: document.getElementById('hk-type').value,
+    priority: document.getElementById('hk-priority').value,
+    notes: document.getElementById('hk-notes').value,
+  };
+  try {
+    await api.post('/housekeeping/tasks/', payload);
+    toast.success('Task created');
+    closeModal('hk-modal');
+    document.getElementById('hk-form').reset();
+    loadTasks();
+  } catch(e) { toast.error('Failed to create task'); }
+});
+
+document.getElementById('status-filter').addEventListener('change', loadTasks);
+document.getElementById('priority-filter').addEventListener('change', loadTasks);
+loadRooms();
+loadTasks();
+</script>
+{% endblock %}

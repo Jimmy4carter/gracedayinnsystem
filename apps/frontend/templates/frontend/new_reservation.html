@@ -1,0 +1,397 @@
+{% extends 'frontend/base.html' %}
+{% load static %}
+
+{% block title %}New Reservation - Graceday Inn{% endblock %}
+{% block nav_reservations %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">New Reservation</h1>
+    <p class="page-subtitle">Create a new booking for a guest</p>
+  </div>
+  <a href="/reservations/" class="btn btn-ghost">← Back to Reservations</a>
+</div>
+
+<!-- Step indicator -->
+<div class="glass-card p-4 mb-4">
+  <div class="d-flex align-items-center gap-0">
+    <div class="step-item active" id="step-ind-1">
+      <div class="step-num">1</div>
+      <div class="step-label">Guest</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" id="step-ind-2">
+      <div class="step-num">2</div>
+      <div class="step-label">Room</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" id="step-ind-3">
+      <div class="step-num">3</div>
+      <div class="step-label">Details</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" id="step-ind-4">
+      <div class="step-num">4</div>
+      <div class="step-label">Confirm</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 1: Guest Selection -->
+<div class="glass-card p-4 mb-4" id="step-1">
+  <h5 class="mb-4" style="font-weight:600;">Select Guest</h5>
+  <div class="row g-3 mb-3">
+    <div class="col-md-8">
+      <label class="form-label">Search Guest</label>
+      <input type="text" id="guest-search" class="form-control" placeholder="Search by name or email..." oninput="searchGuests(this.value)">
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      <button class="btn btn-outline w-100" onclick="showNewGuestForm()">+ New Guest</button>
+    </div>
+  </div>
+  <div id="guest-results"></div>
+  <div id="new-guest-form" style="display:none;">
+    <hr style="border-color:rgba(255,255,255,0.1);margin:20px 0;">
+    <h6 class="mb-3">New Guest Details</h6>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">First Name *</label>
+        <input type="text" id="ng-first" class="form-control" placeholder="First name">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Last Name *</label>
+        <input type="text" id="ng-last" class="form-control" placeholder="Last name">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Email *</label>
+        <input type="email" id="ng-email" class="form-control" placeholder="email@example.com">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Phone</label>
+        <input type="tel" id="ng-phone" class="form-control" placeholder="+1 555 000 0000">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">ID Type</label>
+        <select id="ng-id-type" class="form-control">
+          <option value="">Select ID Type</option>
+          <option>Passport</option>
+          <option>Driver's License</option>
+          <option>National ID</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">ID Number</label>
+        <input type="text" id="ng-id-num" class="form-control" placeholder="ID number">
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary" onclick="createGuestAndSelect()">Create & Select Guest</button>
+      </div>
+    </div>
+  </div>
+  <div id="selected-guest" style="display:none;" class="mt-3">
+    <div class="d-flex align-items-center gap-3 p-3" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:12px;">
+      <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700;" id="sg-avatar"></div>
+      <div>
+        <div style="font-weight:600;" id="sg-name"></div>
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);" id="sg-email"></div>
+      </div>
+      <button class="btn btn-sm btn-ghost ms-auto" onclick="clearSelectedGuest()">Change</button>
+    </div>
+  </div>
+  <div class="mt-4 d-flex justify-content-end">
+    <button class="btn btn-primary" onclick="nextStep(2)" id="step1-next" disabled>Next: Select Room →</button>
+  </div>
+</div>
+
+<!-- Step 2: Room Selection -->
+<div class="glass-card p-4 mb-4" id="step-2" style="display:none;">
+  <h5 class="mb-4" style="font-weight:600;">Select Room</h5>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="form-label">Check-in Date *</label>
+      <input type="date" id="check-in" class="form-control" style="color-scheme:dark;" onchange="searchAvailableRooms()">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Check-out Date *</label>
+      <input type="date" id="check-out" class="form-control" style="color-scheme:dark;" onchange="searchAvailableRooms()">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Room Type</label>
+      <select id="room-type-filter" class="form-control" onchange="searchAvailableRooms()">
+        <option value="">All Types</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button class="btn btn-outline w-100" onclick="searchAvailableRooms()">🔍 Search</button>
+    </div>
+  </div>
+  <div id="available-rooms" class="row g-3"></div>
+  <div class="mt-4 d-flex justify-content-between">
+    <button class="btn btn-ghost" onclick="nextStep(1)">← Back</button>
+    <button class="btn btn-primary" onclick="nextStep(3)" id="step2-next" disabled>Next: Details →</button>
+  </div>
+</div>
+
+<!-- Step 3: Booking Details -->
+<div class="glass-card p-4 mb-4" id="step-3" style="display:none;">
+  <h5 class="mb-4" style="font-weight:600;">Booking Details</h5>
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label">Adults</label>
+      <input type="number" id="num-adults" class="form-control" value="1" min="1" max="10">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Children</label>
+      <input type="number" id="num-children" class="form-control" value="0" min="0" max="10">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Booking Source</label>
+      <select id="source" class="form-control">
+        <option value="direct">Direct</option>
+        <option value="website">Website</option>
+        <option value="phone">Phone</option>
+        <option value="walkin">Walk-in</option>
+        <option value="ota">OTA</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Status</label>
+      <select id="res-status" class="form-control">
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+      </select>
+    </div>
+    <div class="col-12">
+      <label class="form-label">Special Requests</label>
+      <textarea id="special-requests" class="form-control" rows="3" placeholder="Any special requests or preferences..."></textarea>
+    </div>
+    <div class="col-12">
+      <label class="form-label">Internal Notes</label>
+      <textarea id="notes" class="form-control" rows="2" placeholder="Internal notes (not visible to guest)..."></textarea>
+    </div>
+  </div>
+  <div class="mt-4 d-flex justify-content-between">
+    <button class="btn btn-ghost" onclick="nextStep(2)">← Back</button>
+    <button class="btn btn-primary" onclick="nextStep(4)">Next: Confirm →</button>
+  </div>
+</div>
+
+<!-- Step 4: Confirmation -->
+<div class="glass-card p-4 mb-4" id="step-4" style="display:none;">
+  <h5 class="mb-4" style="font-weight:600;">Confirm Reservation</h5>
+  <div id="booking-summary" class="mb-4"></div>
+  <div class="mt-4 d-flex justify-content-between">
+    <button class="btn btn-ghost" onclick="nextStep(3)">← Back</button>
+    <button class="btn btn-primary" onclick="submitReservation()" id="submit-btn">
+      ✅ Create Reservation
+    </button>
+  </div>
+</div>
+
+<style>
+  .step-item { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .step-num { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem; transition:all 0.3s; }
+  .step-item.active .step-num { background:linear-gradient(135deg,#6366f1,#8b5cf6); border-color:#6366f1; }
+  .step-item.done .step-num { background:rgba(34,197,94,0.2); border-color:#22c55e; color:#22c55e; }
+  .step-label { font-size:0.75rem; color:rgba(255,255,255,0.5); white-space:nowrap; }
+  .step-item.active .step-label { color:#a78bfa; }
+  .step-line { flex:1; height:2px; background:rgba(255,255,255,0.1); margin-top:-20px; }
+  .room-option { cursor:pointer; transition:all 0.2s; border:2px solid transparent; }
+  .room-option:hover { border-color:rgba(99,102,241,0.4); }
+  .room-option.selected { border-color:#6366f1; background:rgba(99,102,241,0.1); }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let selectedGuest = null;
+let selectedRoom = null;
+let currentStep = 1;
+
+// Initialize date defaults
+const today = new Date().toISOString().split('T')[0];
+const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+document.getElementById('check-in').value = today;
+document.getElementById('check-out').value = tomorrow;
+
+// Load room types for filter
+api.get('/room-types/').then(data => {
+  const sel = document.getElementById('room-type-filter');
+  (data.results || data).forEach(rt => {
+    const opt = document.createElement('option');
+    opt.value = rt.id; opt.textContent = rt.name;
+    sel.appendChild(opt);
+  });
+}).catch(() => {});
+
+function nextStep(step) {
+  document.getElementById(`step-${currentStep}`).style.display = 'none';
+  document.getElementById(`step-ind-${currentStep}`).classList.remove('active');
+  document.getElementById(`step-ind-${currentStep}`).classList.add('done');
+  currentStep = step;
+  document.getElementById(`step-${currentStep}`).style.display = 'block';
+  document.getElementById(`step-ind-${currentStep}`).classList.add('active');
+  if (step === 4) buildSummary();
+  window.scrollTo(0, 0);
+}
+
+async function searchGuests(q) {
+  if (q.length < 2) { document.getElementById('guest-results').innerHTML = ''; return; }
+  try {
+    const data = await api.get(`/users/?search=${encodeURIComponent(q)}&role=guest`);
+    const users = data.results || data;
+    const container = document.getElementById('guest-results');
+    if (!users.length) { container.innerHTML = '<p style="color:rgba(255,255,255,0.5);font-size:0.85rem;padding:8px 0;">No guests found. Try creating a new one.</p>'; return; }
+    container.innerHTML = users.map(u => `
+      <div onclick="selectGuest(${JSON.stringify(u).replace(/"/g, '&quot;')})" 
+           style="padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;"
+           onmouseover="this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+        <div style="font-weight:500;">${u.first_name} ${u.last_name} <span style="color:rgba(255,255,255,0.5);">@${u.username}</span></div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.5);">${u.email} ${u.phone ? '· ' + u.phone : ''}</div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+function selectGuest(user) {
+  selectedGuest = user;
+  document.getElementById('guest-results').innerHTML = '';
+  document.getElementById('new-guest-form').style.display = 'none';
+  document.getElementById('selected-guest').style.display = 'block';
+  document.getElementById('sg-avatar').textContent = (user.first_name?.[0] || user.username[0]).toUpperCase();
+  document.getElementById('sg-name').textContent = `${user.first_name} ${user.last_name}`.trim() || user.username;
+  document.getElementById('sg-email').textContent = user.email;
+  document.getElementById('guest-search').value = '';
+  document.getElementById('step1-next').disabled = false;
+}
+
+function clearSelectedGuest() {
+  selectedGuest = null;
+  document.getElementById('selected-guest').style.display = 'none';
+  document.getElementById('step1-next').disabled = true;
+}
+
+function showNewGuestForm() {
+  document.getElementById('new-guest-form').style.display = 'block';
+}
+
+async function createGuestAndSelect() {
+  const fn = document.getElementById('ng-first').value.trim();
+  const ln = document.getElementById('ng-last').value.trim();
+  const em = document.getElementById('ng-email').value.trim();
+  if (!fn || !ln || !em) { toast.error('First name, last name and email are required'); return; }
+  try {
+    const user = await api.post('/users/', {
+      username: em.split('@')[0] + '_' + Date.now(),
+      first_name: fn, last_name: ln, email: em,
+      phone: document.getElementById('ng-phone').value,
+      id_type: document.getElementById('ng-id-type').value,
+      id_number: document.getElementById('ng-id-num').value,
+      role: 'guest', password: 'TempPass123!', password_confirm: 'TempPass123!'
+    });
+    selectGuest(user);
+    document.getElementById('new-guest-form').style.display = 'none';
+    toast.success('Guest created!');
+  } catch(e) {
+    toast.error('Failed to create guest. Email may already exist.');
+  }
+}
+
+async function searchAvailableRooms() {
+  const ci = document.getElementById('check-in').value;
+  const co = document.getElementById('check-out').value;
+  const rt = document.getElementById('room-type-filter').value;
+  if (!ci || !co) return;
+  const container = document.getElementById('available-rooms');
+  container.innerHTML = '<div class="col-12 text-center" style="color:rgba(255,255,255,0.5);">Searching...</div>';
+  try {
+    let url = `/rooms/available/?check_in=${ci}&check_out=${co}`;
+    if (rt) url += `&room_type=${rt}`;
+    const rooms = await api.get(url);
+    if (!rooms.length) { container.innerHTML = '<div class="col-12"><p style="color:rgba(255,255,255,0.5);">No rooms available for the selected dates.</p></div>'; return; }
+    container.innerHTML = rooms.map(r => {
+      const nights = Math.ceil((new Date(co) - new Date(ci)) / 86400000);
+      const total = (nights * parseFloat(r.room_type.base_price)).toFixed(2);
+      return `<div class="col-md-4">
+        <div class="glass-card room-option p-3" onclick="selectRoom(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${nights})">
+          <div style="font-size:2rem;text-align:center;padding:20px 0;background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:12px;">🛏️</div>
+          <div style="font-weight:600;margin-bottom:4px;">Room ${r.room_number}</div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:8px;">${r.room_type.name} · Floor ${r.floor}</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#a78bfa;">$${r.room_type.base_price}<span style="font-size:0.75rem;color:rgba(255,255,255,0.5)">/night</span></div>
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.5);">Total: $${total} (${nights} nights)</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { container.innerHTML = '<div class="col-12"><p style="color:#fca5a5;">Failed to load available rooms.</p></div>'; }
+}
+
+function selectRoom(room, nights) {
+  selectedRoom = room;
+  selectedRoom._nights = nights;
+  document.querySelectorAll('.room-option').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  document.getElementById('step2-next').disabled = false;
+}
+
+function buildSummary() {
+  const ci = document.getElementById('check-in').value;
+  const co = document.getElementById('check-out').value;
+  const total = selectedRoom._nights * parseFloat(selectedRoom.room_type.base_price);
+  document.getElementById('booking-summary').innerHTML = `
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:20px;">
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Guest</div>
+          <div style="font-weight:600;">${selectedGuest.first_name} ${selectedGuest.last_name}</div>
+          <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);">${selectedGuest.email}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:20px;">
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Room</div>
+          <div style="font-weight:600;">Room ${selectedRoom.room_number} - ${selectedRoom.room_type.name}</div>
+          <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);">Floor ${selectedRoom.floor}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:20px;">
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Dates</div>
+          <div style="font-weight:600;">${ci} → ${co}</div>
+          <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);">${selectedRoom._nights} night(s)</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:20px;">
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Total</div>
+          <div style="font-size:1.5rem;font-weight:700;color:#a78bfa;">$${total.toFixed(2)}</div>
+          <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);">$${selectedRoom.room_type.base_price}/night × ${selectedRoom._nights}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function submitReservation() {
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  try {
+    const reservation = await api.post('/reservations/', {
+      guest_id: selectedGuest.id,
+      room_id: selectedRoom.id,
+      check_in_date: document.getElementById('check-in').value,
+      check_out_date: document.getElementById('check-out').value,
+      num_adults: parseInt(document.getElementById('num-adults').value),
+      num_children: parseInt(document.getElementById('num-children').value),
+      source: document.getElementById('source').value,
+      status: document.getElementById('res-status').value,
+      special_requests: document.getElementById('special-requests').value,
+      notes: document.getElementById('notes').value,
+    });
+    toast.success('Reservation created!');
+    setTimeout(() => window.location.href = `/reservations/${reservation.id}/`, 800);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '✅ Create Reservation';
+    toast.error('Failed to create reservation. Please check all fields.');
+  }
+}
+</script>
+{% endblock %}
