@@ -89,8 +89,11 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'apps' / 'frontend' / 'static']
+STATIC_ROOT = BASE_DIR / 'collected_static'
+STATICFILES_DIRS = [
+    BASE_DIR / 'apps' / 'frontend' / 'static',
+    BASE_DIR / 'staticfiles',
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -135,3 +138,7 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@gracedayinn.com')
+
+LOGIN_URL = '/portal/sign-in/'
+LOGIN_REDIRECT_URL = '/portal/dashboard/'
+LOGOUT_REDIRECT_URL = '/portal/sign-in/'

@@ -1,0 +1,107 @@
+{% extends 'base_public.html' %}
+{% load static %}
+{% block title %}GRACEDAY INN | Room {{ room.number }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-section">
+    <div class="container"><div class="row"><div class="col-lg-12"><div class="breadcrumb-text"><h2>Room Details</h2><div class="bt-option"><a href="{% url 'frontend:public-home' %}">Home</a><a href="{% url 'frontend:public-rooms' %}">Rooms</a><span>Room {{ room.number }}</span></div></div></div></div></div>
+</div>
+
+<section class="room-details-section spad">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="room-details-item">
+                    <img src="{% static 'img/room/room-details.jpg' %}" alt="">
+                    <div class="rd-text">
+                        <div class="rd-title">
+                            <h3>{{ room.room_type.name }} - Room {{ room.number }}</h3>
+                            <div class="rdt-right">
+                                <div class="rating">
+                                    <i class="icon_star"></i>
+                                    <i class="icon_star"></i>
+                                    <i class="icon_star"></i>
+                                    <i class="icon_star"></i>
+                                    <i class="icon_star-half_alt"></i>
+                                </div>
+                                <a href="{% url 'frontend:public-home' %}#booking">Booking Now</a>
+                            </div>
+                        </div>
+                        <h2>₦{{ room.current_price }}<span>/Pernight</span></h2>
+                        <table>
+                            <thead>
+                                <tr><th>Detail</th><th>Value</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="r-o">Size:</td><td>{{ room.floor|default:'1' }} floor suite</td></tr>
+                                <tr><td class="r-o">Capacity:</td><td>Max {{ room.room_type.max_occupancy }} persons</td></tr>
+                                <tr><td class="r-o">Bed:</td><td>{{ room.room_type.name }}</td></tr>
+                                <tr><td class="r-o">Services:</td><td>{{ room.description|default:room.room_type.description|default:'Wifi, Television, Bathroom, Refrigerator, AC' }}</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="f-para">Comfort redefined room. Step into luxury with this spacious room, thoughtfully designed to offer comfort and relaxation with modern in-room amenities and daily support services.</p>
+                        <p>Whether you are unwinding after a long day or planning a peaceful retreat, every detail is tailored to make your stay unforgettable at GRACEDAY INN.</p>
+                    </div>
+                </div>
+                <div class="rd-reviews">
+                    <h4>Reviews</h4>
+                    <div class="review-item">
+                        <div class="ri-pic"><img src="{% static 'img/room/avatar/avatar-1.jpg' %}" alt=""></div>
+                        <div class="ri-text">
+                            <span>27 Aug 2019</span>
+                            <div class="rating"><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star-half_alt"></i></div>
+                            <h5>Brandon Kelley</h5>
+                            <p>Excellent service and a very comfortable room experience.</p>
+                        </div>
+                    </div>
+                    <div class="review-item">
+                        <div class="ri-pic"><img src="{% static 'img/room/avatar/avatar-2.jpg' %}" alt=""></div>
+                        <div class="ri-text">
+                            <span>27 Aug 2019</span>
+                            <div class="rating"><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star-half_alt"></i></div>
+                            <h5>Bernard Morgan</h5>
+                            <p>This is home away from home and I always return when in Abuja.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="review-add">
+                    <h4>Add Review</h4>
+                    <form action="#" class="ra-form">
+                        <div class="row">
+                            <div class="col-lg-6"><input type="text" placeholder="Name*"></div>
+                            <div class="col-lg-6"><input type="text" placeholder="Email*"></div>
+                            <div class="col-lg-12">
+                                <div>
+                                    <h5>You Rating:</h5>
+                                    <div class="rating"><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star-half_alt"></i></div>
+                                </div>
+                                <textarea placeholder="Your Review"></textarea>
+                                <button type="submit">Submit Now</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="room-booking">
+                    <h3>Your Reservation</h3>
+                    <form action="{% url 'frontend:public-home' %}#booking">
+                        <div class="check-date"><label for="rd-date-in">Check In:</label><input id="rd-date-in" type="text" class="date-input" value="{{ room.created_at|date:'Y-m-d' }}"><i class="icon_calendar"></i></div>
+                        <div class="check-date"><label for="rd-date-out">Check Out:</label><input id="rd-date-out" type="text" class="date-input" value="{{ room.updated_at|date:'Y-m-d' }}"><i class="icon_calendar"></i></div>
+                        <div class="select-option"><label for="rd-guests">Guests:</label><select id="rd-guests"><option>Max {{ room.room_type.max_occupancy }} persons</option></select></div>
+                        <div class="select-option"><label for="rd-room">Room:</label><select id="rd-room"><option>Room {{ room.number }}</option></select></div>
+                        <button type="submit">Check Availability</button>
+                    </form>
+                    <div class="mt-4">
+                        <h5>Similar Rooms</h5>
+                        {% for item in similar_rooms %}
+                            <p><a href="{% url 'frontend:public-room-detail' item.id %}">Room {{ item.number }} - {{ item.room_type.name }}</a></p>
+                        {% empty %}
+                            <p>No similar rooms found.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

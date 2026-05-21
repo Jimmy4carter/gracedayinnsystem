@@ -1,0 +1,40 @@
+{% extends 'base_portal.html' %}
+{% block title %}Guests | GRACEDAY INN{% endblock %}
+{% block page_title %}Guest Directory{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header pb-0"><h6>Guest Directory</h6></div>
+            <div class="card-body px-0 pt-0 pb-2">
+                <div class="table-responsive p-0">
+                    <table class="table align-items-center mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Name</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Username</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Email</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Phone</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for guest in guests %}
+                                <tr>
+                                    <td><p class="text-xs font-weight-bold mb-0">{{ guest.get_full_name|default:'-' }}</p></td>
+                                    <td><p class="text-xs font-weight-bold mb-0">{{ guest.username }}</p></td>
+                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">{{ guest.email|default:'-' }}</span></td>
+                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">{{ guest.phone|default:'-' }}</span></td>
+                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">{{ guest.date_joined|date:'Y-m-d' }}</span></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="5" class="text-center">No guest records.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

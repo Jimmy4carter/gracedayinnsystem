@@ -15,6 +15,6 @@ urlpatterns = [
     path('api/', include('apps.housekeeping.urls')),
     path('api/', include('apps.notifications.urls')),
     # Frontend
-    path('', include('apps.frontend.urls')),
+    path('', include(('apps.frontend.urls', 'frontend'), namespace='frontend')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) \
   + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

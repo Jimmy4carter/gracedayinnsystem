@@ -1,0 +1,41 @@
+{% extends 'base_public.html' %}
+{% block title %}GRACEDAY INN | Contact{% endblock %}
+{% block content %}
+<section class="contact-section spad">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="contact-text">
+                    <h2>Contact Info</h2>
+                    <p>GraceDay Inn is here to assist you with reservations, inquiries, and exceptional services. We look forward to welcoming you, where comfort meets elegance.</p>
+                    <table>
+                        <thead>
+                            <tr><th>Type</th><th>Information</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr><td class="c-o">Address:</td><td>Louis Court Estate, Plot 351 Cadastral Zone B14, Apo-Dutse, Abuja FCT, Nigeria</td></tr>
+                        <tr><td class="c-o">Phone:</td><td>(+234) 7043834383</td></tr>
+                        <tr><td class="c-o">Email:</td><td>info.gracedayinn@gmail.com</td></tr>
+                        <tr><td class="c-o">Phone:</td><td>(+234) 7080076496</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-7 offset-lg-1">
+                <form method="post" class="contact-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-lg-6">{{ form.name }}</div>
+                        <div class="col-lg-6">{{ form.email }}</div>
+                        <div class="col-lg-12">{{ form.subject }}</div>
+                        <div class="col-lg-12">{{ form.message }}<button type="submit">Submit Now</button></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="map">
+            <iframe src="https://www.google.com/maps?q=Apo-Dutse%2C%20Abuja&output=embed" height="470" style="border:0;" allowfullscreen="" title="GRACEDAY INN location map"></iframe>
+        </div>
+    </div>
+</section>
+{% endblock %}

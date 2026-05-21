@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.utils import timezone
 
@@ -68,7 +70,7 @@ class ServiceOrder(models.Model):
         super().save(*args, **kwargs)
 
     def recalculate_total(self):
-        self.total = sum(item.subtotal for item in self.items.all())
+        self.total = sum((item.subtotal for item in self.items.all()), Decimal('0.00'))
         self.__class__.objects.filter(pk=self.pk).update(total=self.total)
 
 
@@ -83,6 +85,12 @@ class ServiceOrderItem(models.Model):
         self.unit_price = self.menu_item.price
         self.subtotal = self.unit_price * self.quantity
         super().save(*args, **kwargs)
+        self.order.recalculate_total()
+
+    def delete(self, *args, **kwargs):
+        order = self.order
+        super().delete(*args, **kwargs)
+        order.recalculate_total()
 
     def __str__(self):
         return f'{self.menu_item.name} x{self.quantity}'

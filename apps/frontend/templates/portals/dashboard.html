@@ -1,0 +1,134 @@
+{% extends 'base_portal.html' %}
+{% block title %}Dashboard | GRACEDAY INN{% endblock %}
+{% block page_title %}Operations Dashboard{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Reservations</small><h4>{{ stats.reservation_count }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Check-ins Today</small><h4>{{ stats.checkin_today }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Available Rooms</small><h4>{{ stats.available_rooms }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Open Balance</small><h4>₦{{ stats.invoice_balance }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Service SLA (Avg Min)</small><h4>{{ stats.service_sla_minutes }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Housekeeping Turnaround (Avg Min)</small><h4>{{ stats.housekeeping_turnaround_minutes }}</h4></div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card stat-card"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Operations Trend</h5>
+                <form method="get" class="d-flex gap-2">
+                    <select class="form-select form-select-sm" name="days" onchange="this.form.submit()">
+                        {% for option in window_choices %}
+                            <option value="{{ option }}" {% if option == selected_days %}selected{% endif %}>Last {{ option }} days</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            <canvas id="operationsTrendChart" height="120"></canvas>
+        </div></div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card stat-card"><div class="card-body">
+            <h5>Recent Notifications</h5>
+            {% for note in recent_notifications %}
+                <div class="border rounded p-2 mb-2">
+                    <strong>{{ note.title }}</strong>
+                    <div class="small text-muted">{{ note.created_at }}</div>
+                </div>
+            {% empty %}
+                <p class="text-muted">No notifications.</p>
+            {% endfor %}
+        </div></div>
+    </div>
+</div>
+<div class="row g-3 mt-1">
+    <div class="col-12">
+        <div class="card stat-card"><div class="card-body">
+            <h5>Recent Reservations</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>Code</th><th>Guest</th><th>Room</th><th>Status</th><th>Dates</th></tr></thead>
+                    <tbody>
+                        {% for item in recent_reservations %}
+                            <tr><td>{{ item.reservation_number }}</td><td>{{ item.guest.get_full_name|default:item.guest.username }}</td><td>{{ item.room.number }}</td><td>{{ item.get_status_display }}</td><td>{{ item.check_in_date }} - {{ item.check_out_date }}</td></tr>
+                        {% empty %}
+                            <tr><td colspan="5">No reservations yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
+<script>
+    const trendLabels = {{ trend_labels_json|safe }};
+    const occupancyTrend = {{ occupancy_trend_json|safe }};
+    const revenueTrend = {{ revenue_trend_json|safe }};
+    const serviceSlaTrend = {{ service_sla_trend_json|safe }};
+
+    const ctx = document.getElementById('operationsTrendChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [
+                    {
+                        label: 'Occupancy %',
+                        data: occupancyTrend,
+                        borderColor: '#0b3c49',
+                        backgroundColor: 'rgba(11, 60, 73, 0.12)',
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Revenue (N)',
+                        data: revenueTrend,
+                        borderColor: '#c16622',
+                        backgroundColor: 'rgba(193, 102, 34, 0.12)',
+                        tension: 0.3,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: 'Service SLA (Min)',
+                        data: serviceSlaTrend,
+                        borderColor: '#2a9d8f',
+                        backgroundColor: 'rgba(42, 157, 143, 0.12)',
+                        tension: 0.3,
+                        yAxisID: 'y2'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                stacked: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        title: { display: true, text: 'Occupancy %' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        position: 'right',
+                        title: { display: true, text: 'Revenue (N)' },
+                        grid: { drawOnChartArea: false }
+                    },
+                    y2: {
+                        type: 'linear',
+                        position: 'right',
+                        title: { display: true, text: 'Service SLA (Min)' },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

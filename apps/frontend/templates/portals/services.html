@@ -1,0 +1,77 @@
+{% extends 'base_portal.html' %}
+{% block title %}Services | GRACEDAY INN{% endblock %}
+{% block page_title %}Restaurant and Services{% endblock %}
+{% block content %}
+{% if can_manage_services %}
+<div class="card stat-card p-3 mb-3">
+    <h5 class="mb-3">Create Service Order</h5>
+    <form method="post" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-3">{{ service_form.guest.label_tag }}{{ service_form.guest }}</div>
+        <div class="col-md-3">{{ service_form.room.label_tag }}{{ service_form.room }}</div>
+        <div class="col-md-3">{{ service_form.menu_item.label_tag }}{{ service_form.menu_item }}</div>
+        <div class="col-md-1">{{ service_form.quantity.label_tag }}{{ service_form.quantity }}</div>
+        <div class="col-md-2">{{ service_form.notes.label_tag }}{{ service_form.notes }}</div>
+        <div class="col-12">
+            {% for field in service_form %}
+                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            {% endfor %}
+            {% for error in service_form.non_field_errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-12"><button class="btn btn-primary btn-sm" type="submit">Create Service Order</button></div>
+    </form>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card stat-card p-3 h-100">
+            <h5>Service Orders</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>Order</th><th>Guest</th><th>Room</th><th>Status</th><th>Total</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.guest.get_full_name|default:order.guest.username }}</td>
+                                <td>{{ order.room.number|default:'-' }}</td>
+                                <td>{{ order.get_status_display }}</td>
+                                <td>₦{{ order.total }}</td>
+                                <td>
+                                    {% if request.user.role != 'guest' %}
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        <form method="post" action="{% url 'frontend:portal-service-action' order.id 'confirm' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Confirm</button></form>
+                                        <form method="post" action="{% url 'frontend:portal-service-action' order.id 'start' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Start</button></form>
+                                        <form method="post" action="{% url 'frontend:portal-service-action' order.id 'complete' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Complete</button></form>
+                                        <form method="post" action="{% url 'frontend:portal-service-action' order.id 'cancel' %}">{% csrf_token %}<button class="btn btn-outline-danger btn-sm">Cancel</button></form>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6">No service orders.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card stat-card p-3 h-100">
+            <h5>Available Menu Items</h5>
+            {% for item in menu_items %}
+                <div class="border rounded p-2 mb-2 d-flex justify-content-between">
+                    <div>
+                        <strong>{{ item.name }}</strong>
+                        <div class="small text-muted">{{ item.category.name }}</div>
+                    </div>
+                    <span>₦{{ item.price }}</span>
+                </div>
+            {% empty %}
+                <p class="text-muted">No menu items yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

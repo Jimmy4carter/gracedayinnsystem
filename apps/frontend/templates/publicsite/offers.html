@@ -1,0 +1,35 @@
+{% extends 'base_public.html' %}
+{% load static %}
+{% block title %}GRACEDAY INN | Special Offers{% endblock %}
+{% block content %}
+<div class="breadcrumb-section"><div class="container"><div class="row"><div class="col-lg-12"><div class="breadcrumb-text"><h2>Special Offers</h2><div class="bt-option"><a href="{% url 'frontend:public-home' %}">Home</a><span>Offers</span></div></div></div></div></div></div>
+
+<section class="rooms-section spad">
+    <div class="container">
+        <div class="row">
+            {% for offer in offers %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="room-item">
+                        <img src="{% static 'img/room/room-2.jpg' %}" alt="">
+                        <div class="ri-text">
+                            <h4>{{ offer.title }}</h4>
+                            <h3>₦{{ offer.price }}<span>/Per-night</span></h3>
+                            <table>
+                                <thead>
+                                    <tr><th>Detail</th><th>Value</th></tr>
+                                </thead>
+                                <tbody>
+                                <tr><td class="r-o">Capacity:</td><td>Max {{ offer.capacity }} guests</td></tr>
+                                <tr><td class="r-o">Details:</td><td>{{ offer.description }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <p>No offers available yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base_portal.html' %}
+{% block title %}Reports | GRACEDAY INN{% endblock %}
+{% block page_title %}Performance Reports{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+        <form method="get" class="d-flex gap-2">
+            <select class="form-select form-select-sm" name="days" onchange="this.form.submit()">
+                {% for option in window_choices %}
+                    <option value="{{ option }}" {% if option == selected_days %}selected{% endif %}>Last {{ option }} days</option>
+                {% endfor %}
+            </select>
+        </form>
+        <a class="btn btn-outline-primary btn-sm mb-0" href="{% url 'frontend:portal-reports-export-csv' %}?days={{ selected_days }}">Export CSV</a>
+        <a class="btn btn-outline-dark btn-sm mb-0" href="{% url 'frontend:portal-reports-export-pdf' %}?days={{ selected_days }}">Export PDF</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Total Revenue</p><h5 class="font-weight-bolder mb-0">₦{{ report.total_revenue }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Open Balance</p><h5 class="font-weight-bolder mb-0">₦{{ report.open_balance }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Total Reservations</p><h5 class="font-weight-bolder mb-0">{{ report.total_reservations }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Confirmed Reservations</p><h5 class="font-weight-bolder mb-0">{{ report.confirmed_reservations }}</h5></div></div></div>
+</div>
+<div class="row mt-4">
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Occupied Rooms</p><h5 class="font-weight-bolder mb-0">{{ report.occupied_rooms }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Pending Housekeeping</p><h5 class="font-weight-bolder mb-0">{{ report.pending_housekeeping }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Service SLA (Avg Min)</p><h5 class="font-weight-bolder mb-0">{{ report.service_sla_minutes }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">HK Turnaround (Avg Min)</p><h5 class="font-weight-bolder mb-0">{{ report.housekeeping_turnaround_minutes }}</h5></div></div></div>
+</div>
+<div class="row mt-4">
+    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Completed Service Orders</p><h5 class="font-weight-bolder mb-0">{{ report.completed_service_orders }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Completed HK Tasks</p><h5 class="font-weight-bolder mb-0">{{ report.completed_housekeeping_tasks }}</h5></div></div></div>
+</div>
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="mb-3">{{ selected_days }}-Day Performance Trend</h5>
+        <canvas id="reportsTrendChart" height="120"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
+<script>
+    const reportLabels = {{ trend_labels_json|safe }};
+    const reportOccupancy = {{ occupancy_trend_json|safe }};
+    const reportRevenue = {{ revenue_trend_json|safe }};
+    const reportSla = {{ service_sla_trend_json|safe }};
+
+    const reportCtx = document.getElementById('reportsTrendChart');
+    if (reportCtx) {
+        new Chart(reportCtx, {
+            type: 'line',
+            data: {
+                labels: reportLabels,
+                datasets: [
+                    {
+                        label: 'Occupancy %',
+                        data: reportOccupancy,
+                        borderColor: '#0b3c49',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Revenue (N)',
+                        data: reportRevenue,
+                        borderColor: '#c16622',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Service SLA (Min)',
+                        data: reportSla,
+                        borderColor: '#2a9d8f',
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

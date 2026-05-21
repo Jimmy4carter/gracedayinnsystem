@@ -1,0 +1,19 @@
+{% extends 'base_portal.html' %}
+{% block title %}Notifications | GRACEDAY INN{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block content %}
+<div class="card stat-card p-3">
+    {% for notification in notifications %}
+        <div class="border-bottom py-2">
+            <div class="d-flex justify-content-between">
+                <strong>{{ notification.title }}</strong>
+                <small>{{ notification.created_at }}</small>
+            </div>
+            <div>{{ notification.message }}</div>
+            <small class="text-muted">Type: {{ notification.get_notification_type_display }}</small>
+        </div>
+    {% empty %}
+        <p class="text-muted">No notifications found.</p>
+    {% endfor %}
+</div>
+{% endblock %}

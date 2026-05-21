@@ -1,0 +1,54 @@
+{% extends 'base_portal.html' %}
+{% block title %}Reservations | GRACEDAY INN{% endblock %}
+{% block page_title %}Reservations{% endblock %}
+{% block content %}
+{% if can_manage_reservations %}
+<div class="card stat-card p-3 mb-3">
+    <h5 class="mb-3">Create Reservation</h5>
+    <form method="post" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-4">{{ reservation_form.guest.label_tag }}{{ reservation_form.guest }}</div>
+        <div class="col-md-4">{{ reservation_form.room.label_tag }}{{ reservation_form.room }}</div>
+        <div class="col-md-2">{{ reservation_form.check_in_date.label_tag }}{{ reservation_form.check_in_date }}</div>
+        <div class="col-md-2">{{ reservation_form.check_out_date.label_tag }}{{ reservation_form.check_out_date }}</div>
+        <div class="col-md-2">{{ reservation_form.num_adults.label_tag }}{{ reservation_form.num_adults }}</div>
+        <div class="col-md-2">{{ reservation_form.num_children.label_tag }}{{ reservation_form.num_children }}</div>
+        <div class="col-md-8">{{ reservation_form.special_requests.label_tag }}{{ reservation_form.special_requests }}</div>
+        <div class="col-12">
+            {% for field in reservation_form %}
+                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            {% endfor %}
+            {% for error in reservation_form.non_field_errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-12"><button class="btn btn-primary btn-sm" type="submit">Create Reservation</button></div>
+    </form>
+</div>
+{% endif %}
+
+<div class="table-responsive card stat-card p-3">
+    <table class="table table-sm align-middle">
+        <thead><tr><th>Code</th><th>Guest</th><th>Room</th><th>Status</th><th>Stay Dates</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for item in reservations %}
+                <tr>
+                    <td>{{ item.reservation_number }}</td>
+                    <td>{{ item.guest.get_full_name|default:item.guest.username }}</td>
+                    <td>{{ item.room.number }}</td>
+                    <td>{{ item.get_status_display }}</td>
+                    <td>{{ item.check_in_date }} - {{ item.check_out_date }}</td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-1">
+                            <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'confirm' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Confirm</button></form>
+                            <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_in' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Check In</button></form>
+                            <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_out' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Check Out</button></form>
+                            <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'cancel' %}">{% csrf_token %}<button class="btn btn-outline-danger btn-sm">Cancel</button></form>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">No reservations available.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

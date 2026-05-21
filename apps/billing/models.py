@@ -59,9 +59,9 @@ class Invoice(models.Model):
 
     def recalculate(self):
         items = self.items.all() if self.pk else []
-        self.subtotal = sum(item.total for item in items)
-        self.tax_amount = (self.subtotal * self.tax_rate / 100).quantize(
-            Decimal('0.01'))
+        self.subtotal = sum((item.total for item in items), Decimal('0.00'))
+        tax_rate = Decimal(str(self.tax_rate or 0))
+        self.tax_amount = (self.subtotal * tax_rate / Decimal('100')).quantize(Decimal('0.01'))
         self.total = self.subtotal + self.tax_amount
         self.balance = self.total - self.amount_paid
 

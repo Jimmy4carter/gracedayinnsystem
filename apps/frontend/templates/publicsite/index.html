@@ -1,0 +1,194 @@
+{% extends 'base_public.html' %}
+{% load static %}
+{% block title %}GRACEDAY INN | Home{% endblock %}
+{% block header_class %}{% endblock %}
+{% block content %}
+<section class="hero-section" id="booking">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="hero-text">
+                    <h1>GraceDay Inn</h1>
+                    <p>Is a premier accommodation destination, dedicated to providing guests with a relaxing experience in an elegant and serene environment. Each day, we connect and inspire millions of people across the globe. Whether you are looking to book the ideal hotel, vacation rental, apartment, meeting hall or guest house, GraceDay Inn has you covered.</p>
+                    <a href="{% url 'frontend:public-rooms' %}" class="primary-btn">Discover Now</a>
+                </div>
+            </div>
+            <div class="col-xl-4 col-lg-5 offset-xl-2 offset-lg-1">
+                <div class="booking-form">
+                    <h3>Booking Your Hotel</h3>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="check-date">
+                            <label for="{{ booking_form.check_in_date.id_for_label }}">Check In:</label>
+                            {{ booking_form.check_in_date }}
+                            <i class="icon_calendar"></i>
+                        </div>
+                        <div class="check-date">
+                            <label for="{{ booking_form.check_out_date.id_for_label }}">Check Out:</label>
+                            {{ booking_form.check_out_date }}
+                            <i class="icon_calendar"></i>
+                        </div>
+                        <div class="select-option"><label for="{{ booking_form.num_adults.id_for_label }}">Adults:</label>{{ booking_form.num_adults }}</div>
+                        <div class="select-option"><label for="{{ booking_form.num_children.id_for_label }}">Children:</label>{{ booking_form.num_children }}</div>
+                        <div class="select-option">
+                            <label for="{{ booking_form.room.id_for_label }}">Room:</label>
+                            {{ booking_form.room }}
+                        </div>
+                        <div class="check-date">
+                            <label for="{{ booking_form.first_name.id_for_label }}">First Name:</label>
+                            {{ booking_form.first_name }}
+                        </div>
+                        <div class="check-date">
+                            <label for="{{ booking_form.last_name.id_for_label }}">Last Name:</label>
+                            {{ booking_form.last_name }}
+                        </div>
+                        <div class="check-date">
+                            <label for="{{ booking_form.email.id_for_label }}">Email:</label>
+                            {{ booking_form.email }}
+                        </div>
+                        <div class="check-date">
+                            <label for="{{ booking_form.phone.id_for_label }}">Phone:</label>
+                            {{ booking_form.phone }}
+                        </div>
+                        <div class="check-date">
+                            <label for="{{ booking_form.special_requests.id_for_label }}">Special Requests:</label>
+                            {{ booking_form.special_requests }}
+                        </div>
+                        {% for field in booking_form %}
+                            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        {% endfor %}
+                        {% for error in booking_form.non_field_errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        <button type="submit">Check Availability</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="hero-slider owl-carousel">
+        <div class="hs-item set-bg" data-setbg="{% static 'img/hero/hero-1.jpg' %}"></div>
+        <div class="hs-item set-bg" data-setbg="{% static 'img/hero/hero-2.jpg' %}"></div>
+        <div class="hs-item set-bg" data-setbg="{% static 'img/hero/hero-3.jpg' %}"></div>
+    </div>
+</section>
+
+<section class="aboutus-section spad">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="about-text">
+                    <div class="section-title">
+                        <span>About Us</span>
+                        <h2>GraceDay Inn <br />Guest House</h2>
+                    </div>
+                    <p class="f-para">GraceDay Inn is a leading accommodation site. We are passionate about relaxation in an elegant and conducive atmosphere. Every day, we inspire and reach millions of people across local communities.</p>
+                    <p class="s-para">Amenities include: {% for amenity in amenity_names %}{{ amenity }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+                    <a href="{% url 'frontend:public-about' %}" class="primary-btn about-btn">Read More</a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="about-pic">
+                    <div class="row">
+                        <div class="col-sm-6"><img src="{% static 'img/about/about-1.jpg' %}" alt=""></div>
+                        <div class="col-sm-6"><img src="{% static 'img/about/about-2.jpg' %}" alt=""></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="services-section spad">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="section-title">
+                    <span>What We Do</span>
+                    <h2>Discover Our Services</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-4 col-sm-6">
+                <div class="service-item"><i class="flaticon-036-parking"></i><h4>Travel Plan</h4><p>GraceDay Inn provides a comfortable and relaxing atmosphere for a perfect rest before travels.</p></div>
+            </div>
+            <div class="col-lg-4 col-sm-6">
+                <div class="service-item"><i class="flaticon-033-dinner"></i><h4>Catering Service</h4><p>We offer top-notch dining and takeout catering services with balanced meals from our kitchen.</p></div>
+            </div>
+            <div class="col-lg-4 col-sm-6">
+                <div class="service-item"><i class="flaticon-026-bed"></i><h4>Premium Rooms</h4><p>Comfort-focused rooms designed for business and leisure stays with modern amenities.</p></div>
+            </div>
+            <div class="col-lg-4 col-sm-6">
+                <div class="service-item"><i class="flaticon-024-towel"></i><h4>Laundry</h4><p>Daily laundry services including self-service, express laundry, and full-service options.</p></div>
+            </div>
+            <div class="col-lg-4 col-sm-6">
+                <div class="service-item"><i class="flaticon-044-clock-1"></i><h4>Hire Driver</h4><p>Affordable and readily available drivers around the clock for pick-ups and drop-offs.</p></div>
+            </div>
+            <div class="col-lg-4 col-sm-6">
+                <div class="service-item"><i class="flaticon-012-cocktail"></i><h4>Dining</h4><p>Enjoy curated menu selections and refreshing beverages from our dining service teams.</p></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="hp-room-section">
+    <div class="container-fluid">
+        <div class="hp-room-items">
+            <div class="row">
+                {% for room_type in featured_rooms %}
+                    <div class="col-lg-3 col-md-6">
+                        <div class="hp-room-item set-bg" data-setbg="{% static 'img/room/room-b1.jpg' %}">
+                            <div class="hr-text">
+                                <h3>{{ room_type.name }}</h3>
+                                <h2>₦{{ room_type.base_price }}<span>/Pernight</span></h2>
+                                <table>
+                                    <thead>
+                                        <tr><th>Detail</th><th>Value</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td class="r-o">Capacity:</td><td>Max {{ room_type.max_occupancy }} persons</td></tr>
+                                        <tr><td class="r-o">Services:</td><td>{{ room_type.description|default:'Wifi, Television, Bathroom, AC' }}</td></tr>
+                                    </tbody>
+                                </table>
+                                <a href="{% url 'frontend:public-rooms' %}" class="primary-btn">More Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12"><p>No room types configured yet.</p></div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="rooms-section spad">
+    <div class="container">
+        <div class="row"><div class="col-lg-12"><div class="section-title"><span>Rooms</span><h2>Featured Room Types</h2></div></div></div>
+        <div class="row">
+            {% for room_type in featured_rooms %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="room-item">
+                        <img src="{% static 'img/room/room-1.jpg' %}" alt="">
+                        <div class="ri-text">
+                            <h4>{{ room_type.name }}</h4>
+                            <h3>₦{{ room_type.base_price }}<span>/Per-night</span></h3>
+                            <table>
+                                <thead>
+                                    <tr><th>Detail</th><th>Value</th></tr>
+                                </thead>
+                                <tbody>
+                                <tr><td class="r-o">Capacity:</td><td>Max {{ room_type.max_occupancy }} persons</td></tr>
+                                <tr><td class="r-o">Services:</td><td>{{ room_type.description|default:'Wifi, Television, Bathroom, AC' }}</td></tr>
+                                </tbody>
+                            </table>
+                            <a href="{% url 'frontend:public-rooms' %}" class="primary-btn">More Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <p>No room types configured yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

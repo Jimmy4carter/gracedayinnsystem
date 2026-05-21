@@ -1,5 +1,113 @@
 // Graceday Inn - Main JavaScript
 
+// Public site template behavior (preloader/menu/widgets)
+(function ($) {
+    function hidePreloader() {
+        const preloder = document.getElementById('preloder');
+        if (!preloder) {
+            return;
+        }
+
+        if ($ && typeof $.fn.fadeOut === 'function') {
+            $('.loader').fadeOut();
+            $('#preloder').delay(200).fadeOut('slow');
+            return;
+        }
+
+        preloder.style.opacity = '0';
+        preloder.style.visibility = 'hidden';
+        preloder.style.pointerEvents = 'none';
+    }
+
+    // Ensure preloader always clears even if another plugin errors.
+    if (typeof globalThis.window !== 'undefined') {
+        globalThis.window.addEventListener('load', hidePreloader);
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(hidePreloader, 1200);
+        });
+        setTimeout(hidePreloader, 0);
+        setTimeout(hidePreloader, 400);
+    }
+
+    if (!$) {
+        return;
+    }
+
+    $('.set-bg').each(function () {
+        let bg = $(this).data('setbg');
+        $(this).css('background-image', 'url(' + bg + ')');
+    });
+
+    $('.canvas-open').on('click', function () {
+        $('.offcanvas-menu-wrapper').addClass('show-offcanvas-menu-wrapper');
+        $('.offcanvas-menu-overlay').addClass('active');
+    });
+
+    $('.canvas-close, .offcanvas-menu-overlay').on('click', function () {
+        $('.offcanvas-menu-wrapper').removeClass('show-offcanvas-menu-wrapper');
+        $('.offcanvas-menu-overlay').removeClass('active');
+    });
+
+    $('.search-switch').on('click', function () {
+        $('.search-model').fadeIn(400);
+    });
+
+    $('.search-close-switch').on('click', function () {
+        $('.search-model').fadeOut(400, function () {
+            $('#search-input').val('');
+        });
+    });
+
+    if (typeof $.fn.slicknav === 'function') {
+        $('.mobile-menu').slicknav({
+            prependTo: '#mobile-menu-wrap',
+            allowParentLinks: true,
+        });
+    }
+
+    if (typeof $.fn.owlCarousel === 'function') {
+        $('.hero-slider').owlCarousel({
+            loop: true,
+            margin: 0,
+            items: 1,
+            dots: true,
+            animateOut: 'fadeOut',
+            animateIn: 'fadeIn',
+            smartSpeed: 1200,
+            autoHeight: false,
+            autoplay: true,
+            mouseDrag: false,
+        });
+
+        $('.testimonial-slider').owlCarousel({
+            items: 1,
+            dots: false,
+            autoplay: true,
+            loop: true,
+            smartSpeed: 1200,
+            nav: true,
+            navText: ["<i class='arrow_left'></i>", "<i class='arrow_right'></i>"],
+        });
+    }
+
+    if (typeof $.fn.magnificPopup === 'function') {
+        $('.video-popup').magnificPopup({
+            type: 'iframe',
+        });
+    }
+
+    if (typeof $.fn.datepicker === 'function') {
+        $('.date-input').datepicker({
+            minDate: 0,
+            dateFormat: 'dd MM, yy',
+        });
+    }
+
+    if (typeof $.fn.niceSelect === 'function') {
+        $('select').niceSelect();
+    }
+})(globalThis.jQuery);
+
 const API_BASE = '/api';
 let authToken = localStorage.getItem('access_token');
 

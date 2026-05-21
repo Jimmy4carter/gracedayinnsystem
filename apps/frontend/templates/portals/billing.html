@@ -1,0 +1,52 @@
+{% extends 'base_portal.html' %}
+{% block title %}Billing | GRACEDAY INN{% endblock %}
+{% block page_title %}Invoice Management{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header pb-0"><h6>Invoices</h6></div>
+            <div class="card-body px-0 pt-0 pb-2">
+                <div class="table-responsive p-0">
+                    <table class="table align-items-center mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Invoice</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Guest</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Paid</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in invoices %}
+                                <tr>
+                                    <td><p class="text-xs font-weight-bold mb-0">{{ invoice.invoice_number }}</p></td>
+                                    <td><p class="text-xs font-weight-bold mb-0">{{ invoice.guest.get_full_name|default:invoice.guest.username }}</p></td>
+                                    <td class="align-middle text-center"><span class="badge badge-sm bg-gradient-dark">{{ invoice.get_status_display }}</span></td>
+                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.total }}</span></td>
+                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.amount_paid }}</span></td>
+                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.balance }}</span></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="6" class="text-center">No invoices available.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header pb-0"><h6>Billing Summary</h6></div>
+            <div class="card-body">
+                <p class="text-sm mb-2">Total Invoices: {{ invoices|length }}</p>
+                <p class="text-sm mb-2">Operations portal billing view synced with downloaded Soft UI design.</p>
+                <p class="text-sm mb-0">Export and payment recording are available from Reports and Payments pages.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

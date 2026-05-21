@@ -1,0 +1,9 @@
+{% extends 'base_public.html' %}
+{% block title %}GRACEDAY INN | News{% endblock %}
+{% block content %}
+<h2 class="mb-3">News and Travel Tips</h2>
+<div class="row g-3">
+    <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body"><h5>How to plan a smooth weekend stay</h5><p>Plan check-in times, room preferences, and service requests before arrival.</p><a href="{% url 'frontend:public-blog-detail' %}">Read article</a></div></div></div>
+    <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body"><h5>Hospitality technology at GRACEDAY INN</h5><p>Our integrated portal helps staff coordinate reservations, billing, and housekeeping.</p><a href="{% url 'frontend:public-blog-detail' %}">Read article</a></div></div></div>
+</div>
+{% endblock %}

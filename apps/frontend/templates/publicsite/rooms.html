@@ -1,0 +1,66 @@
+{% extends 'base_public.html' %}
+{% load static %}
+{% block title %}GRACEDAY INN | Rooms{% endblock %}
+{% block content %}
+<div class="breadcrumb-section">
+    <div class="container">
+        <div class="row"><div class="col-lg-12"><div class="breadcrumb-text"><h2>Our Rooms</h2><div class="bt-option"><a href="{% url 'frontend:public-home' %}">Home</a><span>Rooms</span></div></div></div></div>
+    </div>
+</div>
+
+<section class="rooms-section spad">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <form method="get" class="row g-2">
+                    <div class="col-md-4">
+                        <select class="form-control" name="room_type">
+                            <option value="">All room types</option>
+                            {% for item in room_types %}
+                                <option value="{{ item.id }}" {% if selected_room_type == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3"><input class="form-control" type="number" min="1" name="occupancy" placeholder="Min Guests" value="{{ selected_occupancy }}"></div>
+                    <div class="col-md-3"><input class="form-control" type="number" min="0" step="1000" name="max_price" placeholder="Max Price" value="{{ selected_max_price }}"></div>
+                    <div class="col-md-2"><button class="primary-btn" type="submit">Filter</button></div>
+                </form>
+            </div>
+        </div>
+        <div class="row">
+            {% for room in rooms %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="room-item">
+                        <img src="{% if forloop.counter == 1 %}{% static 'img/room/room-1.jpg' %}{% elif forloop.counter == 2 %}{% static 'img/room/room-2.jpg' %}{% elif forloop.counter == 3 %}{% static 'img/room/room-3.jpg' %}{% elif forloop.counter == 4 %}{% static 'img/room/room-4.jpg' %}{% elif forloop.counter == 5 %}{% static 'img/room/room-5.jpg' %}{% else %}{% static 'img/room/room-6.jpg' %}{% endif %}" alt="">
+                        <div class="ri-text">
+                            <h4>{{ room.room_type.name }} - Room {{ room.number }}</h4>
+                            <h3>₦{{ room.current_price }}<span>/Per-night</span></h3>
+                            <table>
+                                <thead>
+                                    <tr><th>Detail</th><th>Value</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td class="r-o">Size:</td><td>{{ room.floor|default:'1' }} floor suite</td></tr>
+                                    <tr><td class="r-o">Capacity:</td><td>Max {{ room.room_type.max_occupancy }} persons</td></tr>
+                                    <tr><td class="r-o">Bed:</td><td>{{ room.room_type.name }}</td></tr>
+                                    <tr><td class="r-o">Services:</td><td>{{ room.room_type.description|default:'Wifi, Television, Bathroom, Water heater, Refrigerator, AC' }}</td></tr>
+                                </tbody>
+                            </table>
+                            <a href="{% url 'frontend:public-room-detail' room.id %}" class="primary-btn">More Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-lg-12"><p>No rooms available yet.</p></div>
+            {% endfor %}
+            <div class="col-lg-12">
+                <div class="room-pagination">
+                    <a href="{% url 'frontend:public-rooms' %}">1</a>
+                    <a href="{% url 'frontend:public-rooms' %}">2</a>
+                    <a href="{% url 'frontend:public-rooms' %}">Next <i class="fa fa-long-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
