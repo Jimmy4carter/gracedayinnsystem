@@ -15,7 +15,7 @@
             </div>
             <div class="col-xl-4 col-lg-5 offset-xl-2 offset-lg-1">
                 <div class="booking-form">
-                    <h3>Booking Your Hotel</h3>
+                    <h3>Booking</h3>
                     <form method="post">
                         {% csrf_token %}
                         <div class="check-date">
@@ -88,8 +88,9 @@
             <div class="col-lg-6">
                 <div class="about-pic">
                     <div class="row">
-                        <div class="col-sm-6"><img src="{% static 'img/about/about-1.jpg' %}" alt=""></div>
-                        <div class="col-sm-6"><img src="{% static 'img/about/about-2.jpg' %}" alt=""></div>
+                        <div class="col-12">
+                            <img src="{% static 'img/graceday home.png' %}" alt="GraceDay Inn" class="img-fluid" style="width:100%; height:auto;">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -109,7 +110,7 @@
         </div>
         <div class="row">
             <div class="col-lg-4 col-sm-6">
-                <div class="service-item"><i class="flaticon-036-parking"></i><h4>Travel Plan</h4><p>GraceDay Inn provides a comfortable and relaxing atmosphere for a perfect rest before travels.</p></div>
+                <div class="service-item"><i class="flaticon-036-parking"></i><h4>Soothing Atmosphere</h4><p>GraceDay Inn provides a comfortable and relaxing atmosphere for a perfect rest before travels.</p></div>
             </div>
             <div class="col-lg-4 col-sm-6">
                 <div class="service-item"><i class="flaticon-033-dinner"></i><h4>Catering Service</h4><p>We offer top-notch dining and takeout catering services with balanced meals from our kitchen.</p></div>
@@ -121,41 +122,10 @@
                 <div class="service-item"><i class="flaticon-024-towel"></i><h4>Laundry</h4><p>Daily laundry services including self-service, express laundry, and full-service options.</p></div>
             </div>
             <div class="col-lg-4 col-sm-6">
-                <div class="service-item"><i class="flaticon-044-clock-1"></i><h4>Hire Driver</h4><p>Affordable and readily available drivers around the clock for pick-ups and drop-offs.</p></div>
+                <div class="service-item"><i class="flaticon-044-clock-1"></i><h4>Logistics</h4><p>Affordable and readily available drivers around the clock for pick-ups and drop-offs.</p></div>
             </div>
             <div class="col-lg-4 col-sm-6">
                 <div class="service-item"><i class="flaticon-012-cocktail"></i><h4>Dining</h4><p>Enjoy curated menu selections and refreshing beverages from our dining service teams.</p></div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="hp-room-section">
-    <div class="container-fluid">
-        <div class="hp-room-items">
-            <div class="row">
-                {% for room_type in featured_rooms %}
-                    <div class="col-lg-3 col-md-6">
-                        <div class="hp-room-item set-bg" data-setbg="{% static 'img/room/room-b1.jpg' %}">
-                            <div class="hr-text">
-                                <h3>{{ room_type.name }}</h3>
-                                <h2>₦{{ room_type.base_price }}<span>/Pernight</span></h2>
-                                <table>
-                                    <thead>
-                                        <tr><th>Detail</th><th>Value</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td class="r-o">Capacity:</td><td>Max {{ room_type.max_occupancy }} persons</td></tr>
-                                        <tr><td class="r-o">Services:</td><td>{{ room_type.description|default:'Wifi, Television, Bathroom, AC' }}</td></tr>
-                                    </tbody>
-                                </table>
-                                <a href="{% url 'frontend:public-rooms' %}" class="primary-btn">More Details</a>
-                            </div>
-                        </div>
-                    </div>
-                {% empty %}
-                    <div class="col-12"><p>No room types configured yet.</p></div>
-                {% endfor %}
             </div>
         </div>
     </div>

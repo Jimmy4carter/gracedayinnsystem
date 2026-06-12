@@ -49,6 +49,14 @@
     });
 
     $('.search-switch').on('click', function () {
+        var form = $(this).closest('.search-container').find('.header-search-form');
+        if (form.length) {
+            form.toggleClass('visible');
+            if (form.hasClass('visible')) {
+                form.find('input[name="q"]').focus();
+            }
+            return;
+        }
         $('.search-model').fadeIn(400);
     });
 

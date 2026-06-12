@@ -38,15 +38,15 @@
         $(".offcanvas-menu-overlay").removeClass("active");
     });
 
-    // Search model
+    // Header search toggle
     $('.search-switch').on('click', function () {
-        $('.search-model').fadeIn(400);
-    });
-
-    $('.search-close-switch').on('click', function () {
-        $('.search-model').fadeOut(400, function () {
-            $('#search-input').val('');
-        });
+        var form = $(this).closest('.search-container').find('.header-search-form');
+        if (form.length) {
+            form.toggleClass('visible');
+            if (form.hasClass('visible')) {
+                form.find('input[name="q"]').focus();
+            }
+        }
     });
 
     /*------------------

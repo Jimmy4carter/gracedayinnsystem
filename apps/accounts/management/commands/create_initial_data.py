@@ -32,9 +32,9 @@ class Command(BaseCommand):
         from apps.rooms.models import Amenity
         amenities = [
             ('WiFi', '📶'), ('Air Conditioning', '❄️'), ('TV', '📺'),
-            ('Mini Bar', '🍷'), ('Safe', '🔒'), ('Bathtub', '🛁'),
-            ('Ocean View', '🌊'), ('Balcony', '🏖️'), ('Coffee Maker', '☕'),
-            ('Hair Dryer', '💨'), ('Iron & Board', '👔'), ('Room Service', '🍽️'),
+            ('Laundry', '🍷'), ('Conference Room', '🔒'), ('Bathtub', '🛁'),
+            ('Scenic Views', '🌊'), ('Balcony', '🏖️'), ('Coffee Maker', '☕'),
+            ('Iron & Board', '👔'), ('Room Service', '🍽️'),
         ]
         for name, icon in amenities:
             Amenity.objects.get_or_create(name=name, defaults={'icon': icon})

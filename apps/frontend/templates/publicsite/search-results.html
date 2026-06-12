@@ -1,0 +1,101 @@
+{% extends 'base_public.html' %}
+{% load static %}
+{% block title %}Search results for {{ query }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-section">
+    <div class="container">
+        <div class="row"><div class="col-lg-12"><div class="breadcrumb-text"><h2>Search results</h2><p>Results for "{{ query }}"</p></div></div></div>
+    </div>
+</div>
+<section class="search-results-section spad">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                {% if navigation_results %}
+                    <div class="search-results-block mb-4">
+                        <h4>Quick navigation</h4>
+                        <ul>
+                            {% for item in navigation_results %}
+                                <li><a href="{{ item.url }}">{{ item.title }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                {% if room_results %}
+                    <div class="search-results-block mb-4">
+                        <h4>Rooms matching "{{ query }}"</h4>
+                        <div class="row">
+                            {% for room in room_results %}
+                                <div class="col-lg-4 col-md-6 mb-3">
+                                    <div class="room-item">
+                                        <div class="ri-text">
+                                            <h4><a href="{% url 'frontend:public-room-detail' room.id %}">{{ room.room_type.name }} - Room {{ room.number }}</a></h4>
+                                            <p>{{ room.description|default:room.notes|truncatechars:120 }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if room_type_results %}
+                    <div class="search-results-block mb-4">
+                        <h4>Room types</h4>
+                        <div class="row">
+                            {% for room_type in room_type_results %}
+                                <div class="col-lg-4 col-md-6 mb-3">
+                                    <div class="service-item">
+                                        <h5>{{ room_type.name }}</h5>
+                                        <p>{{ room_type.description|truncatechars:120 }}</p>
+                                        <a href="{% url 'frontend:public-rooms' %}?room_type={{ room_type.id }}" class="primary-btn">View Rooms</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if service_results %}
+                    <div class="search-results-block mb-4">
+                        <h4>Available menu items</h4>
+                        <div class="row">
+                            {% for item in service_results %}
+                                <div class="col-lg-4 col-md-6 mb-3">
+                                    <div class="service-item">
+                                        <h5>{{ item.name }}</h5>
+                                        <p>{{ item.description|truncatechars:120 }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if category_results %}
+                    <div class="search-results-block mb-4">
+                        <h4>Service categories</h4>
+                        <div class="row">
+                            {% for category in category_results %}
+                                <div class="col-lg-4 col-md-6 mb-3">
+                                    <div class="service-item">
+                                        <h5>{{ category.name }}</h5>
+                                        <p>{{ category.description|truncatechars:120 }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if not navigation_results and not room_results and not room_type_results and not service_results and not category_results %}
+                    <div class="search-results-block mb-4">
+                        <p>No results found for "{{ query }}". Try searching for rooms, services, or navigation items.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

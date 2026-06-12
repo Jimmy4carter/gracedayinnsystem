@@ -5,11 +5,13 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Sum
+from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Q, Sum
 from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import GuestProfile, UserProfile
@@ -419,7 +421,19 @@ def _portal_stats(user):
 def home(request):
     featured_rooms = RoomType.objects.prefetch_related('amenities').all()[:6]
     featured_menu_items = MenuItem.objects.filter(is_available=True).select_related('category')[:6]
-    amenity_names = list(Amenity.objects.values_list('name', flat=True)[:8])
+    amenity_names = [
+        'WiFi',
+        'Air Conditioning',
+        'TV',
+        'Laundry',
+        'Conference Room',
+        'Bathtub',
+        'Scenic Views',
+        'Balcony',
+        'Coffee Maker',
+        'Iron & Board',
+        'Room Service',
+    ]
     form = BookingRequestForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         reservation = form.create_reservation(request.user if request.user.is_authenticated else None)
@@ -470,25 +484,101 @@ def about(request):
     )
 
 
+def public_search(request):
+    query = (request.GET.get('q') or '').strip()
+    if not query:
+        return redirect('frontend:public-home')
+
+    query_lower = query.lower()
+    navigation = {
+        'home': 'frontend:public-home',
+        'rooms': 'frontend:public-rooms',
+        'about': 'frontend:public-about',
+        'blog': 'frontend:public-blog',
+        'news': 'frontend:public-blog',
+        'contact': 'frontend:public-contact',
+        'offers': 'frontend:public-offers',
+        'dining': 'frontend:public-dining',
+        'restaurant': 'frontend:public-dining',
+        'laundry': 'frontend:public-laundry',
+    }
+
+    navigation_results = []
+    for label, route in navigation.items():
+        if label in query_lower or query_lower in label:
+            navigation_results.append({'title': label.title(), 'url': reverse(route)})
+
+    room_results = Room.objects.filter(is_active=True).filter(
+        Q(number__icontains=query)
+        | Q(description__icontains=query)
+        | Q(notes__icontains=query)
+        | Q(room_type__name__icontains=query)
+        | Q(room_type__description__icontains=query)
+        | Q(room_type__amenities__name__icontains=query)
+    ).distinct()
+
+    room_type_results = RoomType.objects.filter(
+        Q(name__icontains=query)
+        | Q(description__icontains=query)
+        | Q(amenities__name__icontains=query)
+    ).distinct()
+
+    service_results = MenuItem.objects.filter(is_available=True).filter(
+        Q(name__icontains=query)
+        | Q(description__icontains=query)
+        | Q(category__name__icontains=query)
+    ).distinct()
+
+    category_results = ServiceCategory.objects.filter(
+        Q(name__icontains=query)
+        | Q(description__icontains=query)
+    ).distinct()
+
+    return render(
+        request,
+        'publicsite/search-results.html',
+        {
+            'query': query,
+            'navigation_results': navigation_results,
+            'room_results': room_results,
+            'room_type_results': room_type_results,
+            'service_results': service_results,
+            'category_results': category_results,
+        },
+    )
+
+
 def public_rooms(request):
-    rooms = Room.objects.select_related('room_type').filter(is_active=True)
+    rooms_qs = Room.objects.select_related('room_type').filter(is_active=True)
     room_type_id = request.GET.get('room_type')
     occupancy = request.GET.get('occupancy')
     max_price = request.GET.get('max_price')
     if room_type_id:
-        rooms = rooms.filter(room_type_id=room_type_id)
+        rooms_qs = rooms_qs.filter(room_type_id=room_type_id)
     if occupancy:
         try:
-            rooms = rooms.filter(room_type__max_occupancy__gte=int(occupancy))
+            rooms_qs = rooms_qs.filter(room_type__max_occupancy__gte=int(occupancy))
         except (TypeError, ValueError):
             pass
     if max_price:
         try:
-            rooms = rooms.filter(room_type__base_price__lte=max_price)
+            rooms_qs = rooms_qs.filter(room_type__base_price__lte=max_price)
         except (TypeError, ValueError):
             pass
+
+    paginator = Paginator(rooms_qs, 9)
+    page_number = request.GET.get('page')
+    rooms = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop('page', None)
+    querystring = params.urlencode()
+
     context = {
         'rooms': rooms,
+        'page_obj': rooms,
+        'paginator': paginator,
+        'querystring': querystring,
         'room_types': RoomType.objects.all(),
         'selected_room_type': room_type_id,
         'selected_occupancy': occupancy or '',
@@ -518,6 +608,8 @@ def public_dining(request):
     categories = ServiceCategory.objects.prefetch_related('menu_items').all()
     return render(request, 'publicsite/dining.html', {'categories': categories})
 
+def public_laundry(request):
+    return render(request, 'publicsite/laundry.html')
 
 def public_offers(request):
     offers = []
@@ -582,23 +674,9 @@ def portal_logout(request):
 
 @login_required
 def portal_dashboard(request):
-    selected_days = _selected_window_days(request)
-    reservations = Reservation.objects.select_related('guest', 'room').order_by('-created_at')
-    if request.user.role == 'guest':
-        reservations = reservations.filter(guest=request.user)
-    trend = _build_trend_series(days=selected_days)
-    context = {
-        'stats': _portal_stats(request.user),
-        'recent_reservations': reservations[:8],
-        'recent_notifications': Notification.objects.filter(recipient=request.user)[:8],
-        'selected_days': selected_days,
-        'window_choices': sorted(ALLOWED_REPORT_WINDOWS),
-        'trend_labels_json': json.dumps(trend['labels']),
-        'occupancy_trend_json': json.dumps(trend['occupancy_trend']),
-        'revenue_trend_json': json.dumps(trend['revenue_trend']),
-        'service_sla_trend_json': json.dumps(trend['service_sla_trend']),
-    }
-    return render(request, 'portals/dashboard.html', context)
+    logout(request)
+    messages.info(request, 'You have been signed out of the portal.')
+    return redirect('frontend:portal-sign-in')
 
 
 @login_required

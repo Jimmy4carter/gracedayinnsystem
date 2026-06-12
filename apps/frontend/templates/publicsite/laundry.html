@@ -1,0 +1,168 @@
+{% extends 'base_public.html' %}
+{% load static %}
+{% block title %}GRACEDAY INN | Laundry{% endblock %}
+{% block extra_css %}
+<style>
+.laundry-banner {
+    background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url("{% static 'img/Laundry room.png' %}");
+    background-size: cover;
+    background-position: center;
+    padding: 140px 0;
+    text-align: center;
+}
+.laundry-banner h1 {
+    color: #fff;
+    font-size: 60px;
+    font-weight: 700;
+}
+.laundry-banner p {
+    color: #f5f5f5;
+    font-size: 18px;
+}
+.laundry-section {
+    padding: 100px 0;
+}
+.laundry-image img {
+    width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,.15);
+}
+.laundry-content h2 {
+    margin-bottom: 20px;
+    color: #222;
+}
+.laundry-content p {
+    color: #666;
+    line-height: 30px;
+    margin-bottom: 20px;
+}
+.laundry-features {
+    margin-top: 30px;
+}
+.laundry-features li {
+    list-style: none;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+.laundry-features i {
+    color: #c89b3c;
+    margin-right: 10px;
+}
+.service-box {
+    background: #fff;
+    padding: 35px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    transition: .4s;
+    margin-bottom: 30px;
+}
+.service-box:hover {
+    transform: translateY(-10px);
+}
+.service-box i {
+    font-size: 45px;
+    color: #c89b3c;
+    margin-bottom: 15px;
+}
+.laundry-cta {
+    background: #111;
+    color: #fff;
+    padding: 80px 0;
+    text-align: center;
+}
+.laundry-cta h2 {
+    color: #fff;
+    margin-bottom: 20px;
+}
+.primary-btn {
+    display: inline-block;
+    padding: 14px 35px;
+    background: #c89b3c;
+    color: #fff;
+    border-radius: 40px;
+}
+.primary-btn:hover {
+    background: #b5852c;
+    color: #fff;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="breadcrumb-text"><h2>Laundry</h2></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="laundry-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="laundry-image">
+                    <img src="{% static 'img/Laundry room.png' %}" alt="Laundry Room">
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="laundry-content">
+                    <h2>Premium Laundry & Garment Care</h2>
+                    <p>At GraceDay Inn, we understand the importance of looking your best. Our modern laundry facility provides professional washing, drying, ironing and garment care services designed to meet the needs of both hotel guests and walk-in customers.</p>
+                    <p>Using high-quality detergents, modern equipment and experienced staff, we ensure your clothes remain fresh, clean and perfectly cared for.</p>
+                    <ul class="laundry-features">
+                        <li><i class="fa fa-check-circle"></i> Same-Day Laundry Service</li>
+                        <li><i class="fa fa-check-circle"></i> Professional Ironing</li>
+                        <li><i class="fa fa-check-circle"></i> Delicate Fabric Care</li>
+                        <li><i class="fa fa-check-circle"></i> Guest Laundry Services</li>
+                        <li><i class="fa fa-check-circle"></i> Affordable Pricing</li>
+                        <li><i class="fa fa-check-circle"></i> Fast Turnaround Time</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="services-section pb-5">
+    <div class="container">
+        <div class="section-title text-center mb-5">
+            <span>OUR SERVICES</span>
+            <h2>Laundry Solutions</h2>
+        </div>
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="service-box">
+                    <i class="fa fa-tint"></i>
+                    <h4>Wash & Fold</h4>
+                    <p>Quick and efficient washing and folding services.</p>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="service-box">
+                    <i class="fa fa-magic"></i>
+                    <h4>Ironing Service</h4>
+                    <p>Professionally pressed garments ready for use.</p>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="service-box">
+                    <i class="fa fa-star"></i>
+                    <h4>Premium Care</h4>
+                    <p>Special treatment for delicate and luxury fabrics.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="laundry-cta">
+    <div class="container">
+        <h2>Need Laundry Assistance?</h2>
+        <p>Contact our front desk or laundry department for prompt service.</p>
+        <a href="{% url 'frontend:public-contact' %}" class="primary-btn">Contact Us</a>
+    </div>
+</section>
+{% endblock %}

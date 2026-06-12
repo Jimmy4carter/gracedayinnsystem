@@ -12,7 +12,9 @@ urlpatterns = [
     path('blog/details/', views.blog_detail, name='public-blog-detail'),
     path('offers/', views.public_offers, name='public-offers'),
     path('dining/', views.public_dining, name='public-dining'),
+    path('laundry/', views.public_laundry, name='public-laundry'),
     path('contact/', views.contact, name='public-contact'),
+    path('search/', views.public_search, name='public-search'),
 
     path('portal/sign-in/', views.portal_sign_in, name='portal-sign-in'),
     path('portal/sign-up/', views.portal_sign_up, name='portal-sign-up'),

@@ -1,40 +1,159 @@
 {% extends 'base_public.html' %}
+{% load static %}
 {% block title %}GRACEDAY INN | Contact{% endblock %}
+{% block extra_css %}
+<style>
+.contact-section {
+    padding: 100px 0;
+    background: #faf8f4;
+}
+.contact-text p {
+    color: #666;
+    line-height: 28px;
+    margin-bottom: 25px;
+}
+.contact-form-wrapper {
+    background: #fff;
+    padding: 35px;
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+}
+.contact-form .form-group {
+    margin-bottom: 18px;
+}
+.contact-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #222;
+}
+.contact-form input,
+.contact-form textarea,
+.contact-form select {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 15px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+}
+.contact-form textarea {
+    min-height: 180px;
+    resize: vertical;
+}
+.contact-form input:focus,
+.contact-form textarea:focus,
+.contact-form select:focus {
+    border-color: #c89b3c;
+    box-shadow: 0 0 10px rgba(200,155,60,0.2);
+    outline: none;
+}
+.contact-btn {
+    width: 100%;
+    border: none;
+    padding: 16px;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #c89b3c, #e7be67);
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 15px;
+    transition: 0.3s;
+}
+.contact-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(200,155,60,0.35);
+}
+.map {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+    min-height: 520px;
+}
+.map iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 520px;
+    border: 0;
+}
+@media (max-width: 991px) {
+    .map iframe {
+        min-height: 420px;
+    }
+}
+</style>
+{% endblock %}
 {% block content %}
 <section class="contact-section spad">
     <div class="container">
-        <div class="row">
+        <div class="row gy-4">
             <div class="col-lg-4">
                 <div class="contact-text">
-                    <h2>Contact Info</h2>
-                    <p>GraceDay Inn is here to assist you with reservations, inquiries, and exceptional services. We look forward to welcoming you, where comfort meets elegance.</p>
-                    <table>
-                        <thead>
-                            <tr><th>Type</th><th>Information</th></tr>
-                        </thead>
-                        <tbody>
-                        <tr><td class="c-o">Address:</td><td>Louis Court Estate, Plot 351 Cadastral Zone B14, Apo-Dutse, Abuja FCT, Nigeria</td></tr>
-                        <tr><td class="c-o">Phone:</td><td>(+234) 7043834383</td></tr>
-                        <tr><td class="c-o">Email:</td><td>info.gracedayinn@gmail.com</td></tr>
-                        <tr><td class="c-o">Phone:</td><td>(+234) 7080076496</td></tr>
-                        </tbody>
-                    </table>
+                    <div class="section-title">
+                        <span>Contact Us</span>
+                        <h2>Reach GraceDay Inn</h2>
+                    </div>
+                    <p>GraceDay Inn is here to assist you with reservations, accommodation inquiries and exceptional hospitality services.</p>
+                    <div class="contact-card">
+                        <i class="fa fa-map-marker"></i>
+                        <div>
+                            <h5>Address</h5>
+                            <p>Louis Court Estate, Plot 351 Cadastral Zone B14, Apo-Dutse, Abuja FCT, Nigeria</p>
+                        </div>
+                    </div>
+                    <div class="contact-card">
+                        <i class="fa fa-phone"></i>
+                        <div>
+                            <h5>Phone</h5>
+                            <p>(+234) 7043834383</p>
+                            <p>(+234) 7080076496</p>
+                        </div>
+                    </div>
+                    <div class="contact-card">
+                        <i class="fa fa-envelope"></i>
+                        <div>
+                            <h5>Email</h5>
+                            <p>info.gracedayinn@gmail.com</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-7 offset-lg-1">
-                <form method="post" class="contact-form">
-                    {% csrf_token %}
-                    <div class="row">
-                        <div class="col-lg-6">{{ form.name }}</div>
-                        <div class="col-lg-6">{{ form.email }}</div>
-                        <div class="col-lg-12">{{ form.subject }}</div>
-                        <div class="col-lg-12">{{ form.message }}<button type="submit">Submit Now</button></div>
+            <div class="col-lg-8">
+                <div class="row gx-4 gy-4">
+                    <div class="col-md-6">
+                        <div class="contact-form-wrapper">
+                            <form method="post" class="contact-form">
+                                {% csrf_token %}
+                                {{ form.non_field_errors }}
+                                <div class="form-group">
+                                    {{ form.name.label_tag }}
+                                    {{ form.name }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.email.label_tag }}
+                                    {{ form.email }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.subject.label_tag }}
+                                    {{ form.subject }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.message.label_tag }}
+                                    {{ form.message }}
+                                </div>
+                                <button type="submit" class="contact-btn">Submit Now</button>
+                            </form>
+                        </div>
                     </div>
-                </form>
+                    <div class="col-md-6">
+                        <div class="map">
+                            <iframe src="https://www.google.com/maps?q=Apo-Dutse%2C%20Abuja&output=embed" allowfullscreen="" title="GRACEDAY INN location map"></iframe>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="map">
-            <iframe src="https://www.google.com/maps?q=Apo-Dutse%2C%20Abuja&output=embed" height="470" style="border:0;" allowfullscreen="" title="GRACEDAY INN location map"></iframe>
         </div>
     </div>
 </section>
