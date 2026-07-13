@@ -1,6 +1,12 @@
 import csv
 import json
+import random
+import string
 from datetime import timedelta
+
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -23,7 +29,7 @@ from apps.reservations.models import Reservation
 from apps.rooms.models import Amenity, Room, RoomType
 from apps.services.models import MenuItem, ServiceCategory, ServiceOrder
 
-from .decorators import action_role_required
+from .decorators import action_role_required, role_required
 from .forms import (
     BookingRequestForm,
     ContactForm,
@@ -34,7 +40,7 @@ from .forms import (
     PortalLoginForm,
     PortalSignUpForm,
 )
-from .models import AuditLog
+from .models import AuditLog, NewsletterSubscription
 
 FRONTEND_ROUTE_PREFIX = 'frontend:'
 PORTAL_DASHBOARD_ROUTE = f'{FRONTEND_ROUTE_PREFIX}portal-dashboard'
@@ -436,21 +442,48 @@ def home(request):
     ]
     form = BookingRequestForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        reservation = form.create_reservation(request.user if request.user.is_authenticated else None)
-        _notify_staff(
-            title='New booking request',
-            message=(
-                f'Booking {reservation.reservation_number} created for Room {reservation.room.number} '
-                f'({reservation.check_in_date} to {reservation.check_out_date}).'
-            ),
-            notification_type='reservation',
-            link=RESERVATIONS_LINK,
-        )
-        messages.success(
-            request,
-            f'Booking request {reservation.reservation_number} created successfully for GRACEDAY INN.',
-        )
-        return redirect('frontend:public-home')
+        if request.user.is_authenticated:
+            reservation = form.create_reservation(request.user)
+            _notify_staff(
+                title='New booking request',
+                message=(
+                    f'Booking {reservation.reservation_number} created for Room {reservation.room.number} '
+                    f'({reservation.check_in_date} to {reservation.check_out_date}).'
+                ),
+                notification_type='reservation',
+                link=RESERVATIONS_LINK,
+            )
+            messages.success(
+                request,
+                f'Booking request {reservation.reservation_number} created successfully for GRACEDAY INN.',
+            )
+            return redirect('frontend:public-home')
+        else:
+            booking_data = {
+                'first_name': form.cleaned_data['first_name'],
+                'last_name': form.cleaned_data['last_name'],
+                'email': form.cleaned_data['email'],
+                'phone': form.cleaned_data['phone'],
+                'check_in_date': form.cleaned_data['check_in_date'].isoformat(),
+                'check_out_date': form.cleaned_data['check_out_date'].isoformat(),
+                'room_id': form.cleaned_data['room'].id,
+                'num_adults': form.cleaned_data['num_adults'],
+                'num_children': form.cleaned_data['num_children'],
+                'special_requests': form.cleaned_data['special_requests'],
+            }
+            code = str(random.randint(100000, 999999))
+            request.session['booking_request_data'] = booking_data
+            request.session['booking_verify_code'] = code
+            
+            send_html_email(
+                subject='GRACEDAY INN - Verify your booking',
+                template_name='emails/verify_email.html',
+                context={'first_name': booking_data['first_name'], 'code': code},
+                recipient_list=[booking_data['email']],
+            )
+                
+            messages.info(request, 'A verification code has been sent to your email. Please enter it below to complete your booking.')
+            return redirect('frontend:portal-verify-booking')
 
     context = {
         'booking_form': form,
@@ -674,9 +707,30 @@ def portal_logout(request):
 
 @login_required
 def portal_dashboard(request):
-    logout(request)
-    messages.info(request, 'You have been signed out of the portal.')
-    return redirect('frontend:portal-sign-in')
+    selected_days = _selected_window_days(request)
+    trend_data = _build_trend_series(days=selected_days)
+    
+    recent_notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:5]
+    
+    recent_reservations = Reservation.objects.select_related('guest', 'room', 'room__room_type').order_by('-created_at')
+    if request.user.role == 'guest':
+        recent_reservations = recent_reservations.filter(guest=request.user)
+    recent_reservations = recent_reservations[:5]
+    
+    stats = _portal_stats(request.user)
+    
+    context = {
+        'stats': stats,
+        'window_choices': sorted(list(ALLOWED_REPORT_WINDOWS)),
+        'selected_days': selected_days,
+        'recent_notifications': recent_notifications,
+        'recent_reservations': recent_reservations,
+        'trend_labels_json': json.dumps(trend_data['labels']),
+        'occupancy_trend_json': json.dumps(trend_data['occupancy_trend']),
+        'revenue_trend_json': json.dumps(trend_data['revenue_trend']),
+        'service_sla_trend_json': json.dumps(trend_data['service_sla_trend']),
+    }
+    return render(request, 'portals/dashboard.html', context)
 
 
 @login_required
@@ -774,6 +828,7 @@ def portal_reservation_action(request, pk, action):
 
 
 @login_required
+@role_required({'admin', 'manager', 'receptionist'})
 def portal_guests(request):
     guests = UserProfile.objects.filter(role='guest').order_by('first_name', 'last_name')
     return render(request, 'portals/guests.html', {'guests': guests, 'stats': _portal_stats(request.user)})
@@ -893,6 +948,7 @@ def portal_services(request):
 
 
 @login_required
+@role_required({'admin', 'manager', 'receptionist', 'housekeeping'})
 def portal_housekeeping(request):
     can_manage = request.user.role in {'admin', 'manager', 'housekeeping', 'receptionist'}
     task_form = HousekeepingTaskCreateForm(request.POST or None)
@@ -1034,6 +1090,7 @@ def portal_housekeeping_action(request, pk, action):
 
 
 @login_required
+@role_required({'admin', 'manager', 'receptionist'})
 def portal_reports(request):
     selected_days = _selected_window_days(request)
     report, trend = _build_report_data(days=selected_days)
@@ -1054,6 +1111,7 @@ def portal_reports(request):
 
 
 @login_required
+@role_required({'admin', 'manager', 'receptionist'})
 def portal_reports_export_csv(request):
     selected_days = _selected_window_days(request)
     report, trend = _build_report_data(days=selected_days)
@@ -1092,6 +1150,7 @@ def portal_reports_export_csv(request):
 
 
 @login_required
+@role_required({'admin', 'manager', 'receptionist'})
 def portal_reports_export_pdf(request):
     selected_days = _selected_window_days(request)
     report, trend = _build_report_data(days=selected_days)
@@ -1113,3 +1172,165 @@ def portal_notifications(request):
 @login_required
 def portal_settings(request):
     return render(request, 'portals/rtl.html', {'stats': _portal_stats(request.user)})
+
+
+def send_html_email(subject, template_name, context, recipient_list):
+    html_content = render_to_string(template_name, context)
+    text_content = strip_tags(html_content)
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=text_content,
+        from_email=None,
+        to=recipient_list
+    )
+    email.attach_alternative(html_content, "text/html")
+    try:
+        email.send()
+    except Exception as e:
+        print(f"Error sending email {template_name}: {e}")
+
+
+def generate_gdi_password():
+    choices = string.ascii_lowercase + string.digits
+    extra = ''.join(random.choice(choices) for _ in range(5))
+    return f"GDI{extra}"
+
+
+def portal_verify_booking(request):
+    if 'booking_request_data' not in request.session or 'booking_verify_code' not in request.session:
+        messages.error(request, 'No active booking verification found. Please initiate a booking first.')
+        return redirect('frontend:public-home')
+    
+    booking_data = request.session['booking_request_data']
+    correct_code = request.session['booking_verify_code']
+    
+    if request.method == 'POST':
+        entered_code = request.POST.get('verification_code', '').strip()
+        if entered_code == correct_code:
+            email = booking_data['email'].lower().strip()
+            first_name = booking_data['first_name'].strip()
+            last_name = booking_data['last_name'].strip()
+            phone = booking_data['phone'].strip()
+            
+            with transaction.atomic():
+                user = UserProfile.objects.filter(email=email).first()
+                new_password = None
+                
+                if not user:
+                    base_username = email.split('@')[0] or 'guest'
+                    username = base_username
+                    index = 1
+                    while UserProfile.objects.filter(username=username).exists():
+                        username = f'{base_username}{index}'
+                        index += 1
+                        
+                    new_password = generate_gdi_password()
+                    
+                    user = UserProfile.objects.create(
+                        username=username,
+                        email=email,
+                        first_name=first_name,
+                        last_name=last_name,
+                        phone=phone,
+                        role='guest',
+                        is_active=True,
+                    )
+                    user.set_password(new_password)
+                    user.save()
+                    
+                    GuestProfile.objects.get_or_create(user=user)
+                else:
+                    updated = False
+                    if not user.first_name:
+                        user.first_name = first_name
+                        updated = True
+                    if not user.last_name:
+                        user.last_name = last_name
+                        updated = True
+                    if phone and not user.phone:
+                        user.phone = phone
+                        updated = True
+                    if updated:
+                        user.save(update_fields=['first_name', 'last_name', 'phone'])
+                    
+                    GuestProfile.objects.get_or_create(user=user)
+                
+                room = get_object_or_404(Room, id=booking_data['room_id'])
+                reservation = Reservation.objects.create(
+                    guest=user,
+                    room=room,
+                    check_in_date=booking_data['check_in_date'],
+                    check_out_date=booking_data['check_out_date'],
+                    num_adults=booking_data['num_adults'],
+                    num_children=booking_data['num_children'],
+                    special_requests=booking_data['special_requests'],
+                    nightly_rate=room.current_price,
+                    status='pending',
+                    notes=f"Requested via website with email verification. Contact: {phone or 'N/A'}",
+                    created_by=user,
+                )
+                
+                _notify_staff(
+                    title='New booking request',
+                    message=(
+                        f'Booking {reservation.reservation_number} created for Room {reservation.room.number} '
+                        f'({reservation.check_in_date} to {reservation.check_out_date}).'
+                    ),
+                    notification_type='reservation',
+                    link=RESERVATIONS_LINK,
+                )
+                
+                login_url = request.build_absolute_uri(reverse('frontend:portal-sign-in'))
+                send_html_email(
+                    subject='GraceDay Inn - Booking Confirmed',
+                    template_name='emails/booking_confirmed.html',
+                    context={
+                        'first_name': first_name,
+                        'reservation_number': reservation.reservation_number,
+                        'username': user.username,
+                        'password': new_password,
+                        'login_url': login_url,
+                    },
+                    recipient_list=[email],
+                )
+                
+                login(request, user)
+                
+                del request.session['booking_request_data']
+                del request.session['booking_verify_code']
+                
+                if new_password:
+                    messages.success(request, f'Booking request {reservation.reservation_number} created! A portal account was created for you with password: {new_password}')
+                else:
+                    messages.success(request, f'Booking request {reservation.reservation_number} created! Welcome back.')
+                    
+                return redirect(PORTAL_DASHBOARD_ROUTE)
+        else:
+            messages.error(request, 'Invalid verification code. Please try again.')
+            
+    return render(request, 'portals/verify-booking.html', {'email': booking_data['email']})
+
+
+def subscribe_newsletter(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        if email:
+            subscription, created = NewsletterSubscription.objects.get_or_create(email=email)
+            if created or not subscription.is_active:
+                subscription.is_active = True
+                subscription.save()
+                
+                send_html_email(
+                    subject='Welcome to GraceDay Inn Newsletter',
+                    template_name='emails/newsletter_welcome.html',
+                    context={},
+                    recipient_list=[email],
+                )
+                messages.success(request, 'Thank you for subscribing to our newsletter!')
+            else:
+                messages.info(request, 'You are already subscribed to our newsletter.')
+        else:
+            messages.error(request, 'Please enter a valid email address.')
+            
+    next_url = request.META.get('HTTP_REFERER') or reverse('frontend:public-home')
+    return redirect(next_url)

@@ -41,10 +41,16 @@
                                 <td>
                                     {% if request.user.role != 'guest' %}
                                     <div class="d-flex gap-1 flex-wrap">
-                                        <form method="post" action="{% url 'frontend:portal-service-action' order.id 'confirm' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Confirm</button></form>
-                                        <form method="post" action="{% url 'frontend:portal-service-action' order.id 'start' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Start</button></form>
-                                        <form method="post" action="{% url 'frontend:portal-service-action' order.id 'complete' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Complete</button></form>
-                                        <form method="post" action="{% url 'frontend:portal-service-action' order.id 'cancel' %}">{% csrf_token %}<button class="btn btn-outline-danger btn-sm">Cancel</button></form>
+                                        {% if order.status == 'pending' %}
+                                            <form method="post" action="{% url 'frontend:portal-service-action' order.id 'confirm' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Confirm</button></form>
+                                            <form method="post" action="{% url 'frontend:portal-service-action' order.id 'cancel' %}">{% csrf_token %}<button class="btn btn-outline-danger btn-sm">Cancel</button></form>
+                                        {% endif %}
+                                        {% if order.status == 'confirmed' %}
+                                            <form method="post" action="{% url 'frontend:portal-service-action' order.id 'start' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Start</button></form>
+                                        {% endif %}
+                                        {% if order.status == 'in_progress' %}
+                                            <form method="post" action="{% url 'frontend:portal-service-action' order.id 'complete' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Complete</button></form>
+                                        {% endif %}
                                     </div>
                                     {% endif %}
                                 </td>

@@ -190,8 +190,9 @@
                     <div class="ft-newslatter">
                         <h6>Newsletter</h6>
                         <p>Get the latest updates and offers.</p>
-                        <form action="#" class="fn-form">
-                            <input type="text" placeholder="Email">
+                        <form method="post" action="{% url 'frontend:subscribe-newsletter' %}" class="fn-form">
+                            {% csrf_token %}
+                            <input type="email" name="email" placeholder="Email" required>
                             <button type="submit"><i class="fa fa-send"></i></button>
                         </form>
                     </div>

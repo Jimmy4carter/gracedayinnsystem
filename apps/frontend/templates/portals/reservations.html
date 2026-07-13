@@ -38,10 +38,20 @@
                     <td>{{ item.check_in_date }} - {{ item.check_out_date }}</td>
                     <td>
                         <div class="d-flex flex-wrap gap-1">
-                            <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'confirm' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Confirm</button></form>
-                            <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_in' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Check In</button></form>
-                            <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_out' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Check Out</button></form>
-                            <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'cancel' %}">{% csrf_token %}<button class="btn btn-outline-danger btn-sm">Cancel</button></form>
+                            {% if item.status == 'pending' and can_manage_reservations %}
+                                <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'confirm' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Confirm</button></form>
+                            {% endif %}
+                            {% if item.status == 'confirmed' and can_manage_reservations %}
+                                <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_in' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Check In</button></form>
+                            {% endif %}
+                            {% if item.status == 'checked_in' and can_manage_reservations %}
+                                <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_out' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Check Out</button></form>
+                            {% endif %}
+                            {% if item.status == 'pending' or item.status == 'confirmed' %}
+                                {% if can_manage_reservations or request.user.id == item.guest.id %}
+                                    <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'cancel' %}">{% csrf_token %}<button class="btn btn-outline-danger btn-sm">Cancel</button></form>
+                                {% endif %}
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

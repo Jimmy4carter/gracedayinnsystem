@@ -1,0 +1,24 @@
+{% extends 'emails/base_email.html' %}
+{% block email_title %}Booking Confirmed - GraceDay Inn{% endblock %}
+{% block email_content %}
+<h2>Booking Request Received!</h2>
+<p>Hello {{ first_name }},</p>
+<p>Your email has been verified and your booking request <strong>{{ reservation_number }}</strong> has been created at GraceDay Inn.</p>
+{% if password %}
+<p>A portal account has been automatically created for you so you can track your reservation, view invoices, request housekeeping, or order room service.</p>
+<div style="background-color: #fcf9f5; border-left: 4px solid #c89b3c; padding: 15px; margin: 20px 0;">
+    <strong>Username:</strong> {{ username }}<br>
+    <strong>Password:</strong> {{ password }}
+</div>
+<p style="text-align: center;">
+    <a href="{{ login_url }}" class="btn" style="color: #ffffff;">Log In to Portal</a>
+</p>
+{% else %}
+<p>You can log in to the portal using your existing credentials to view the status of your reservation.</p>
+<p style="text-align: center;">
+    <a href="{{ login_url }}" class="btn" style="color: #ffffff;">Log In to Portal</a>
+</p>
+{% endif %}
+<p>We look forward to hosting you!</p>
+<p>Best regards,<br>The GraceDay Inn Team</p>
+{% endblock %}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block email_title %}GRACEDAY INN{% endblock %}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fdfaf6;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333333;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrapper {
+            width: 100%;
+            background-color: #fdfaf6;
+            padding: 40px 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #0b3c49;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #c89b3c;
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .body {
+            padding: 40px 30px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #c89b3c;
+            color: #ffffff !important;
+            padding: 12px 30px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #888888;
+            border-top: 1px solid #eeeeee;
+        }
+        .footer a {
+            color: #c89b3c;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>GraceDay Inn</h1>
+            </div>
+            <div class="body">
+                {% block email_content %}{% endblock %}
+            </div>
+            <div class="footer">
+                <p>&copy; {% now "Y" %} GraceDay Inn. All rights reserved.</p>
+                <p>Louis Court Estate, Apo-Dutse, Abuja FCT, Nigeria</p>
+                <p>If you have any questions, contact us at <a href="mailto:info.gracedayinn@gmail.com">info.gracedayinn@gmail.com</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

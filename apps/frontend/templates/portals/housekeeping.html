@@ -39,9 +39,15 @@
                     <td>
                         {% if can_manage_housekeeping %}
                         <div class="d-flex gap-1 flex-wrap">
-                            <form method="post" action="{% url 'frontend:portal-housekeeping-action' task.id 'start' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Start</button></form>
-                            <form method="post" action="{% url 'frontend:portal-housekeeping-action' task.id 'complete' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Complete</button></form>
-                            <form method="post" action="{% url 'frontend:portal-housekeeping-action' task.id 'verify' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Verify</button></form>
+                            {% if task.status == 'pending' %}
+                                <form method="post" action="{% url 'frontend:portal-housekeeping-action' task.id 'start' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Start</button></form>
+                            {% endif %}
+                            {% if task.status == 'pending' or task.status == 'in_progress' %}
+                                <form method="post" action="{% url 'frontend:portal-housekeeping-action' task.id 'complete' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Complete</button></form>
+                            {% endif %}
+                            {% if task.status == 'completed' %}
+                                <form method="post" action="{% url 'frontend:portal-housekeeping-action' task.id 'verify' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Verify</button></form>
+                            {% endif %}
                         </div>
                         {% endif %}
                     </td>

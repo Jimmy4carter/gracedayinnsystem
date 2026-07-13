@@ -18,6 +18,7 @@ urlpatterns = [
 
     path('portal/sign-in/', views.portal_sign_in, name='portal-sign-in'),
     path('portal/sign-up/', views.portal_sign_up, name='portal-sign-up'),
+    path('portal/verify-booking/', views.portal_verify_booking, name='portal-verify-booking'),
     path('portal/logout/', views.portal_logout, name='portal-logout'),
     path('portal/dashboard/', views.portal_dashboard, name='portal-dashboard'),
     path('portal/rooms/', views.portal_rooms, name='portal-rooms'),
@@ -36,4 +37,5 @@ urlpatterns = [
     path('portal/profile/', views.portal_profile, name='portal-profile'),
     path('portal/notifications/', views.portal_notifications, name='portal-notifications'),
     path('portal/settings/', views.portal_settings, name='portal-settings'),
+    path('subscribe-newsletter/', views.subscribe_newsletter, name='subscribe-newsletter'),
 ]

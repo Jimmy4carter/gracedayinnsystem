@@ -33,3 +33,14 @@ class AuditLog(models.Model):
 		return f'{self.event_type}:{self.action} by {self.actor_id or "system"}'
 
 # Create your models here.
+
+class NewsletterSubscription(models.Model):
+    email = models.EmailField(unique=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.email} (Active: {self.is_active})'

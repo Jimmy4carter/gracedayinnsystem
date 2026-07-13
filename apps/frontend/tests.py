@@ -437,3 +437,10 @@ class FrontendWorkflowTests(TestCase):
 						self.assertEqual(task.status, config['target'])
 					else:
 						self.assertEqual(task.status, config['initial'])
+
+	def test_newsletter_subscription(self):
+		from apps.frontend.models import NewsletterSubscription
+		url = reverse('frontend:subscribe-newsletter')
+		response = self.client.post(url, {'email': 'new_subscriber@example.com'})
+		self.assertEqual(response.status_code, 302)
+		self.assertTrue(NewsletterSubscription.objects.filter(email='new_subscriber@example.com', is_active=True).exists())
