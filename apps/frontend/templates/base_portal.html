@@ -1,92 +1,774 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="apple-touch-icon" sizes="76x76" href="{% static 'admin/assets/img/apple-icon.png' %}">
-    <link rel="icon" type="image/png" href="{% static 'admin/assets/img/favicon.png' %}">
-    <title>{% block title %}GRACEDAY INN Portal{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/font-awesome.min.css' %}" type="text/css">
-    <link id="pagestyle" href="{% static 'admin/assets/css/soft-ui-dashboard.css' %}" rel="stylesheet" />
+
+    <meta charset="utf-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="apple-touch-icon"
+          sizes="76x76"
+          href="{% static 'admin/assets/img/apple-icon.png' %}">
+
+    <link rel="icon"
+          type="image/png"
+          href="{% static 'admin/assets/img/favicon.png' %}">
+
+    <title>
+        {% block title %}
+            GRACEDAY INN Portal
+        {% endblock %}
+    </title>
+
+    <link rel="stylesheet"
+          href="{% static 'css/font-awesome.min.css' %}"
+          type="text/css">
+
+    <link id="pagestyle"
+          href="{% static 'admin/assets/css/soft-ui-dashboard.css' %}"
+          rel="stylesheet">
+
     {% block extra_css %}{% endblock %}
+
 </head>
+
+
 <body class="g-sidenav-show bg-gray-100">
-    <aside class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3" id="sidenav-main">
-        <div class="sidenav-header">
-            <i class="fa fa-times p-3 cursor-pointer text-secondary opacity-5 position-absolute end-0 top-0 d-none d-xl-none" aria-hidden="true" id="iconSidenav"></i>
-            <a class="navbar-brand m-0" href="{% url 'frontend:portal-dashboard' %}">
-                <img src="{% static 'img/Header_logo.png' %}" class="navbar-brand-img h-100" alt="main_logo" style="max-height:110px;height:auto;">
-                <span class="ms-1 font-weight-bold" style="color:#000">GRACEDAY INN</span>
-            </a>
-        </div>
-        <hr class="horizontal dark mt-0">
-        <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
-            <ul class="navbar-nav">
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-dashboard' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-dashboard text-dark"></i></div><span class="nav-link-text ms-1">Dashboard</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-rooms' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-building text-dark"></i></div><span class="nav-link-text ms-1">Rooms</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-reservations' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-calendar text-dark"></i></div><span class="nav-link-text ms-1">Reservations</span></a></li>
-                {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-guests' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-users text-dark"></i></div><span class="nav-link-text ms-1">Guests</span></a></li>
-                {% endif %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-billing' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-credit-card text-dark"></i></div><span class="nav-link-text ms-1">Billing</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-payments' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-money text-dark"></i></div><span class="nav-link-text ms-1">Payments</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-services' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-archive text-dark"></i></div><span class="nav-link-text ms-1">Services</span></a></li>
-                {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' or request.user.role == 'housekeeping' %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-housekeeping' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-check-square-o text-dark"></i></div><span class="nav-link-text ms-1">Housekeeping</span></a></li>
-                {% endif %}
-                {% if request.user.role == 'admin' or request.user.role == 'manager' %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-reports' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-line-chart text-dark"></i></div><span class="nav-link-text ms-1">Reports</span></a></li>
-                {% endif %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-notifications' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-bell text-dark"></i></div><span class="nav-link-text ms-1">Notifications</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-profile' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-user-circle-o text-dark"></i></div><span class="nav-link-text ms-1">Profile</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-settings' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-cog text-dark"></i></div><span class="nav-link-text ms-1">Settings</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'frontend:portal-logout' %}"><div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-sign-out text-dark"></i></div><span class="nav-link-text ms-1">Logout</span></a></li>
-            </ul>
-        </div>
-    </aside>
 
-    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-        <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" navbar-scroll="true" aria-label="Portal top navigation">
-            <div class="container-fluid py-1 px-3">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                        <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
-                        <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{% block page_title %}Portal{% endblock %}</li>
-                    </ol>
-                    <h6 class="font-weight-bolder mb-0">{% block page_heading %}Portal{% endblock %}</h6>
-                </nav>
-                <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
-                    <div class="ms-md-auto pe-md-3 d-flex align-items-center">
-                        <div class="input-group">
-                            <span class="input-group-text text-body"><i class="fa fa-search" aria-hidden="true"></i></span>
-                            <input type="text" class="form-control" placeholder="Type here...">
-                        </div>
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside
+    class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3"
+    id="sidenav-main">
+
+
+    <!-- BRAND -->
+
+    <div class="sidenav-header d-flex align-items-center justify-content-between">
+
+        <i
+            class="fa fa-times p-3 cursor-pointer text-secondary opacity-5 position-absolute end-0 top-0 d-none d-xl-none"
+            aria-hidden="true"
+            id="iconSidenav">
+        </i>
+
+        <a
+            class="navbar-brand m-0 d-flex align-items-center"
+            href="{% url 'frontend:portal-dashboard' %}">
+
+            <img
+                src="{% static 'img/Header_logo.png' %}"
+                class="navbar-brand-img"
+                alt="GRACEDAY INN Logo"
+                style="max-height:64px;height:auto;"> 
+
+        </a>
+
+    </div>
+
+
+    <hr class="horizontal dark mt-0">
+
+
+    <!-- =====================================================
+         SIDEBAR NAVIGATION
+    ===================================================== -->
+
+    <div
+        class="collapse navbar-collapse w-auto"
+        id="sidenav-collapse-main">
+
+
+        <ul class="navbar-nav">
+
+
+            <!-- =========================
+                 MAIN MENU
+            ========================== -->
+
+            <li class="nav-item mt-2">
+
+                <h6
+                    class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
+
+                    Main Menu
+
+                </h6>
+
+            </li>
+
+
+            <!-- DASHBOARD -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-dashboard' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-dashboard text-dark"></i>
+
                     </div>
-                    <ul class="navbar-nav justify-content-end">
-                        <li class="nav-item d-flex align-items-center">
-                            <span class="badge bg-gradient-dark">{{ request.user.get_full_name|default:request.user.username }}</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
 
-        <div class="container-fluid py-2">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags|default:'info' }} text-white bg-gradient-info">{{ message }}</div>
-                {% endfor %}
+                    <span class="nav-link-text ms-1">
+                        Dashboard
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- ROOMS -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-rooms' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-building text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Rooms
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- RESERVATIONS -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-reservations' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-calendar text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Reservations
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- GUESTS -->
+
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' %}
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-guests' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-users text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Guests
+                    </span>
+
+                </a>
+
+            </li>
+
             {% endif %}
-            {% block content %}{% endblock %}
-        </div>
-    </main>
 
-    <script src="{% static 'admin/assets/js/core/popper.min.js' %}"></script>
-    <script src="{% static 'admin/assets/js/core/bootstrap.min.js' %}"></script>
-    <script src="{% static 'admin/assets/js/plugins/perfect-scrollbar.min.js' %}"></script>
-    <script src="{% static 'admin/assets/js/plugins/smooth-scrollbar.min.js' %}"></script>
-    <script src="{% static 'admin/assets/js/soft-ui-dashboard.min.js' %}"></script>
-    {% block extra_js %}{% endblock %}
+
+            <!-- =========================
+                 FINANCE & SERVICES
+            ========================== -->
+
+            <li class="nav-item mt-3">
+
+                <h6
+                    class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
+
+                    Finance & Services
+
+                </h6>
+
+            </li>
+
+
+            <!-- BILLING -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-billing' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-credit-card text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Billing
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- PAYMENTS -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-payments' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-money text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Payments
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- SERVICES -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-services' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-archive text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Services
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- HOUSEKEEPING -->
+
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' or request.user.role == 'housekeeping' %}
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-housekeeping' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-check-square-o text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Housekeeping
+                    </span>
+
+                </a>
+
+            </li>
+
+            {% endif %}
+
+
+            <!-- =========================
+                 ADMINISTRATION
+            ========================== -->
+
+            {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+
+
+            <li class="nav-item mt-3">
+
+                <h6
+                    class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
+
+                    Administration
+
+                </h6>
+
+            </li>
+
+
+            <!-- STAFF -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-staff' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-id-badge text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Staff
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- NEWSLETTER -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-newsletter' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-envelope text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Newsletter
+                    </span>
+                </a>
+
+            </li>
+
+
+            <!-- REPORTS -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-reports' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-line-chart text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Reports
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            {% endif %}
+
+
+            <!-- =========================
+                 ACCOUNT
+            ========================== -->
+
+            <li class="nav-item mt-3">
+
+                <h6
+                    class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
+
+                    Account
+
+                </h6>
+
+            </li>
+
+
+            <!-- NOTIFICATIONS -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-notifications' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-bell text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Notifications
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- PROFILE -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-profile' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-user-circle-o text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Profile
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- SETTINGS -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-settings' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-cog text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Settings
+                    </span>
+
+                </a>
+
+            </li>
+
+
+            <!-- LOGOUT -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link"
+                    href="{% url 'frontend:portal-logout' %}">
+
+                    <div
+                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+
+                        <i class="fa fa-sign-out text-dark"></i>
+
+                    </div>
+
+                    <span class="nav-link-text ms-1">
+                        Logout
+                    </span>
+
+                </a>
+
+            </li>
+
+
+        </ul>
+
+    </div>
+
+</aside>
+
+
+<!-- =====================================================
+     MAIN CONTENT
+===================================================== -->
+
+<main
+    class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+
+    <!-- TOP NAVIGATION -->
+
+    <nav
+        class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl"
+        id="navbarBlur"
+        navbar-scroll="true"
+        aria-label="Portal top navigation">
+
+
+        <div class="container-fluid py-1 px-3">
+
+
+            <!-- PAGE TITLE -->
+            <!-- MOBILE TOGGLER (visible on small screens) -->
+            <button class="btn btn-outline-secondary d-xl-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#mobileMenu" aria-expanded="false" aria-controls="mobileMenu" title="Menu">
+                <i class="fa fa-bars"></i>
+            </button>
+
+            <nav aria-label="breadcrumb">
+
+                <ol
+                    class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+
+                    <li
+                        class="breadcrumb-item text-sm">
+
+                        <a
+                            class="opacity-5 text-dark"
+                            href="javascript:;">
+
+                            Pages
+
+                        </a>
+
+                    </li>
+
+
+                    <li
+                        class="breadcrumb-item text-sm text-dark active"
+                        aria-current="page">
+
+                        {% block page_title %}
+                            Portal
+                        {% endblock %}
+
+                    </li>
+
+                </ol>
+
+
+                <h6 class="font-weight-bolder mb-0">
+
+                    {% block page_heading %}
+                        Portal
+                    {% endblock %}
+
+                </h6>
+
+            </nav>
+
+
+            <!-- TOP NAVIGATION RIGHT -->
+
+            <div
+                class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4"
+                id="navbar">
+
+
+                <!-- SEARCH -->
+
+                <div
+                    class="ms-md-auto pe-md-3 d-flex align-items-center">
+
+                    <div class="input-group">
+
+                        <span
+                            class="input-group-text text-body">
+
+                            <i
+                                class="fa fa-search"
+                                aria-hidden="true">
+                            </i>
+
+                        </span>
+
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            placeholder="Type here...">
+
+                    </div>
+
+                </div>
+
+
+                <!-- USER -->
+
+                <ul
+                    class="navbar-nav justify-content-end">
+
+                    <li
+                        class="nav-item d-flex align-items-center">
+
+                        <span
+                            class="badge bg-gradient-dark">
+
+                            {{ request.user.get_full_name|default:request.user.username }}
+
+                        </span>
+
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+    <!-- MOBILE COLLAPSE MENU (cloned from sidebar) -->
+    <div class="container-fluid d-xl-none">
+        <div class="collapse" id="mobileMenu">
+            <div class="card card-body">
+                <div id="mobile-menu-container"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- =====================================================
+         PAGE CONTENT
+    ===================================================== -->
+
+    <div class="container-fluid py-2">
+
+
+        <!-- MESSAGES -->
+
+        {% if messages %}
+
+            {% for message in messages %}
+
+                <div
+                    class="alert alert-{{ message.tags|default:'info' }} text-white bg-gradient-info">
+
+                    {{ message }}
+
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+
+        <!-- CHILD CONTENT -->
+
+        {% block content %}
+
+        {% endblock %}
+
+
+    </div>
+
+
+</main>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script src="{% static 'admin/assets/js/core/popper.min.js' %}">
+</script>
+
+<script src="{% static 'admin/assets/js/core/bootstrap.min.js' %}">
+</script>
+
+<script src="{% static 'admin/assets/js/plugins/perfect-scrollbar.min.js' %}">
+</script>
+
+<script src="{% static 'admin/assets/js/plugins/smooth-scrollbar.min.js' %}">
+</script>
+
+<script src="{% static 'admin/assets/js/soft-ui-dashboard.min.js' %}">
+</script>
+
+
+{% block extra_js %}
+
+{% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    try {
+        var sidebarNav = document.querySelector('#sidenav-main .navbar-nav');
+        var mobileContainer = document.getElementById('mobile-menu-container');
+        if (sidebarNav && mobileContainer && mobileContainer.innerHTML.trim() === '') {
+            // Build a simple stacked list of links for mobile
+            var list = document.createElement('div');
+            list.className = 'list-group';
+            sidebarNav.querySelectorAll('a.nav-link').forEach(function (a) {
+                var href = a.getAttribute('href');
+                var text = a.textContent.trim();
+                if (!href || !text) return;
+                var item = document.createElement('a');
+                item.className = 'list-group-item list-group-item-action';
+                item.href = href;
+                item.textContent = text;
+                list.appendChild(item);
+            });
+            mobileContainer.appendChild(list);
+        }
+
+        var icon = document.getElementById('iconSidenav');
+        var sidenav = document.getElementById('sidenav-main');
+        if (icon && sidenav) {
+            icon.addEventListener('click', function () {
+                sidenav.classList.toggle('d-none');
+            });
+        }
+    } catch (e) {
+        console && console.error && console.error(e);
+    }
+});
+</script>
+
 </body>
+
 </html>

@@ -5,13 +5,24 @@
 {% if can_manage_services %}
 <div class="card stat-card p-3 mb-3">
     <h5 class="mb-3">Create Service Order</h5>
-    <form method="post" class="row g-2">
+    <form method="post" class="row gx-2 gy-2 align-items-end" style="overflow-x:auto; white-space:nowrap;">
         {% csrf_token %}
-        <div class="col-md-3">{{ service_form.guest.label_tag }}{{ service_form.guest }}</div>
-        <div class="col-md-3">{{ service_form.room.label_tag }}{{ service_form.room }}</div>
-        <div class="col-md-3">{{ service_form.menu_item.label_tag }}{{ service_form.menu_item }}</div>
-        <div class="col-md-1">{{ service_form.quantity.label_tag }}{{ service_form.quantity }}</div>
-        <div class="col-md-2">{{ service_form.notes.label_tag }}{{ service_form.notes }}</div>
+        <div class="col-auto" style="min-width:220px; display:inline-block;">
+            {{ service_form.guest.label_tag }}
+            <div class="w-100">{{ service_form.guest }}</div>
+        </div>
+        <div class="col-auto" style="min-width:140px; display:inline-block;">
+            {{ service_form.room.label_tag }}
+            <div class="w-100">{{ service_form.room }}</div>
+        </div>
+        <div class="col-auto" style="min-width:240px; display:inline-block;">
+            {{ service_form.menu_item.label_tag }}
+            <div class="w-100">{{ service_form.menu_item }}</div>
+        </div>
+        <div class="col-auto" style="min-width:90px; display:inline-block;">
+            {{ service_form.quantity.label_tag }}
+            <div class="w-100">{{ service_form.quantity }}</div>
+        </div>
         <div class="col-12">
             {% for field in service_form %}
                 {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}

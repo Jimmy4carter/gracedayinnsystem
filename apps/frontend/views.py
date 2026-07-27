@@ -31,16 +31,20 @@ from apps.services.models import MenuItem, ServiceCategory, ServiceOrder
 
 from .decorators import action_role_required, role_required
 from .forms import (
+    AmenityCreateForm,
     BookingRequestForm,
     ContactForm,
+    GuestCreateForm,
     HousekeepingTaskCreateForm,
+    NewsletterMessageForm,
     PaymentRecordForm,
     ServiceOrderCreateForm,
     PortalReservationForm,
     PortalLoginForm,
     PortalSignUpForm,
+    RoomCreateForm,
 )
-from .models import AuditLog, NewsletterSubscription
+from .models import AuditLog, NewsletterSubscription, NewsletterMessage
 
 FRONTEND_ROUTE_PREFIX = 'frontend:'
 PORTAL_DASHBOARD_ROUTE = f'{FRONTEND_ROUTE_PREFIX}portal-dashboard'
@@ -735,9 +739,264 @@ def portal_dashboard(request):
 
 @login_required
 def portal_rooms(request):
-    rooms = Room.objects.select_related('room_type').all()
-    return render(request, 'portals/tables.html', {'rooms': rooms, 'stats': _portal_stats(request.user)})
+    can_manage_rooms = request.user.role in STAFF_ROLES
+    room_form = None
+    amenity_form = None
+    if can_manage_rooms:
+        if request.method == 'POST':
+            if 'amenity_submit' in request.POST:
+                amenity_form = AmenityCreateForm(request.POST)
+                if amenity_form.is_valid():
+                    amenity = amenity_form.save()
+                    messages.success(request, f'Amenity {amenity.name} created successfully.')
+                    return redirect('frontend:portal-rooms')
+            else:
+                room_form = RoomCreateForm(request.POST)
+                if room_form.is_valid():
+                    room = room_form.save()
+                    messages.success(request, f'Room {room.number} created successfully.')
+                    return redirect('frontend:portal-rooms')
+        else:
+            room_form = RoomCreateForm()
+            amenity_form = AmenityCreateForm()
 
+    rooms = Room.objects.select_related('room_type').all()
+    return render(
+        request,
+        'portals/tables.html',
+        {
+            'rooms': rooms,
+            'stats': _portal_stats(request.user),
+            'room_form': room_form,
+            'amenity_form': amenity_form,
+            'can_manage_rooms': can_manage_rooms,
+        },
+    )
+
+# =========================================================
+# ROOM MANAGEMENT
+# =========================================================
+
+@login_required
+def portal_room_detail(request, pk):
+    """
+    Display details for a single room.
+    """
+    room = get_object_or_404(
+        Room.objects.select_related('room_type'),
+        pk=pk,
+    )
+
+    recent_reservations = Reservation.objects.filter(
+        room=room
+    ).select_related(
+        'guest'
+    ).order_by('-created_at')[:10]
+
+    # Provide a reservation form for the modal on the room detail page.
+    reservation_form = PortalReservationForm()
+
+    return render(
+        request,
+        'portals/room-detail.html',
+        {
+            'room': room,
+            'recent_reservations': recent_reservations,
+            'stats': _portal_stats(request.user),
+            'reservation_form': reservation_form,
+        },
+    )
+
+
+@login_required
+def portal_room_reserve(request, pk):
+    """
+    Reserve a room directly.
+    Guests reserve for themselves.
+    Staff may reserve for any guest.
+    """
+
+    room = get_object_or_404(
+        Room,
+        pk=pk,
+        is_active=True,
+    )
+
+    if room.status != 'available':
+        messages.error(
+            request,
+            'This room is currently unavailable.'
+        )
+        return redirect(
+            'frontend:portal-room-detail',
+            pk=room.pk,
+        )
+
+    form = PortalReservationForm(
+        request.POST or None
+    )
+
+    if request.method == 'POST' and form.is_valid():
+
+        reservation = form.save(commit=False)
+
+        reservation.room = room
+        reservation.created_by = request.user
+        reservation.status = 'pending'
+
+        if request.user.role == 'guest':
+            reservation.guest = request.user
+
+        reservation.save()
+
+        _notify_user(
+            recipient=reservation.guest,
+            title='Reservation Created',
+            message=(
+                f'Your reservation '
+                f'{reservation.reservation_number} '
+                'has been created successfully.'
+            ),
+            notification_type='reservation',
+            link=RESERVATIONS_LINK,
+        )
+
+        _notify_staff(
+            title='New Reservation',
+            message=(
+                f'Room {room.number} has been reserved by '
+                f'{reservation.guest.get_full_name()}.'
+            ),
+            notification_type='reservation',
+            link=RESERVATIONS_LINK,
+        )
+
+        _log_audit(
+            request,
+            event_type='reservation',
+            action='create_reservation',
+            target_model='Reservation',
+            target_id=reservation.id,
+            details={
+                'reservation_number': reservation.reservation_number,
+                'room_number': room.number,
+            },
+        )
+
+        messages.success(
+            request,
+            f'Room {room.number} reserved successfully.'
+        )
+
+        return redirect(PORTAL_RESERVATIONS_ROUTE)
+
+    return render(
+        request,
+        'portals/room-reserve.html',
+        {
+            'room': room,
+            'form': form,
+            'stats': _portal_stats(request.user),
+        },
+    )
+
+
+@login_required
+@role_required({'admin', 'manager', 'receptionist'})
+def portal_room_edit(request, pk):
+    """
+    Edit an existing room.
+    """
+
+    room = get_object_or_404(
+        Room,
+        pk=pk,
+    )
+
+    form = RoomCreateForm(
+        request.POST or None,
+        instance=room,
+    )
+
+    if request.method == 'POST' and form.is_valid():
+
+        room = form.save()
+
+        _log_audit(
+            request,
+            event_type='room',
+            action='edit_room',
+            target_model='Room',
+            target_id=room.id,
+            details={
+                'room_number': room.number,
+            },
+        )
+
+        messages.success(
+            request,
+            f'Room {room.number} updated successfully.'
+        )
+
+        return redirect('frontend:portal-rooms')
+
+    return render(
+        request,
+        'portals/room-edit.html',
+        {
+            'room': room,
+            'form': form,
+            'stats': _portal_stats(request.user),
+        },
+    )
+
+
+@login_required
+@role_required({'admin', 'manager'})
+def portal_room_delete(request, pk):
+    """
+    Deactivate a room instead of permanently deleting it.
+    """
+
+    room = get_object_or_404(
+        Room,
+        pk=pk,
+    )
+
+    if request.method == 'POST':
+
+        room.is_active = False
+
+        room.save(
+            update_fields=['is_active']
+        )
+
+        _log_audit(
+            request,
+            event_type='room',
+            action='deactivate_room',
+            target_model='Room',
+            target_id=room.id,
+            details={
+                'room_number': room.number,
+            },
+        )
+
+        messages.success(
+            request,
+            f'Room {room.number} has been deactivated.'
+        )
+
+        return redirect('frontend:portal-rooms')
+
+    return render(
+        request,
+        'portals/room-delete.html',
+        {
+            'room': room,
+            'stats': _portal_stats(request.user),
+        },
+    )
 
 @login_required
 def portal_reservations(request):
@@ -831,7 +1090,248 @@ def portal_reservation_action(request, pk, action):
 @role_required({'admin', 'manager', 'receptionist'})
 def portal_guests(request):
     guests = UserProfile.objects.filter(role='guest').order_by('first_name', 'last_name')
-    return render(request, 'portals/guests.html', {'guests': guests, 'stats': _portal_stats(request.user)})
+    guest_form = GuestCreateForm(request.POST or None)
+
+    if request.method == 'POST' and guest_form.is_valid():
+        guest_form.save()
+        messages.success(request, 'Guest account created successfully.')
+        return redirect('frontend:portal-guests')
+
+    return render(
+        request,
+        'portals/guests.html',
+        {
+            'guests': guests,
+            'stats': _portal_stats(request.user),
+            'guest_form': guest_form,
+        },
+    )
+
+# =========================================================
+# STAFF MANAGEMENT
+# =========================================================
+
+@login_required
+@role_required({'admin', 'manager'})
+def portal_staff(request):
+    staff_roles = {
+        'admin',
+        'manager',
+        'receptionist',
+        'housekeeping',
+    }
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        phone = request.POST.get('phone', '').strip()
+        role = request.POST.get('role', '').strip()
+        password = request.POST.get('password', '').strip()
+
+        if role not in staff_roles:
+            messages.error(request, 'Invalid staff role selected.')
+            return redirect('frontend:portal-staff')
+
+        if not first_name or not last_name or not email:
+            messages.error(
+                request,
+                'First name, last name and email are required.'
+            )
+            return redirect('frontend:portal-staff')
+
+        if UserProfile.objects.filter(email=email).exists():
+            messages.error(
+                request,
+                'A user with this email already exists.'
+            )
+            return redirect('frontend:portal-staff')
+
+        base_username = email.split('@')[0] or 'staff'
+        username = base_username
+        counter = 1
+
+        while UserProfile.objects.filter(username=username).exists():
+            username = f'{base_username}{counter}'
+            counter += 1
+
+        staff = UserProfile.objects.create(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            role=role,
+            is_active=True,
+        )
+
+        staff.set_password(password or generate_gdi_password())
+        staff.save()
+
+        _log_audit(
+            request,
+            event_type='staff',
+            action='create_staff',
+            target_model='UserProfile',
+            target_id=staff.id,
+            details={
+                'username': staff.username,
+                'email': staff.email,
+                'role': staff.role,
+            },
+        )
+
+        messages.success(
+            request,
+            f'Staff account for {staff.get_full_name()} created successfully.'
+        )
+
+        return redirect('frontend:portal-staff')
+
+    staff_members = UserProfile.objects.filter(
+        role__in=staff_roles
+    ).order_by('first_name', 'last_name')
+
+    staff_role_options = [
+        (role, dict(UserProfile.ROLE_CHOICES).get(role, role.replace('_', ' ').title()))
+        for role in sorted(staff_roles)
+    ]
+
+    return render(
+        request,
+        'portals/staff.html',
+        {
+            'staff': staff_members,
+            'staff_members': staff_members,
+            'staff_roles': sorted(staff_roles),
+            'staff_role_options': staff_role_options,
+            'stats': _portal_stats(request.user),
+        },
+    )
+
+
+@login_required
+@role_required({'admin', 'manager'})
+def portal_staff_action(request, pk, action):
+    if request.method != 'POST':
+        return redirect('frontend:portal-staff')
+
+    staff = get_object_or_404(
+        UserProfile,
+        pk=pk,
+        role__in={
+            'admin',
+            'manager',
+            'receptionist',
+            'housekeeping',
+        },
+    )
+
+    if staff.pk == request.user.pk:
+        messages.error(
+            request,
+            'You cannot perform this action on your own account.'
+        )
+        return redirect('frontend:portal-staff')
+
+    if action == 'activate':
+        staff.is_active = True
+        staff.save(update_fields=['is_active'])
+        messages.success(
+            request,
+            f'{staff.get_full_name()} has been activated.'
+        )
+
+    elif action == 'deactivate':
+        staff.is_active = False
+        staff.save(update_fields=['is_active'])
+        messages.success(
+            request,
+            f'{staff.get_full_name()} has been deactivated.'
+        )
+
+    elif action == 'delete':
+        name = staff.get_full_name()
+        staff.delete()
+        messages.success(
+            request,
+            f'{name} has been removed from the staff list.'
+        )
+
+    else:
+        messages.error(request, 'Unknown staff action.')
+
+    return redirect('frontend:portal-staff')
+
+
+# =========================================================
+# NEWSLETTER MANAGEMENT
+# =========================================================
+
+@login_required
+@role_required({'admin', 'manager'})
+def portal_newsletter(request):
+    subscribers = NewsletterSubscription.objects.all().order_by('-id')
+    newsletter_form = NewsletterMessageForm(request.POST or None, request.FILES or None)
+
+    if request.method == 'POST' and newsletter_form.is_valid():
+        newsletter_form.save()
+        messages.success(request, 'Newsletter draft saved successfully.')
+        return redirect('frontend:portal-newsletter')
+
+    messages_list = NewsletterMessage.objects.order_by('-created_at')[:10]
+
+    return render(
+        request,
+        'portals/newsletter.html',
+        {
+            'subscribers': subscribers,
+            'newsletter_form': newsletter_form,
+            'newsletters': messages_list,
+            'stats': _portal_stats(request.user),
+        },
+    )
+
+
+@login_required
+@role_required({'admin', 'manager'})
+def portal_newsletter_action(request, pk, action):
+    if request.method != 'POST':
+        return redirect('frontend:portal-newsletter')
+
+    subscriber = get_object_or_404(
+        NewsletterSubscription,
+        pk=pk,
+    )
+
+    if action == 'activate':
+        subscriber.is_active = True
+        subscriber.save(update_fields=['is_active'])
+        messages.success(
+            request,
+            f'{subscriber.email} has been activated.'
+        )
+
+    elif action == 'deactivate':
+        subscriber.is_active = False
+        subscriber.save(update_fields=['is_active'])
+        messages.success(
+            request,
+            f'{subscriber.email} has been unsubscribed.'
+        )
+
+    elif action == 'delete':
+        email = subscriber.email
+        subscriber.delete()
+        messages.success(
+            request,
+            f'{email} has been removed from the newsletter list.'
+        )
+
+    else:
+        messages.error(request, 'Unknown newsletter action.')
+
+    return redirect('frontend:portal-newsletter')
 
 
 @login_required
@@ -840,6 +1340,18 @@ def portal_billing(request):
     if request.user.role == 'guest':
         invoices = invoices.filter(guest=request.user)
     return render(request, 'portals/billing.html', {'invoices': invoices, 'stats': _portal_stats(request.user)})
+
+
+@login_required
+def portal_invoice_receipt(request, invoice_id):
+    """Render a simple printable receipt view for an invoice."""
+    invoice = Invoice.objects.prefetch_related('items').select_related('guest', 'reservation').filter(pk=invoice_id).first()
+    if not invoice:
+        return HttpResponse(status=404)
+    # Guests can only view their own invoices
+    if request.user.role == 'guest' and invoice.guest_id != request.user.id:
+        return HttpResponse(status=403)
+    return render(request, 'portals/receipt.html', {'invoice': invoice})
 
 
 @login_required

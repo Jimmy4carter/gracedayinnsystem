@@ -6,8 +6,18 @@
 <div class="row">
     <div class="col-12">
         <div class="card mb-4">
-            <div class="card-header pb-0">
+            <div class="card-header pb-0 d-flex justify-content-between align-items-center">
                 <h6>Room Inventory Table</h6>
+                {% if can_manage_rooms %}
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#amenityModal">
+                            Add Amenity
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#roomModal">
+                            Add Room
+                        </button>
+                    </div>
+                {% endif %}
             </div>
             <div class="card-body px-0 pt-0 pb-2">
                 <div class="table-responsive p-0">
@@ -21,22 +31,95 @@
                                 <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Price</th>
                             </tr>
                         </thead>
-                        <tbody>
+                       <tbody>
                             {% for room in rooms %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex px-2 py-1">
-                                            <div><img src="{% static 'img/room/room-1.jpg' %}" class="avatar avatar-sm me-3" alt="room"></div>
-                                            <div class="d-flex flex-column justify-content-center"><h6 class="mb-0 text-sm">Room {{ room.number }}</h6></div>
+                            <tr onclick="window.location='{% url 'frontend:portal-room-detail' room.id %}'"
+                                style="cursor:pointer;"
+                                class="room-row">
+
+                                <td>
+                                    <div class="d-flex px-2 py-1">
+                                        <div>
+                                            {% if room.room_type.image %}
+                                                <img src="{{ room.room_type.image.url }}"
+                                                    class="avatar avatar-sm me-3"
+                                                    alt="room">
+                                            {% else %}
+                                                <img src="{% static 'img/room/room-1.jpg' %}"
+                                                    class="avatar avatar-sm me-3"
+                                                    alt="room">
+                                            {% endif %}
                                         </div>
-                                    </td>
-                                    <td><p class="text-xs font-weight-bold mb-0">{{ room.room_type.name }}</p></td>
-                                    <td><p class="text-xs font-weight-bold mb-0">{{ room.floor }}</p></td>
-                                    <td class="align-middle text-center text-sm"><span class="badge badge-sm bg-gradient-info">{{ room.get_status_display }}</span></td>
-                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ room.current_price }}</span></td>
-                                </tr>
+
+                                        <div class="d-flex flex-column justify-content-center">
+                                            <h6 class="mb-0 text-sm">
+                                                Room {{ room.number }}
+                                            </h6>
+                                            <p class="text-xs text-secondary mb-0">
+                                                Click to view details
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <p class="text-xs font-weight-bold mb-0">
+                                        {{ room.room_type.name }}
+                                    </p>
+                                </td>
+
+                                <td>
+                                    <p class="text-xs font-weight-bold mb-0">
+                                        Floor {{ room.floor }}
+                                    </p>
+                                </td>
+
+                                <td class="align-middle text-center text-sm">
+
+                                    {% if room.status == 'available' %}
+                                        <span class="badge bg-gradient-success">
+                                            Available
+                                        </span>
+
+                                    {% elif room.status == 'occupied' %}
+                                        <span class="badge bg-gradient-danger">
+                                            Occupied
+                                        </span>
+
+                                    {% elif room.status == 'housekeeping' %}
+                                        <span class="badge bg-gradient-warning">
+                                            Housekeeping
+                                        </span>
+
+                                    {% elif room.status == 'maintenance' %}
+                                        <span class="badge bg-gradient-dark">
+                                            Maintenance
+                                        </span>
+
+                                    {% else %}
+                                        <span class="badge bg-gradient-secondary">
+                                            Out of Order
+                                        </span>
+                                    {% endif %}
+
+                                </td>
+
+                                <td class="align-middle text-center">
+                                    <span class="text-secondary text-xs font-weight-bold">
+                                        ₦{{ room.current_price }}
+                                    </span>
+                                </td>
+
+                            </tr>
+
                             {% empty %}
-                                <tr><td colspan="5" class="text-center">No rooms configured.</td></tr>
+
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <strong>No rooms configured.</strong>
+                                </td>
+                            </tr>
+
                             {% endfor %}
                         </tbody>
                     </table>
@@ -45,4 +128,116 @@
         </div>
     </div>
 </div>
+
+{% if can_manage_rooms %}
+<div class="modal fade" id="amenityModal" tabindex="-1" aria-labelledby="amenityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'frontend:portal-rooms' %}">
+                {% csrf_token %}
+                <input type="hidden" name="amenity_submit" value="1">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="amenityModalLabel">Add New Amenity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">These suggestions are sourced from the About Us page highlights and can be reused for room amenities.</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Preset</label>
+                            {{ amenity_form.preset }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Name</label>
+                            {{ amenity_form.name }}
+                            {% if amenity_form.name.errors %}<div class="text-danger small">{{ amenity_form.name.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Icon</label>
+                            {{ amenity_form.icon }}
+                            {% if amenity_form.icon.errors %}<div class="text-danger small">{{ amenity_form.icon.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            {{ amenity_form.description }}
+                            {% if amenity_form.description.errors %}<div class="text-danger small">{{ amenity_form.description.errors|striptags }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Amenity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="roomModal" tabindex="-1" aria-labelledby="roomModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'frontend:portal-rooms' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="roomModalLabel">Add New Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% if room_form.non_field_errors %}
+                        <div class="alert alert-danger">{{ room_form.non_field_errors }}</div>
+                    {% endif %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Room Number</label>
+                            {{ room_form.number }}
+                            {% if room_form.number.errors %}<div class="text-danger small">{{ room_form.number.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Room Type</label>
+                            {{ room_form.room_type }}
+                            {% if room_form.room_type.errors %}<div class="text-danger small">{{ room_form.room_type.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Floor</label>
+                            {{ room_form.floor }}
+                            {% if room_form.floor.errors %}<div class="text-danger small">{{ room_form.floor.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            {{ room_form.status }}
+                            {% if room_form.status.errors %}<div class="text-danger small">{{ room_form.status.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            {{ room_form.description }}
+                            {% if room_form.description.errors %}<div class="text-danger small">{{ room_form.description.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notes</label>
+                            {{ room_form.notes }}
+                            {% if room_form.notes.errors %}<div class="text-danger small">{{ room_form.notes.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Amenities</label>
+                            {{ room_form.amenities }}
+                            <div class="form-text">Select amenities to attach to the selected room type.</div>
+                            {% if room_form.amenities.errors %}<div class="text-danger small">{{ room_form.amenities.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ room_form.is_active }}
+                                <label class="form-check-label" for="id_is_active">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

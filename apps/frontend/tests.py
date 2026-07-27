@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import UserProfile
+from apps.accounts.models import GuestProfile, UserProfile
 from apps.billing.models import Invoice, InvoiceItem
 from apps.housekeeping.models import HousekeepingTask
 from apps.notifications.models import Notification
@@ -77,6 +77,62 @@ class FrontendWorkflowTests(TestCase):
 			'housekeeping': self.housekeeper,
 			'guest': self.guest,
 		}
+
+	def test_staff_can_create_room_from_portal(self):
+		self.client.force_login(self.staff)
+		response = self.client.post(
+			reverse('frontend:portal-rooms'),
+			data={
+				'number': '205',
+				'room_type': self.room_type.id,
+				'floor': 2,
+				'status': 'available',
+				'description': 'New deluxe room',
+				'notes': 'Ready for deployment',
+				'is_active': 'on',
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		self.assertTrue(Room.objects.filter(number='205').exists())
+
+	def test_staff_can_create_guest_from_portal(self):
+		self.client.force_login(self.staff)
+		response = self.client.post(
+			reverse('frontend:portal-guests'),
+			data={
+				'username': 'newguest',
+				'email': 'newguest@example.com',
+				'first_name': 'Nneka',
+				'last_name': 'Okafor',
+				'phone': '08022222222',
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		guest = UserProfile.objects.get(username='newguest')
+		self.assertEqual(guest.role, 'guest')
+		self.assertTrue(guest.is_active)
+		self.assertTrue(GuestProfile.objects.filter(user=guest).exists())
+
+	def test_staff_creation_from_portal(self):
+		self.client.force_login(self.admin)
+		response = self.client.post(
+			reverse('frontend:portal-staff'),
+			data={
+				'first_name': 'Amara',
+				'last_name': 'Nwosu',
+				'email': 'amara@example.com',
+				'phone': '08033333333',
+				'role': 'receptionist',
+				'password': 'secret123',
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		staff = UserProfile.objects.get(email='amara@example.com')
+		self.assertEqual(staff.role, 'receptionist')
+		self.assertTrue(staff.is_active)
 
 	def test_booking_form_rejects_conflicting_room_dates(self):
 		today = timezone.localdate()

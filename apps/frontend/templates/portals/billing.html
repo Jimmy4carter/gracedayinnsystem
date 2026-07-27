@@ -17,6 +17,7 @@
                                 <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Total</th>
                                 <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Paid</th>
                                 <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Balance</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -28,6 +29,9 @@
                                     <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.total }}</span></td>
                                     <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.amount_paid }}</span></td>
                                     <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.balance }}</span></td>
+                                    <td class="align-middle text-center">
+                                        <a href="{% url 'frontend:portal-invoice-print' invoice.id %}" target="_blank" class="btn btn-outline-primary btn-sm">Print</a>
+                                    </td>
                                 </tr>
                             {% empty %}
                                 <tr><td colspan="6" class="text-center">No invoices available.</td></tr>

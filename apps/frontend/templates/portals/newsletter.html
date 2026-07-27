@@ -1,0 +1,915 @@
+{% extends 'base_portal.html' %}
+
+{% block title %}GRACEDAY INN | Newsletter{% endblock %}
+
+{% block page_title %}Newsletter{% endblock %}
+
+{% block page_heading %}Newsletter Management{% endblock %}
+
+
+{% block extra_css %}
+<style>
+
+    /* =====================================================
+       NEWSLETTER PAGE
+    ===================================================== */
+
+    .newsletter-header {
+        background: linear-gradient(135deg, #c89b3c, #e7be67);
+        border-radius: 15px;
+        padding: 25px 30px;
+        color: #ffffff;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 25px rgba(200, 155, 60, 0.18);
+    }
+
+    .newsletter-header h4 {
+        margin: 0 0 8px;
+        font-weight: 700;
+    }
+
+    .newsletter-header p {
+        margin: 0;
+        opacity: 0.9;
+    }
+
+
+    /* =====================================================
+       CARDS
+    ===================================================== */
+
+    .newsletter-card {
+        background: #ffffff;
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+    }
+
+    .newsletter-table-card {
+        margin-top: 25px;
+    }
+
+    .newsletter-card .card-header {
+        background: #ffffff;
+        border-bottom: 1px solid #eeeeee;
+        padding: 20px 25px;
+    }
+
+    .newsletter-card .card-header h6 {
+        margin: 0;
+        color: #222222;
+        font-weight: 700;
+    }
+
+
+    /* =====================================================
+       TABLE
+    ===================================================== */
+
+    .newsletter-table {
+        margin-bottom: 0;
+    }
+
+    .newsletter-table thead th {
+        background: #faf7f0;
+        color: #555555;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 15px;
+        border: none;
+        white-space: nowrap;
+    }
+
+    .newsletter-table tbody td {
+        padding: 16px 15px;
+        vertical-align: middle;
+        color: #555555;
+        border-bottom: 1px solid #f1f1f1;
+    }
+
+    .newsletter-table tbody tr:hover {
+        background: #fffaf1;
+    }
+
+    .newsletter-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .newsletter-table-wrapper {
+        width: 100%;
+    }
+
+
+    /* =====================================================
+       SUBSCRIBERS
+    ===================================================== */
+
+    .subscriber-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #f3ead8;
+        color: #c89b3c;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        flex-shrink: 0;
+    }
+
+    .subscriber-email {
+        color: #222222;
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ===================================================== */
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .status-active {
+        background: #dff5e7;
+        color: #198754;
+    }
+
+    .status-ready {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-inactive {
+        background: #f8d7da;
+        color: #dc3545;
+    }
+
+
+    /* =====================================================
+       DATE
+    ===================================================== */
+
+    .date-text {
+        color: #777777;
+        font-size: 13px;
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    .empty-newsletter {
+        text-align: center;
+        padding: 55px 20px;
+        color: #777777;
+    }
+
+    .empty-newsletter i {
+        display: block;
+        font-size: 45px;
+        color: #c89b3c;
+        margin-bottom: 15px;
+    }
+
+    .empty-newsletter h5 {
+        color: #333333;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .empty-newsletter p {
+        margin-bottom: 0;
+    }
+
+
+    /* =====================================================
+       MODAL
+    ===================================================== */
+
+    .newsletter-modal .modal-dialog {
+        max-width: 760px;
+    }
+
+    .newsletter-modal .modal-content {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18);
+    }
+
+    .newsletter-modal .modal-header {
+        background: #faf7f0;
+        border-bottom: 1px solid #eeeeee;
+        padding: 20px 25px;
+    }
+
+    .newsletter-modal .modal-title {
+        color: #222222;
+        font-weight: 700;
+    }
+
+    .newsletter-modal .modal-body {
+        padding: 25px;
+    }
+
+    .newsletter-modal .modal-footer {
+        background: #fafafa;
+        border-top: 1px solid #eeeeee;
+        padding: 15px 25px;
+    }
+
+    .newsletter-modal .form-label {
+        color: #333333;
+        font-weight: 600;
+        margin-bottom: 7px;
+    }
+
+    .newsletter-modal input,
+    .newsletter-modal textarea,
+    .newsletter-modal select {
+        width: 100%;
+        border: 1px solid #dddddd;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 14px;
+        outline: none;
+        transition: 0.3s ease;
+    }
+
+    .newsletter-modal input:focus,
+    .newsletter-modal textarea:focus,
+    .newsletter-modal select:focus {
+        border-color: #c89b3c;
+        box-shadow: 0 0 0 3px rgba(200, 155, 60, 0.12);
+    }
+
+    .newsletter-modal textarea {
+        min-height: 150px;
+        resize: vertical;
+    }
+
+    .newsletter-modal input[type="file"] {
+        padding: 8px;
+    }
+
+    .newsletter-modal .form-text {
+        color: #6c757d;
+        font-size: 13px;
+    }
+
+
+    /* =====================================================
+       FORM ERRORS
+    ===================================================== */
+
+    .newsletter-form-errors {
+        background: #fff1f1;
+        border: 1px solid #f1b0b7;
+        border-radius: 8px;
+        padding: 12px 15px;
+        margin-bottom: 20px;
+        color: #842029;
+        font-size: 14px;
+    }
+
+    .field-error {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+        display: block;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 767px) {
+
+        .newsletter-header {
+            padding: 20px;
+        }
+
+        .newsletter-card .card-header {
+            padding: 17px;
+        }
+
+        .newsletter-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .newsletter-table {
+            min-width: 650px;
+        }
+
+        .newsletter-modal .modal-body {
+            padding: 20px;
+        }
+
+        .newsletter-modal .modal-footer {
+            padding: 15px 20px;
+        }
+
+    }
+
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- =====================================================
+     PAGE HEADER
+===================================================== -->
+
+<div class="newsletter-header">
+    <h4>Newsletter Management</h4>
+    <p>
+        Manage newsletter subscribers and create professional newsletter campaigns for GRACEDAY INN.
+    </p>
+</div>
+
+
+<!-- =====================================================
+     SUBSCRIBERS
+===================================================== -->
+
+<div class="card newsletter-card">
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6>Newsletter Subscribers</h6>
+
+        <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#newsletterModal">
+
+            <i class="fa fa-plus me-1"></i>
+            Create Newsletter
+
+        </button>
+    </div>
+
+
+    <div class="card-body p-0">
+
+        {% if subscribers %}
+
+            <div class="newsletter-table-wrapper">
+
+                <table class="table newsletter-table align-items-center">
+
+                    <thead>
+                        <tr>
+                            <th>Email Address</th>
+                            <th>Date Subscribed</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for subscriber in subscribers %}
+
+                            <tr>
+
+                                <td>
+
+                                    <div class="d-flex align-items-center">
+
+                                        <div class="subscriber-icon">
+                                            <i class="fa fa-envelope"></i>
+                                        </div>
+
+                                        <span class="subscriber-email">
+                                            {{ subscriber.email }}
+                                        </span>
+
+                                    </div>
+
+                                </td>
+
+
+                                <td>
+
+                                    <span class="date-text">
+                                        {{ subscriber.created_at|date:"M d, Y" }}
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if subscriber.is_active %}
+
+                                        <span class="status-badge status-active">
+                                            Active
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="status-badge status-inactive">
+                                            Inactive
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-newsletter">
+
+                <i class="fa fa-envelope-o"></i>
+
+                <h5>No Newsletter Subscribers</h5>
+
+                <p>
+                    No visitors have subscribed to the newsletter yet.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     SAVED NEWSLETTERS
+===================================================== -->
+
+<div class="card newsletter-card newsletter-table-card">
+
+    <div class="card-header">
+
+        <h6>Saved Newsletters</h6>
+
+    </div>
+
+
+    <div class="card-body p-0">
+
+        {% if newsletters %}
+
+            <div class="newsletter-table-wrapper">
+
+                <table class="table newsletter-table align-items-center">
+
+                    <thead>
+
+                        <tr>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Date Created</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for item in newsletters %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>{{ item.subject }}</strong>
+                                </td>
+
+
+                                <td>
+
+                                    {% if item.status == 'sent' %}
+
+                                        <span class="status-badge status-active">
+                                            {{ item.get_status_display }}
+                                        </span>
+
+                                    {% elif item.status == 'ready' %}
+
+                                        <span class="status-badge status-ready">
+                                            {{ item.get_status_display }}
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="status-badge status-inactive">
+                                            {{ item.get_status_display }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    <span class="date-text">
+                                        {{ item.created_at|date:"M d, Y" }}
+                                    </span>
+
+                                </td>
+
+                            </tr>
+
+                        {% empty %}
+
+                            <tr>
+
+                                <td colspan="3" class="text-center py-4">
+
+                                    No newsletters have been created yet.
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-newsletter">
+
+                <i class="fa fa-file-text-o"></i>
+
+                <h5>No Newsletters Yet</h5>
+
+                <p>
+                    Create a newsletter to begin your campaign workflow.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     CREATE NEWSLETTER MODAL
+===================================================== -->
+
+<div
+    class="modal fade newsletter-modal"
+    id="newsletterModal"
+    tabindex="-1"
+    aria-labelledby="newsletterModalLabel"
+    aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="post"
+                enctype="multipart/form-data">
+
+                {% csrf_token %}
+
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="newsletterModalLabel">
+
+                        Create Newsletter
+
+                    </h5>
+
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+
+                    </button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    {% if newsletter_form.non_field_errors %}
+
+                        <div class="newsletter-form-errors">
+
+                            {% for error in newsletter_form.non_field_errors %}
+
+                                <div>
+                                    {{ error }}
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% endif %}
+
+
+                    <div class="row g-3">
+
+
+                        <!-- SUBJECT -->
+
+                        <div class="col-12">
+
+                            <label
+                                class="form-label"
+                                for="{{ newsletter_form.subject.id_for_label }}">
+
+                                Subject
+
+                            </label>
+
+                            {{ newsletter_form.subject }}
+
+                            {% for error in newsletter_form.subject.errors %}
+
+                                <span class="field-error">
+                                    {{ error }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <!-- TITLE -->
+
+                        <div class="col-12">
+
+                            <label
+                                class="form-label"
+                                for="{{ newsletter_form.title.id_for_label }}">
+
+                                Newsletter Title
+
+                            </label>
+
+                            {{ newsletter_form.title }}
+
+                            {% for error in newsletter_form.title.errors %}
+
+                                <span class="field-error">
+                                    {{ error }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <!-- MESSAGE -->
+
+                        <div class="col-12">
+
+                            <label
+                                class="form-label"
+                                for="{{ newsletter_form.message.id_for_label }}">
+
+                                Message
+
+                            </label>
+
+                            {{ newsletter_form.message }}
+
+                            {% for error in newsletter_form.message.errors %}
+
+                                <span class="field-error">
+                                    {{ error }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <!-- IMAGE -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                class="form-label"
+                                for="{{ newsletter_form.featured_image.id_for_label }}">
+
+                                Featured Image
+
+                            </label>
+
+                            {{ newsletter_form.featured_image }}
+
+                            {% for error in newsletter_form.featured_image.errors %}
+
+                                <span class="field-error">
+                                    {{ error }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <!-- CTA TEXT -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                class="form-label"
+                                for="{{ newsletter_form.cta_text.id_for_label }}">
+
+                                Button Text
+
+                            </label>
+
+                            {{ newsletter_form.cta_text }}
+
+                            {% for error in newsletter_form.cta_text.errors %}
+
+                                <span class="field-error">
+                                    {{ error }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <!-- CTA LINK -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                class="form-label"
+                                for="{{ newsletter_form.cta_link.id_for_label }}">
+
+                                Button Link
+
+                            </label>
+
+                            {{ newsletter_form.cta_link }}
+
+                            {% for error in newsletter_form.cta_link.errors %}
+
+                                <span class="field-error">
+                                    {{ error }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <!-- RECIPIENT -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                class="form-label"
+                                for="{{ newsletter_form.recipient.id_for_label }}">
+
+                                Recipient
+
+                            </label>
+
+                            {{ newsletter_form.recipient }}
+
+                            {% for error in newsletter_form.recipient.errors %}
+
+                                <span class="field-error">
+                                    {{ error }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <!-- STATUS -->
+
+                        <div class="col-md-6">
+
+                            <label
+                                class="form-label"
+                                for="{{ newsletter_form.status.id_for_label }}">
+
+                                Status
+
+                            </label>
+
+                            {{ newsletter_form.status }}
+
+                            {% for error in newsletter_form.status.errors %}
+
+                                <span class="field-error">
+                                    {{ error }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                        Cancel
+
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary">
+
+                        <i class="fa fa-save me-1"></i>
+                        Save Newsletter
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+
+{% if newsletter_form.errors or newsletter_form.non_field_errors %}
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const newsletterModal =
+            document.getElementById("newsletterModal");
+
+        if (newsletterModal) {
+
+            const modal =
+                new bootstrap.Modal(newsletterModal);
+
+            modal.show();
+
+        }
+
+    });
+
+</script>
+
+{% endif %}
+
+{% endblock %}

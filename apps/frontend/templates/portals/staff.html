@@ -1,0 +1,313 @@
+{% extends 'base_portal.html' %}
+
+{% block title %}GRACEDAY INN | Staff{% endblock %}
+
+{% block page_title %}Staff{% endblock %}
+
+{% block page_heading %}Staff Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .staff-header {
+        background: linear-gradient(135deg, #c89b3c, #e7be67);
+        border-radius: 15px;
+        padding: 25px;
+        color: #fff;
+        margin-bottom: 25px;
+    }
+
+    .staff-header h4 {
+        margin-bottom: 8px;
+        font-weight: 700;
+    }
+
+    .staff-header p {
+        margin-bottom: 0;
+        opacity: .9;
+    }
+
+    .staff-card {
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,.06);
+        border: none;
+        overflow: hidden;
+    }
+
+    .staff-card .card-header {
+        background: #fff;
+        border-bottom: 1px solid #eee;
+        padding: 20px 25px;
+    }
+
+    .staff-card .card-header h6 {
+        margin: 0;
+        font-weight: 700;
+        color: #222;
+    }
+
+    .staff-table {
+        margin-bottom: 0;
+    }
+
+    .staff-table thead th {
+        background: #faf7f0;
+        color: #555;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 15px;
+        border: none;
+    }
+
+    .staff-table tbody td {
+        padding: 16px 15px;
+        vertical-align: middle;
+        color: #555;
+        border-bottom: 1px solid #f1f1f1;
+    }
+
+    .staff-table tbody tr:hover {
+        background: #fffaf1;
+    }
+
+    .staff-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #c89b3c;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin-right: 10px;
+    }
+
+    .staff-name {
+        font-weight: 600;
+        color: #222;
+    }
+
+    .role-badge {
+        background: #f3ead8;
+        color: #9b741e;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: #dff5e7;
+        color: #198754;
+    }
+
+    .status-inactive {
+        background: #f8d7da;
+        color: #dc3545;
+    }
+
+    .empty-staff {
+        text-align: center;
+        padding: 50px 20px;
+        color: #777;
+    }
+
+    .empty-staff i {
+        font-size: 45px;
+        color: #c89b3c;
+        margin-bottom: 15px;
+    }
+
+    @media (max-width: 767px) {
+        .staff-table {
+            min-width: 750px;
+        }
+
+        .staff-table-wrapper {
+            overflow-x: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="staff-header">
+    <h4>Staff Management</h4>
+    <p>Manage and monitor GRACEDAY INN staff members and their assigned roles.</p>
+</div>
+
+<div class="card staff-card">
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6>All Staff Members</h6>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#staffModal">
+            Add Staff
+        </button>
+    </div>
+
+    <div class="card-body p-0">
+
+        {% if staff_members %}
+
+        <div class="staff-table-wrapper">
+
+            <table class="table staff-table align-items-center">
+
+                <thead>
+                    <tr>
+                        <th>Staff Member</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for staff in staff_members %}
+
+                    <tr>
+
+                        <td>
+                            <div class="d-flex align-items-center">
+
+                                <div class="staff-avatar">
+                                    {{ staff.first_name|first|upper }}
+                                </div>
+
+                                <div>
+                                    <div class="staff-name">
+                                        {{ staff.get_full_name|default:staff.username }}
+                                    </div>
+
+                                    <small class="text-muted">
+                                        @{{ staff.username }}
+                                    </small>
+                                </div>
+
+                            </div>
+                        </td>
+
+                        <td>
+                            {{ staff.email|default:"Not provided" }}
+                        </td>
+
+                        <td>
+                            <span class="role-badge">
+                                {{ staff.role|default:"Staff" }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {{ staff.phone|default:"Not provided" }}
+                        </td>
+
+                        <td>
+
+                            {% if staff.is_active %}
+
+                                <span class="status-badge status-active">
+                                    Active
+                                </span>
+
+                            {% else %}
+
+                                <span class="status-badge status-inactive">
+                                    Inactive
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-staff">
+
+            <i class="fa fa-users"></i>
+
+            <h5>No Staff Members Found</h5>
+
+            <p>There are currently no staff members available to display.</p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<div class="modal fade" id="staffModal" tabindex="-1" aria-labelledby="staffModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'frontend:portal-staff' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staffModalLabel">Add New Staff Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First name</label>
+                            <input type="text" class="form-control" name="first_name" placeholder="First name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last name</label>
+                            <input type="text" class="form-control" name="last_name" placeholder="Last name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" placeholder="staff@example.com" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone</label>
+                            <input type="text" class="form-control" name="phone" placeholder="Phone number">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Staff role</label>
+                            <select class="form-select" name="role" required>
+                                {% for role, label in staff_role_options %}
+                                    <option value="{{ role }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Temporary password</label>
+                            <input type="password" class="form-control" name="password" placeholder="Leave blank to auto-generate">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Staff</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

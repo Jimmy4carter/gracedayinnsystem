@@ -1,14 +1,93 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.utils import timezone
+from django.db.models import Q
+from django.core.exceptions import ValidationError
 
-from apps.accounts.models import UserProfile
+from apps.accounts.models import GuestProfile, UserProfile
 from apps.billing.models import Invoice
 from apps.housekeeping.models import HousekeepingTask
 from apps.payments.models import Payment
 from apps.reservations.models import Reservation
-from apps.rooms.models import Room
+from apps.rooms.models import Amenity, Room, RoomType
 from apps.services.models import MenuItem, ServiceOrder, ServiceOrderItem
+from apps.frontend.models import NewsletterMessage
+
+
+class NewsletterMessageForm(forms.ModelForm):
+    class Meta:
+        model = NewsletterMessage
+        fields = [
+            'subject',
+            'title',
+            'message',
+            'cta_text',
+            'cta_link',
+            'featured_image',
+            'recipient',
+            'status',
+        ]
+        widgets = {
+            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Exclusive Weekend Offer at GRACEDAY INN'}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Experience Luxury at GRACEDAY INN'}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 6, 'placeholder': 'Treat yourself to a relaxing stay at GRACEDAY INN...'}),
+            'cta_text': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Book Your Stay'}),
+            'cta_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': '/rooms/'}),
+            'recipient': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+        }
+        help_texts = {
+            'cta_link': 'Use an internal or external booking link.',
+        }
+
+
+
+class GuestCreateForm(forms.ModelForm):
+    password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Leave blank to send an invite later'}),
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ('username', 'email', 'first_name', 'last_name', 'phone')
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. guest_ada'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'guest@example.com'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone'}),
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username', '').strip()
+        if not username:
+            raise forms.ValidationError('Username is required.')
+        if UserProfile.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError('A user with this username already exists.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if not email:
+            raise forms.ValidationError('Email is required.')
+        if UserProfile.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('A user with this email already exists.')
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = 'guest'
+        user.is_active = True
+        raw_password = self.cleaned_data.get('password')
+        if raw_password:
+            user.set_password(raw_password)
+        else:
+            user.set_unusable_password()
+        if commit:
+            user.save()
+            GuestProfile.objects.get_or_create(user=user)
+        return user
 
 
 class PortalLoginForm(AuthenticationForm):
@@ -142,6 +221,92 @@ class ContactForm(forms.Form):
     message = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}))
 
 
+ABOUT_PAGE_AMENITY_SUGGESTIONS = [
+    ('Free WiFi', 'Free WiFi', 'Enjoy fast and reliable internet access throughout the hotel premises.', 'flaticon-029-wifi'),
+    ('Air Conditioning', 'Air Conditioning', 'All rooms are fully air-conditioned for maximum guest comfort.', 'flaticon-003-air-conditioner'),
+    ('Smart TV', 'Smart TV', 'Enjoy premium entertainment and satellite television channels.', 'flaticon-019-television'),
+    ('Laundry', 'Laundry', 'Enjoy clean and fresh clothing from our high-quality laundry service.', 'flaticon-004-fridge'),
+    ('Secure Safe', 'Secure Safe', 'Keep valuables protected using our secure in-room safety locker.', 'flaticon-013-safety-box'),
+    ('Luxury Bathtub', 'Luxury Bathtub', 'Relax in spacious bathrooms with premium bathtub facilities.', 'flaticon-030-bathtub'),
+    ('24-Hour Service', '24-Hour Service', 'Round-the-clock hospitality support and assistance for every guest.', 'flaticon-026-bed'),
+    ('Dining Service', 'Dining Service', 'Enjoy convenient dining options and room service support throughout the day.', 'flaticon-004-fridge'),
+]
+
+
+class RoomCreateForm(forms.ModelForm):
+    amenities = forms.ModelMultipleChoiceField(
+        queryset=Amenity.objects.order_by('name'),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': '6'}),
+    )
+
+    class Meta:
+        model = Room
+        fields = ['number', 'room_type', 'floor', 'status', 'description', 'notes', 'is_active']
+        widgets = {
+            'number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 205'}),
+            'room_type': forms.Select(attrs={'class': 'form-select'}),
+            'floor': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['room_type'].queryset = RoomType.objects.order_by('name')
+        self.fields['room_type'].empty_label = 'Select room type'
+        self.fields['is_active'].required = False
+
+    def save(self, commit=True):
+        room = super().save(commit=False)
+        if commit:
+            room.save()
+        selected_amenities = list(self.cleaned_data.get('amenities', []))
+        if room.room_type_id and selected_amenities:
+            room.room_type.amenities.set(selected_amenities)
+        if commit:
+            room.room_type.refresh_from_db()
+        return room
+
+
+class AmenityCreateForm(forms.ModelForm):
+    preset = forms.ChoiceField(
+        choices=[('', 'Create a custom amenity')] + [(name, label) for name, label, _, _ in ABOUT_PAGE_AMENITY_SUGGESTIONS],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
+    class Meta:
+        model = Amenity
+        fields = ['name', 'icon', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Spa Access'}),
+            'icon': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. flaticon-029-wifi'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].required = False
+        self.fields['icon'].required = False
+
+    def save(self, commit=True):
+        amenity = super().save(commit=False)
+        preset = self.cleaned_data.get('preset')
+        if preset:
+            _, label, description, icon = next(item for item in ABOUT_PAGE_AMENITY_SUGGESTIONS if item[0] == preset)
+            amenity.name = label
+            amenity.icon = icon
+            amenity.description = description
+        else:
+            amenity.name = amenity.name or ''
+        if commit:
+            amenity.save()
+        return amenity
+
+
 class PortalReservationForm(forms.ModelForm):
     class Meta:
         model = Reservation
@@ -228,10 +393,8 @@ class PaymentRecordForm(forms.ModelForm):
 
 
 class ServiceOrderCreateForm(forms.Form):
-    guest = forms.ModelChoiceField(
-        queryset=UserProfile.objects.filter(role='guest', is_active=True),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-    )
+    # accept a plain-text guest identifier (username or email) instead of a dropdown
+    guest = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'username or email'}))
     room = forms.ModelChoiceField(
         queryset=Room.objects.filter(is_active=True),
         required=False,
@@ -242,20 +405,34 @@ class ServiceOrderCreateForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
     quantity = forms.IntegerField(min_value=1, initial=1, widget=forms.NumberInput(attrs={'class': 'form-control'}))
-    notes = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}))
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if user and user.role == 'guest':
-            self.fields['guest'].queryset = UserProfile.objects.filter(id=user.id)
-            self.fields['guest'].initial = user.id
+            self.fields['guest'].initial = user.username
+
+    def clean_guest(self):
+        raw = (self.cleaned_data.get('guest') or '').strip()
+        if not raw:
+            raise ValidationError('Guest username or email is required.')
+
+        user = UserProfile.objects.filter(
+            Q(username__iexact=raw) | Q(email__iexact=raw),
+            role='guest',
+            is_active=True,
+        ).first()
+
+        if not user:
+            raise ValidationError('No active guest found with that username or email.')
+
+        return user
 
     def save(self, created_by):
         order = ServiceOrder.objects.create(
             guest=self.cleaned_data['guest'],
-            room=self.cleaned_data['room'],
-            notes=self.cleaned_data['notes'],
+            room=self.cleaned_data.get('room'),
+            notes='',
             status='pending',
         )
         ServiceOrderItem.objects.create(

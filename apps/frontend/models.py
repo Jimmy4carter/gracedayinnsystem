@@ -44,3 +44,32 @@ class NewsletterSubscription(models.Model):
 
     def __str__(self):
         return f'{self.email} (Active: {self.is_active})'
+
+
+class NewsletterMessage(models.Model):
+    RECIPIENT_CHOICES = [
+        ('all', 'All Subscribers'),
+        ('active', 'Active Subscribers'),
+    ]
+
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('ready_to_send', 'Ready to Send'),
+    ]
+
+    subject = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    cta_text = models.CharField(max_length=100, blank=True)
+    cta_link = models.URLField(blank=True)
+    featured_image = models.ImageField(upload_to='newsletters/', blank=True, null=True)
+    recipient = models.CharField(max_length=20, choices=RECIPIENT_CHOICES, default='all')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.subject} ({self.get_status_display()})'

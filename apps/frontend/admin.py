@@ -17,3 +17,14 @@ class NewsletterSubscriptionAdmin(admin.ModelAdmin):
 	list_filter = ('is_active', 'created_at')
 	search_fields = ('email',)
 	readonly_fields = ('created_at',)
+
+
+from .models import NewsletterMessage
+
+
+@admin.register(NewsletterMessage)
+class NewsletterMessageAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'status', 'recipient', 'created_at')
+    list_filter = ('status', 'recipient', 'created_at')
+    search_fields = ('subject', 'title', 'message')
+    readonly_fields = ('created_at', 'updated_at')

@@ -953,3 +953,22 @@ a {
         color:#fff;
     }
 }
+
+/* ==========================================
+   PORTAL ROOM TABLE
+========================================== */
+
+.room-row{
+    cursor:pointer;
+    transition:all .25s ease;
+}
+
+.room-row:hover{
+    background:#f8f9fa;
+    transform:scale(1.003);
+    box-shadow:0 3px 12px rgba(0,0,0,.05);
+}
+
+.room-row td{
+    vertical-align:middle;
+}

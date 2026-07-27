@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Receipt - {{ invoice.invoice_number }}</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 24px; color: #222 }
+    .header { text-align: center; margin-bottom: 16px }
+    .items { width: 100%; border-collapse: collapse; margin-top: 12px }
+    .items th, .items td { border: 1px solid #ddd; padding: 8px }
+    .items th { background: #f7f7f7 }
+    .totals { margin-top: 12px; float: right; min-width: 260px }
+    .muted { color: #666; font-size: 0.9em }
+    @media print { .no-print { display: none } }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align:right;margin-bottom:8px;">
+    <button onclick="window.print()">Print</button>
+  </div>
+  <div class="header">
+    <h2>GRACEDAY INN</h2>
+    <div class="muted">Receipt for Invoice {{ invoice.invoice_number }}</div>
+  </div>
+  <div>
+    <strong>Guest:</strong> {{ invoice.guest.get_full_name|default:invoice.guest.username }}<br>
+    <strong>Reservation:</strong> {{ invoice.reservation }}<br>
+    <strong>Issued:</strong> {{ invoice.created_at|date:"Y-m-d H:i" }}
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th style="width:120px;text-align:right">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in invoice.items.all %}
+      <tr>
+        <td>{{ item.description }}</td>
+        <td style="text-align:right">₦{{ item.amount }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <table>
+      <tr><td class="muted">Subtotal:</td><td style="text-align:right">₦{{ invoice.subtotal }}</td></tr>
+      <tr><td class="muted">Tax:</td><td style="text-align:right">₦{{ invoice.tax_amount }}</td></tr>
+      <tr><td class="muted">Total:</td><td style="text-align:right"><strong>₦{{ invoice.total }}</strong></td></tr>
+      <tr><td class="muted">Amount Paid:</td><td style="text-align:right">₦{{ invoice.amount_paid }}</td></tr>
+      <tr><td class="muted">Balance:</td><td style="text-align:right">₦{{ invoice.balance }}</td></tr>
+    </table>
+  </div>
+
+  <div style="clear:both;margin-top:40px;" class="muted">Thank you for your business.</div>
+
+  <script>
+    // If opened as a new tab/window for printing, auto-print.
+    if (window.opener || window.name) {
+      window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 300); });
+    }
+  </script>
+</body>
+</html>
