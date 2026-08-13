@@ -1,0 +1,240 @@
+{% extends 'base_portal.html' %}
+{% block title %}Chat {{ conversation.reference }}{% endblock %}
+{% block page_title %}Live Chat Console{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Message Container -->
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 text-dark font-weight-bold">
+                    Conversation with {% if conversation.guest %}{{ conversation.visitor_name|default:conversation.guest.username }}{% else %}{{ conversation.visitor_name|default:'Visitor' }}{% endif %}
+                </h6>
+                <span id="chatPresence" class="badge bg-light text-secondary text-xs">
+                    <i class="fa fa-spinner fa-spin me-1"></i>Connecting...
+                </span>
+            </div>
+            <div class="card-body p-4" id="chatMessages" style="height: 450px; overflow-y: auto; background: #f8f9fa; border-radius: 12px; margin: 15px;">
+                {% for item in conversation.messages.all %}
+                    {% if item.sender_type == 'system' %}
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="bg-white border rounded-pill px-3 py-1 text-xs text-secondary text-center shadow-xs">
+                                <i class="fa fa-info-circle me-1"></i>{{ item.body }}
+                            </div>
+                        </div>
+                    {% elif item.sender_type == 'internal' %}
+                        <!-- Private note (amber border) -->
+                        <div class="d-flex justify-content-end mb-3">
+                            <div class="chat-bubble-internal p-3 border-radius-lg border border-warning" style="max-width: 70%; background-color: #fffbeb;">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-xs font-weight-bold text-warning"><i class="fa fa-lock me-1"></i>Internal Note</span>
+                                    <span class="text-xxs text-secondary float-end ms-2">{{ item.created_at|date:"H:i" }}</span>
+                                </div>
+                                <div class="text-sm text-dark">{{ item.body|linebreaksbr }}</div>
+                            </div>
+                        </div>
+                    {% elif item.sender_type == 'agent' %}
+                        <!-- Agent message (blue/indigo bubble on the right) -->
+                        <div class="d-flex justify-content-end mb-3">
+                            <div class="chat-bubble-agent text-white p-3 border-radius-lg bg-gradient-dark" style="max-width: 70%;">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-xs font-weight-bold opacity-8">Agent</span>
+                                    <span class="text-xxs opacity-7 float-end ms-2">{{ item.created_at|date:"H:i" }}</span>
+                                </div>
+                                <div class="text-sm">{{ item.body|linebreaksbr }}</div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Visitor or Guest message (grey bubble on the left) -->
+                        <div class="d-flex justify-content-start mb-3">
+                            <div class="chat-bubble-visitor bg-white p-3 border-radius-lg border shadow-xs" style="max-width: 70%;">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-xs font-weight-bold text-dark">{{ conversation.visitor_name|default:'Visitor' }}</span>
+                                    <span class="text-xxs text-secondary float-end ms-2">{{ item.created_at|date:"H:i" }}</span>
+                                </div>
+                                <div class="text-sm text-secondary">{{ item.body|linebreaksbr }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Reply Input Card -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-3">
+                <form method="post" id="replyForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="cannedReply" class="form-label text-xs font-weight-bold text-secondary">Canned Reply Helper</label>
+                        <select id="cannedReply" name="canned_reply_id" class="form-select border-radius-md text-sm">
+                            <option value="">-- Choose canned response --</option>
+                            {% for item in canned_replies %}
+                                <option value="{{ item.id }}" data-body="{{ item.body|escape }}">{{ item.category|title }} &mdash; {{ item.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <textarea id="chatReplyBody" name="body" class="form-control border-radius-md text-sm" rows="3" placeholder="Type your reply or internal note here..." required></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button class="btn bg-gradient-dark mb-0 me-2" name="command" value="reply">
+                                <i class="fa fa-paper-plane me-2"></i>Send Reply
+                            </button>
+                            <button class="btn btn-outline-warning mb-0" name="command" value="note">
+                                <i class="fa fa-lock me-2"></i>Save Note
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Controls -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header pb-0 bg-transparent">
+                <h6 class="mb-0 text-dark font-weight-bold">Conversation Control</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-sm text-secondary">Current Status</span>
+                        <span class="badge bg-light text-dark font-weight-bold">{{ conversation.get_status_display }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-sm text-secondary">Assigned Agent</span>
+                        <span class="text-sm font-weight-bold text-dark">{% if conversation.assigned_to %}{{ conversation.assigned_to.username }}{% else %}Unassigned{% endif %}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-sm text-secondary">Queue</span>
+                        <span class="text-sm font-weight-bold text-dark">{{ conversation.queue|title }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-sm text-secondary">Email</span>
+                        <span class="text-sm text-dark text-wrap">{{ conversation.visitor_email|default:'—' }}</span>
+                    </li>
+                </ul>
+
+                <div class="d-grid gap-2">
+                    {% if conversation.status == 'queued' %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <button class="btn bg-gradient-success w-100 mb-0" name="command" value="assign">
+                                <i class="fa fa-user-plus me-2"></i>Assign to Me
+                            </button>
+                        </form>
+                    {% endif %}
+                    
+                    {% if conversation.status == 'open' %}
+                        <form method="post" class="mb-2">
+                            {% csrf_token %}
+                            <button class="btn btn-outline-warning w-100 mb-0" name="command" value="wait">
+                                <i class="fa fa-clock-o me-2"></i>Wait for Guest
+                            </button>
+                        </form>
+                        <hr class="horizontal dark">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <input class="form-control text-sm" name="disposition" placeholder="Enter closure summary" required>
+                            </div>
+                            <button class="btn bg-gradient-danger w-100" name="command" value="close">
+                                <i class="fa fa-check-circle me-2"></i>Resolve & Close
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if conversation.status == 'waiting' or conversation.status == 'closed' %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <button class="btn btn-outline-primary w-100" name="command" value="reopen">
+                                <i class="fa fa-folder-open me-2"></i>Reopen Conversation
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('cannedReply');
+    const body = document.getElementById('chatReplyBody');
+    const presence = document.getElementById('chatPresence');
+    const messages = document.getElementById('chatMessages');
+
+    // Auto scroll chat to bottom
+    messages.scrollTop = messages.scrollHeight;
+
+    select.addEventListener('change', function () {
+        const option = select.options[select.selectedIndex];
+        if (option.dataset.body) {
+            body.value = option.dataset.body;
+        }
+    });
+
+    let socket;
+    try {
+        socket = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/chat/{{ conversation.reference }}/');
+        socket.onopen = function () {
+            presence.className = 'badge bg-light text-success text-xs';
+            presence.innerHTML = '<i class="fa fa-check-circle me-1"></i>Live Connected';
+        };
+        socket.onclose = function () {
+            presence.className = 'badge bg-light text-secondary text-xs';
+            presence.innerHTML = '<i class="fa fa-exclamation-circle me-1"></i>Disconnected (Refresh)';
+        };
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'typing') {
+                presence.innerHTML = data.is_typing ? '<i class="fa fa-keyboard-o me-1"></i>Guest is typing…' : '<i class="fa fa-check-circle me-1"></i>Live Connected';
+            } else if (data.type === 'presence') {
+                presence.innerHTML = data.state === 'joined' ? '<i class="fa fa-user me-1"></i>Guest Online' : '<i class="fa fa-user-times me-1"></i>Guest Left';
+            } else if (data.type === 'message' && data.sender_type !== 'internal') {
+                const isAgent = data.sender_type === 'agent';
+                const wrapper = document.createElement('div');
+                wrapper.className = isAgent ? 'd-flex justify-content-end mb-3' : 'd-flex justify-content-start mb-3';
+                
+                const bubble = document.createElement('div');
+                bubble.className = isAgent ? 'chat-bubble-agent text-white p-3 border-radius-lg bg-gradient-dark' : 'chat-bubble-visitor bg-white p-3 border-radius-lg border shadow-xs';
+                bubble.style.maxWidth = '70%';
+
+                const header = document.createElement('div');
+                header.className = 'd-flex justify-content-between mb-1';
+                header.innerHTML = `<span class="text-xs font-weight-bold ${isAgent ? 'opacity-8' : 'text-dark'}">${isAgent ? 'Agent' : 'Visitor'}</span><span class="text-xxs ${isAgent ? 'opacity-7' : 'text-secondary'} float-end ms-2">Now</span>`;
+
+                const content = document.createElement('div');
+                content.className = isAgent ? 'text-sm' : 'text-sm text-secondary';
+                content.textContent = data.body;
+
+                bubble.appendChild(header);
+                bubble.appendChild(content);
+                wrapper.appendChild(bubble);
+                messages.appendChild(wrapper);
+                messages.scrollTop = messages.scrollHeight;
+            }
+        };
+
+        let typingTimer;
+        body.addEventListener('input', function () {
+            if (!socket || socket.readyState !== 1) return;
+            socket.send(JSON.stringify({type: 'typing', is_typing: true}));
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(function () {
+                if (socket.readyState === 1) socket.send(JSON.stringify({type: 'typing', is_typing: false}));
+            }, 1200);
+        });
+    } catch (error) {
+        presence.className = 'badge bg-light text-warning text-xs';
+        presence.innerHTML = '<i class="fa fa-warning me-1"></i>Offline (Manual Mode)';
+    }
+});
+</script>
+{% endblock %}

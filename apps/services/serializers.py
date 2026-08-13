@@ -27,4 +27,17 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceOrder
         fields = '__all__'
-        read_only_fields = ['order_number', 'total']
+        read_only_fields = ['order_number', 'total', 'status']
+        extra_kwargs = {'guest': {'required': False}}
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if (
+            self.instance is None
+            and request
+            and request.user.is_authenticated
+            and (request.user.is_superuser or request.user.role in {'admin', 'manager', 'receptionist'})
+            and not data.get('guest')
+        ):
+            raise serializers.ValidationError({'guest': 'Staff must select a guest.'})
+        return data

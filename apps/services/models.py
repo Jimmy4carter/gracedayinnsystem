@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.db import models
 from django.utils import timezone
+import uuid
 
 
 class ServiceCategory(models.Model):
@@ -30,10 +31,8 @@ class MenuItem(models.Model):
 
 
 def generate_service_order_number():
-    from apps.services.models import ServiceOrder
     year = timezone.now().year
-    count = ServiceOrder.objects.filter(created_at__year=year).count() + 1
-    return f'SVC-{year}-{count:04d}'
+    return f'SVC-{year}-{uuid.uuid4().hex[:10].upper()}'
 
 
 class ServiceOrder(models.Model):

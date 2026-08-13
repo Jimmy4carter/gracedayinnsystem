@@ -1,0 +1,106 @@
+{% extends 'base_portal.html' %}
+
+{% block title %}GRACEDAY INN | Edit Room {{ room.number }}{% endblock %}
+{% block page_title %}Edit Room {{ room.number }}{% endblock %}
+{% block page_heading %}Edit Room{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white pt-4 pb-0 border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 font-weight-bold">Edit Room {{ room.number }}</h5>
+                <span class="badge bg-gradient-info text-capitalize">{{ room.get_status_display }}</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-light border d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4" role="status">
+                    <div><strong>Editing Room {{ room.number }}</strong><div class="small text-muted">Select another room to continue without returning to the list.</div></div>
+                    <label class="mb-0 small fw-bold" for="room-switcher">Room <select id="room-switcher" class="form-select form-select-sm d-inline-block w-auto ms-1" onchange="if(this.value) window.location.href=this.value">{% for item in editable_rooms %}<option value="{% url 'frontend:portal-room-edit' item.id %}" {% if item.id == room.id %}selected{% endif %}>{{ item.number }} · {{ item.room_type.name }}</option>{% endfor %}</select></label>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger text-white mb-3">
+                            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Room Number *</label>
+                            {{ form.number }}
+                            {% if form.number.errors %}<div class="text-danger text-xs mt-1">{{ form.number.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Room Type *</label>
+                            {{ form.room_type }}
+                            {% if form.room_type.errors %}<div class="text-danger text-xs mt-1">{{ form.room_type.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Floor *</label>
+                            {{ form.floor }}
+                            {% if form.floor.errors %}<div class="text-danger text-xs mt-1">{{ form.floor.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Status *</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}<div class="text-danger text-xs mt-1">{{ form.status.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Custom Room Price (NGN)</label>
+                            {{ form.price }}
+                            <small class="form-text text-muted d-block mt-1">Overrides standard base price (base: NGN {{ room.room_type.base_price }}).</small>
+                            {% if form.price.errors %}<div class="text-danger text-xs mt-1">{{ form.price.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Room Photo</label>
+                            {% if room.image %}
+                                <div class="mb-2">
+                                    <img src="{{ room.image.url }}" alt="Room {{ room.number }}" class="img-thumbnail" style="max-height: 90px;">
+                                </div>
+                            {% endif %}
+                            {{ form.image }}
+                            {% if form.image.errors %}<div class="text-danger text-xs mt-1">{{ form.image.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label font-weight-bold">Amenities</label>
+                            <div class="row g-2 border rounded p-3 bg-light">{% for amenity in form.amenities %}<div class="col-md-4 col-6"><label class="form-check d-flex gap-2 align-items-center">{{ amenity.tag }}<span>{{ amenity.choice_label }}</span></label></div>{% endfor %}</div>
+                            <small class="form-text text-muted d-block mt-1">Select every amenity available in this room.</small>
+                            {% if form.amenities.errors %}<div class="text-danger text-xs mt-1">{{ form.amenities.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-12 mb-3"><label class="form-label font-weight-bold">Additional room images</label>{{ form.gallery_images }}<small class="form-text text-muted d-block mt-1">Select multiple images to append to the room gallery.</small></div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label font-weight-bold">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}<div class="text-danger text-xs mt-1">{{ form.description.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label font-weight-bold">Internal Operational Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}<div class="text-danger text-xs mt-1">{{ form.notes.errors|join:", " }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch">
+                                {{ form.is_active }}
+                                <label class="form-check-label font-weight-bold ms-2" for="{{ form.is_active.id_for_label }}">Active Room</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch">
+                                {{ form.is_sellable }}
+                                <label class="form-check-label font-weight-bold ms-2" for="{{ form.is_sellable.id_for_label }}">Sellable / Bookable</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'frontend:portal-rooms' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary bg-gradient-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

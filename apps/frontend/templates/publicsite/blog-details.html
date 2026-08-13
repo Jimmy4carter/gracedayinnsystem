@@ -1,12 +1,44 @@
 {% extends 'base_public.html' %}
-{% block title %}GRACEDAY INN | Article{% endblock %}
+{% load static %}
+{% block title %}GRACEDAY INN | Journal Article{% endblock %}
 {% block content %}
-<article class="card border-0 shadow-sm">
-    <div class="card-body p-4">
-        <h2>Hospitality Excellence Through Smart Operations</h2>
-        <p class="text-muted">Published by GRACEDAY INN Team</p>
-        <p>At GRACEDAY INN, we use a connected management workflow for reservations, room status, billing, and guest requests. This means faster check-ins, cleaner rooms, and transparent service delivery.</p>
-        <p>Our portal gives every department a unified view of operations so guests receive timely support throughout their stay.</p>
+<div class="breadcrumb-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="breadcrumb-text">
+                    <h2>GraceDay Journal</h2>
+                </div>
+            </div>
+        </div>
     </div>
-</article>
+</div>
+
+<section class="blog-details-section spad">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="blog-details-text">
+                    <span class="b-tag text-uppercase small text-muted">Hospitality & Technology</span>
+                    <h2 class="mt-2 mb-3">Hospitality Excellence Through Smart Operations</h2>
+                    <div class="bd-author mb-4 d-flex align-items-center">
+                        <div class="bp-text">
+                            <h6>Published by GraceDay Inn Management Team</h6>
+                            <span class="small text-muted">August 12, 2026</span>
+                        </div>
+                    </div>
+                    <p class="lead">At GraceDay Inn, we believe luxury is defined by effortless service. By integrating modern digital architecture with warm Nigerian hospitality, every guest journey is seamlessly managed from quote to check-out.</p>
+                    <p>Our unified management system connects front-desk reception, housekeeping workflows, in-room service fulfillment, and automated billing into a single real-time operational engine. This eliminates unnecessary delays at check-in, guarantees pristine room readiness, and delivers transparent, instant invoices.</p>
+                    <blockquote class="my-4 p-4 border-start border-4 border-warning bg-light">
+                        <p class="fst-italic mb-0">"True hospitality lies in anticipating the guest's needs long before they ask. Technology allows us to execute that vision with precision."</p>
+                    </blockquote>
+                    <p>Guests can manage their reservations, request in-room dining, order laundry services, and review folios directly from their personal mobile portal — all backed by our 24/7 dedicated support team.</p>
+                    <div class="mt-5 pt-3 border-top">
+                        <a href="{% url 'frontend:public-blog' %}" class="btn btn-outline-dark"><i class="fa fa-arrow-left me-2"></i>Back to Journal</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 {% endblock %}

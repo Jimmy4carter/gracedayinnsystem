@@ -1,0 +1,24 @@
+{% extends 'base_portal.html' %}
+{% block title %}Privacy Requests | GRACEDAY INN{% endblock %}
+{% block page_title %}Privacy Requests{% endblock %}
+{% block content %}
+{% if not is_privacy_manager %}
+<div class="card mb-4"><div class="card-body">
+  <h5>Request access or a privacy action</h5>
+  <p class="text-sm">Submit a request to export your information, correct a record, or anonymize your account. Requests are reviewed before execution.</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="command" value="submit">
+    <select class="form-select mb-3" name="request_type" required>{% for value, label in request_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+    <textarea class="form-control mb-3" name="details" rows="4" placeholder="Describe the records or correction you need"></textarea>
+    <button class="btn bg-gradient-dark">Submit request</button>
+  </form>
+</div></div>
+{% endif %}
+<div class="card"><div class="card-body"><h5>{% if is_privacy_manager %}Request queue{% else %}Your requests{% endif %}</h5>
+<div class="table-responsive"><table class="table align-items-center"><thead><tr>{% if is_privacy_manager %}<th>Guest</th>{% endif %}<th>Reference</th><th>Type</th><th>Status</th><th>Created</th><th>Action</th></tr></thead><tbody>
+{% for item in privacy_requests %}<tr>{% if is_privacy_manager %}<td>{{ item.guest.get_full_name|default:item.guest.username }}<br><small>{{ item.guest.email }}</small>{% if item.guest.privacy_legal_hold %}<span class="badge bg-danger">Legal hold</span>{% endif %}</td>{% endif %}<td><small>{{ item.reference }}</small></td><td>{{ item.get_request_type_display }}{% if item.details %}<br><small>{{ item.details }}</small>{% endif %}</td><td><span class="badge bg-gradient-info">{{ item.get_status_display }}</span>{% if item.decision_reason %}<br><small>{{ item.decision_reason }}</small>{% endif %}</td><td>{{ item.created_at }}</td><td>
+{% if item.status == 'completed' and item.artifact %}<a class="btn btn-sm btn-outline-primary" href="{% url 'frontend:portal-privacy-download' item.id %}">Download export</a>{% endif %}
+{% if is_privacy_manager and item.status == 'submitted' %}<form method="post" class="mb-2">{% csrf_token %}<input type="hidden" name="request_id" value="{{ item.id }}"><input class="form-control form-control-sm mb-1" name="reason" placeholder="Decision note"><button class="btn btn-sm btn-success" name="command" value="approve">Approve</button> <button class="btn btn-sm btn-outline-danger" name="command" value="reject">Reject</button></form>{% endif %}
+{% if is_privacy_manager and item.status == 'approved' %}<form method="post">{% csrf_token %}<input type="hidden" name="request_id" value="{{ item.id }}"><button class="btn btn-sm bg-gradient-dark" name="command" value="execute">Execute</button></form>{% endif %}
+</td></tr>{% empty %}<tr><td colspan="6">No privacy requests.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+{% endblock %}

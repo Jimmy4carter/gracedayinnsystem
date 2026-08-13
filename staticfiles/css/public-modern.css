@@ -1,0 +1,243 @@
+:root {
+  --gdi-ink: #17211f;
+  --gdi-muted: #5f6966;
+  --gdi-gold: #c79735;
+  --gdi-gold-dark: #926717;
+  --gdi-cream: #f7f3ea;
+  --gdi-white: #fff;
+  --gdi-radius: 18px;
+  --gdi-shadow: 0 18px 50px rgba(24, 33, 31, .14);
+}
+
+html { scroll-behavior: smooth; }
+body { color: var(--gdi-ink); background: #fff; }
+a, button, input, select, textarea { transition: border-color .2s, box-shadow .2s, color .2s, background .2s, transform .2s; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(199, 151, 53, .45); outline-offset: 3px;
+}
+.skip-link { position: fixed; left: 16px; top: -80px; z-index: 10001; padding: 12px 18px; color: #fff; background: var(--gdi-ink); border-radius: 8px; }
+.skip-link:focus { top: 14px; color: #fff; }
+.header-section { background: rgba(255,255,255,.97); box-shadow: 0 1px 0 rgba(23,33,31,.08); }
+.header-section .menu-item .nav-menu .mainmenu ul li a { letter-spacing: .01em; }
+.hero-section { min-height: 760px; }
+.hero-section::after { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgba(12,19,18,.82) 0%, rgba(12,19,18,.46) 52%, rgba(12,19,18,.12) 100%); pointer-events: none; }
+.hero-section > .container { position: relative; z-index: 2; }
+.hero-text h1 { letter-spacing: -.03em; line-height: 1; }
+.hero-text p { max-width: 600px; font-size: 18px; line-height: 1.75; }
+.primary-btn, .booking-form button, .room-booking button { border-radius: 999px; letter-spacing: .06em; }
+.booking-form { border-radius: var(--gdi-radius); box-shadow: var(--gdi-shadow); padding: 28px; max-height: 620px; overflow-y: auto; }
+.booking-form h3 { margin-bottom: 4px; }
+.booking-intro { color: var(--gdi-muted); margin-bottom: 20px; }
+.booking-form label { font-weight: 600; color: var(--gdi-ink); }
+.booking-form input, .booking-form select, .booking-form textarea { border-radius: 10px !important; border: 1px solid #d8ddd9 !important; min-height: 46px; }
+.booking-form textarea { min-height: 78px; }
+.booking-extras { border: 0; padding: 0; margin: 0 0 18px; }
+.booking-extras legend { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.booking-extras ul { list-style: none; padding: 0; margin: 0; }
+.booking-extras label { display: flex; gap: 8px; align-items: center; font-weight: 500; }
+.booking-extras input { min-height: auto !important; }
+.section-title h2 { letter-spacing: -.025em; }
+.service-item, .room-item { border-radius: var(--gdi-radius); overflow: hidden; border: 1px solid #ece9e1; box-shadow: 0 10px 30px rgba(24,33,31,.07); }
+.service-item { height: 100%; padding: 34px 28px; }
+.room-item img { aspect-ratio: 16 / 10; object-fit: cover; width: 100%; }
+.room-item .ri-text { padding: 28px; }
+.room-item .ri-text table thead, .room-details-item table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.footer-section { margin-top: 0; }
+#gdi-chat-toggle { font-weight: 700; }
+
+@media (max-width: 991px) {
+  .hero-section { min-height: auto; padding: 90px 0 64px; }
+  .hero-section::after { background: rgba(12,19,18,.62); }
+  .hero-text { padding-top: 35px; padding-bottom: 35px; }
+  .hero-text h1 { font-size: clamp(42px, 12vw, 64px); }
+  .booking-form { max-height: none; margin-top: 20px; }
+}
+
+@media (max-width: 575px) {
+  .header-section .menu-item { padding: 14px 0; }
+  .header-section .logo img { max-width: 120px; }
+  .hero-section { padding-top: 54px; }
+  .hero-text p { font-size: 16px; line-height: 1.65; }
+  .booking-form { padding: 24px 20px; }
+  .spad { padding: 64px 0; }
+  .footer-section .footer-col { flex: 0 0 100%; max-width: 100%; margin-bottom: 28px; }
+  #gdi-chat-toggle { right: 10px !important; bottom: 10px !important; width: 54px; height: 54px; padding: 0 !important; font-size: 0; }
+  #gdi-chat-toggle::after { content: "Chat"; font-size: 12px; }
+  #gdi-chat { right: 10px !important; bottom: 70px !important; width: calc(100vw - 20px) !important; height: min(520px, calc(100vh - 90px)) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+.quote-review { background: var(--gdi-cream); min-height: 70vh; }
+.quote-card { background: #fff; border-radius: 22px; padding: clamp(24px, 5vw, 48px); box-shadow: var(--gdi-shadow); }
+.quote-card h1 { font-size: clamp(36px, 6vw, 56px); margin-bottom: 10px; }
+.quote-card h2 { font-size: 22px; margin: 32px 0 14px; }
+.quote-eyebrow { color: var(--gdi-gold-dark); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.quote-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 28px; }
+.quote-grid > div { padding: 16px; background: var(--gdi-cream); border-radius: 12px; }
+.quote-grid span, .quote-grid strong { display: block; }
+.quote-grid span { color: var(--gdi-muted); font-size: 13px; margin-bottom: 4px; }
+.quote-lines > div { display: flex; justify-content: space-between; gap: 24px; padding: 10px 0; border-bottom: 1px solid #ece9e1; }
+.quote-lines dt { font-weight: 500; }.quote-lines dd { margin: 0; font-weight: 700; text-align: right; }
+.quote-lines .discount { color: #26734d; }.quote-lines .quote-total { font-size: 21px; border-bottom: 0; padding-top: 18px; }
+.policy-box { padding: 20px; background: #f5f7f6; border-left: 4px solid var(--gdi-gold); border-radius: 10px; }
+.policy-box h2 { margin-top: 0; }.hold-expiry { margin: 24px 0; color: var(--gdi-muted); }
+.quote-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.text-button { border: 0; background: transparent; color: var(--gdi-muted); text-decoration: underline; padding: 10px; }
+@media(max-width:575px){.quote-grid{grid-template-columns:1fr}.quote-actions,.quote-actions form,.quote-actions button{width:100%}}
+
+/* =========================================================
+   PUBLIC SITE BRAND FORM & AUTH STYLING EXTENSIONS
+   ========================================================= */
+
+/* Public Auth Cards & Layout */
+.public-auth-section {
+  background: var(--gdi-cream);
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  padding: 60px 0;
+}
+
+.public-auth-card {
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: var(--gdi-shadow);
+  padding: 40px;
+  border: 1px solid #ece9e1;
+}
+
+.public-auth-card h2 {
+  color: var(--gdi-ink);
+  font-weight: 700;
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.public-auth-card p.subtitle {
+  color: var(--gdi-muted);
+  font-size: 15px;
+  margin-bottom: 24px;
+}
+
+/* Public Form Elements */
+.gdi-form-group {
+  margin-bottom: 20px;
+}
+
+.gdi-form-group label {
+  display: block;
+  font-weight: 600;
+  color: var(--gdi-ink);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.gdi-input, 
+.public-auth-card input[type="text"], 
+.public-auth-card input[type="email"], 
+.public-auth-card input[type="password"],
+.public-auth-card select,
+.room-booking input,
+.room-booking select,
+.room-booking textarea {
+  width: 100%;
+  background: #ffffff !important;
+  border: 1px solid #d8ddd9 !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  font-size: 15px !important;
+  color: var(--gdi-ink) !important;
+  transition: all 0.2s ease !important;
+}
+
+.gdi-input:focus, 
+.public-auth-card input:focus, 
+.public-auth-card select:focus,
+.room-booking input:focus,
+.room-booking select:focus,
+.room-booking textarea:focus {
+  border-color: var(--gdi-gold) !important;
+  box-shadow: 0 0 0 3px rgba(199, 151, 53, 0.25) !important;
+  outline: none !important;
+}
+
+/* Primary Brand Gold Buttons */
+.gdi-btn-gold, .room-booking button[type="submit"] {
+  display: inline-block;
+  width: 100%;
+  background: linear-gradient(135deg, #dfa974 0%, #c89b3c 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  font-size: 14px !important;
+  padding: 14px 28px !important;
+  border-radius: 999px !important;
+  border: none !important;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 6px 18px rgba(200, 155, 60, 0.3);
+}
+
+.gdi-btn-gold:hover, .room-booking button[type="submit"]:hover {
+  background: linear-gradient(135deg, #c89b3c 0%, #a87d2b 100%) !important;
+  box-shadow: 0 8px 24px rgba(200, 155, 60, 0.45);
+  transform: translateY(-2px);
+  color: #ffffff !important;
+}
+
+/* Filter Bar Styling */
+.filter-bar-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(24, 33, 31, 0.08);
+  border: 1px solid #ece9e1;
+}
+
+.filter-bar-card label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gdi-muted);
+}
+
+/* Extras Checkboxes */
+.booking-extras {
+  background: var(--gdi-cream);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #ece9e1;
+}
+
+.booking-extras ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.booking-extras li {
+  margin-bottom: 8px;
+}
+
+.booking-extras label {
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.booking-extras input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-height: auto !important;
+  accent-color: var(--gdi-gold);
+  cursor: pointer;
+}

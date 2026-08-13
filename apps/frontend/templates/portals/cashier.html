@@ -1,0 +1,146 @@
+{% extends 'base_portal.html' %}
+{% load custom_filters %}
+{% block title %}Cashier Terminal Management | GRACEDAY INN{% endblock %}
+{% block page_title %}Cashier Terminal{% endblock %}
+{% block page_heading %}Cashier Shift &amp; Terminal Operations{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- SHIFT MANAGEMENT PANEL -->
+    <div class="col-lg-5 mb-4">
+        <div class="card border-0 shadow-sm">
+            {% if open_shift %}
+            <div class="card-header bg-gradient-success text-white d-flex align-items-center justify-content-between py-3">
+                <h6 class="text-white mb-0 font-weight-bold"><i class="fa fa-check-circle me-2"></i> Active Shift Open</h6>
+                <span class="badge bg-white text-success text-xs">LIVE</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="bg-gray-100 rounded p-3 mb-3">
+                    <div class="row text-sm">
+                        <div class="col-6">
+                            <strong class="text-xs text-uppercase text-muted d-block">Terminal</strong>
+                            <span class="text-dark font-weight-bold">{{ open_shift.terminal.name }}</span>
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-xs text-uppercase text-muted d-block">Cashier</strong>
+                            <span class="text-dark font-weight-bold">{{ request.user.get_full_name|default:request.user.username }}</span>
+                        </div>
+                    </div>
+                    <div class="row text-sm mt-2">
+                        <div class="col-6">
+                            <strong class="text-xs text-uppercase text-muted d-block">Opened At</strong>
+                            <span class="text-dark">{{ open_shift.opened_at|date:"d M Y, H:i" }}</span>
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-xs text-uppercase text-muted d-block">Opening Float</strong>
+                            <span class="text-dark font-weight-bold">₦{{ open_shift.opening_float|currency_format }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="close">
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold text-xs text-uppercase">Physical Cash Count (NGN)</label>
+                        <input class="form-control form-control-lg" type="number" step="0.01" min="0" name="counted_cash" required placeholder="Enter exact counted amount">
+                        <small class="text-muted">Count all cash in the drawer and enter the total amount precisely</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold text-xs text-uppercase">Cashier Closing Notes / Observations</label>
+                        <textarea class="form-control" name="note" rows="2" placeholder="Record any discrepancy explanations or observations..."></textarea>
+                    </div>
+                    <button class="btn bg-gradient-danger btn-lg w-100 mb-0" type="submit">
+                        <i class="fa fa-lock me-2"></i> Close Shift &amp; Reconcile Cash Drawer
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div class="card-header bg-gradient-dark text-white py-3">
+                <h6 class="text-white mb-0 font-weight-bold"><i class="fa fa-calculator me-2"></i> Start New Cashier Shift</h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="open">
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold text-xs text-uppercase">Select Terminal Station</label>
+                        <select class="form-select" name="terminal" required>
+                            {% for terminal in terminals %}
+                                <option value="{{ terminal.id }}">{{ terminal.name }}{% if terminal.location %} — {{ terminal.location }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold text-xs text-uppercase">Opening Float Amount (NGN)</label>
+                        <input class="form-control" type="number" step="0.01" min="0" name="opening_float" value="0" placeholder="Enter opening float (e.g. 5000.00)">
+                        <small class="text-muted">Record the exact cash amount placed in the drawer at shift start</small>
+                    </div>
+                    <button class="btn bg-gradient-primary btn-lg w-100 mb-0" type="submit">
+                        <i class="fa fa-play-circle me-2"></i> Open Cashier Shift
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- RECENT SHIFTS TABLE -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                <h6 class="font-weight-bold mb-0 text-dark"><i class="fa fa-history me-2 text-info"></i> Shift Reconciliation History</h6>
+                <span class="text-xs text-muted">Cash Drawer Audit Trail</span>
+            </div>
+            <div class="card-body px-0 pt-2 pb-2">
+                <div class="table-responsive p-0">
+                    <table class="table align-items-center mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-3">Terminal &amp; Cashier</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Opening Float</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">System Expected</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Counted</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Variance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shift in recent_shifts %}
+                            <tr>
+                                <td class="ps-3">
+                                    <strong class="text-dark text-xs">{{ shift.terminal.name }}</strong>
+                                    <small class="d-block text-muted">{{ shift.cashier.get_full_name|default:shift.cashier.username }}</small>
+                                    <small class="d-block text-muted text-xxs">{{ shift.opened_at|date:"d M H:i" }}{% if shift.closed_at %} → {{ shift.closed_at|date:"H:i" }}{% endif %}</small>
+                                </td>
+                                <td class="align-middle text-center">
+                                    {% if shift.status == 'closed' %}
+                                        <span class="badge bg-gradient-secondary badge-sm">Closed</span>
+                                    {% else %}
+                                        <span class="badge bg-gradient-success badge-sm">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle text-center text-xs font-weight-bold">₦{{ shift.opening_float|currency_format }}</td>
+                                <td class="align-middle text-center text-xs font-weight-bold">₦{{ shift.expected_cash|default:0|currency_format }}</td>
+                                <td class="align-middle text-center text-xs font-weight-bold">₦{{ shift.counted_cash|default:0|currency_format }}</td>
+                                <td class="align-middle text-center">
+                                    {% if shift.variance and shift.variance != 0 %}
+                                        <span class="badge bg-gradient-danger">₦{{ shift.variance|currency_format }}</span>
+                                    {% elif shift.status == 'closed' %}
+                                        <span class="badge bg-gradient-success">₦0.00</span>
+                                    {% else %}
+                                        <span class="text-muted text-xs">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-3 text-muted">No shift records yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

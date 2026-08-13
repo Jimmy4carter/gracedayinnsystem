@@ -1,0 +1,22 @@
+{% extends 'base_portal.html' %}
+{% block title %}{{ case.subject }} | Inquiry{% endblock %}
+{% block page_title %}Inquiry {{ case.reference }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card mb-4"><div class="card-body">
+      <h4>{{ case.subject }}</h4><p>{{ case.requester_name }} · {{ case.requester_email }} · {{ case.get_category_display }}</p>
+      {% for item in case.messages.all %}<div class="border rounded p-3 mb-2 {% if item.is_internal %}bg-light{% endif %}"><strong>{{ item.sender_name }}{% if item.is_internal %} — Internal note{% endif %}</strong><small class="float-end">{{ item.created_at }}</small><div class="mt-2">{{ item.body|linebreaks }}</div></div>{% endfor %}
+      {% if case.attachments.exists %}<h5 class="mt-4">Protected attachments</h5>{% for attachment in case.attachments.all %}<div class="d-flex justify-content-between border rounded p-2 mb-2"><span>{{ attachment.original_name }} · {{ attachment.size|filesizeformat }}</span><a class="btn btn-sm btn-outline-primary mb-0" href="{% url 'frontend:portal-inquiry-attachment-download' attachment.id %}">Download</a></div>{% endfor %}{% endif %}
+    </div></div>
+    <div class="card"><div class="card-body"><h5>Reply or internal note</h5><form method="post">{% csrf_token %}<input type="hidden" name="command" value="reply"><textarea class="form-control mb-2" name="body" required></textarea><label><input type="checkbox" name="internal"> Internal note only</label><br><button class="btn bg-gradient-dark mt-2">Add message</button></form></div></div>
+  </div>
+  <div class="col-lg-4"><div class="card"><div class="card-body"><h5>Workflow</h5><p>Status: <strong>{{ case.get_status_display }}</strong><br>Owner: {{ case.owner.username|default:'Unassigned' }}</p>
+    {% if case.status == 'new' %}<form method="post">{% csrf_token %}<input type="hidden" name="command" value="acknowledge"><button class="btn btn-outline-primary w-100">Acknowledge & assign me</button></form>{% endif %}
+    {% if case.status == 'acknowledged' or case.status == 'awaiting_guest' %}<form method="post">{% csrf_token %}<input type="hidden" name="command" value="start"><button class="btn btn-outline-warning w-100">Start work</button></form>{% endif %}
+    {% if case.status == 'in_progress' %}<form method="post">{% csrf_token %}<input type="hidden" name="command" value="await_guest"><button class="btn btn-outline-secondary w-100">Await guest</button></form><form method="post">{% csrf_token %}<input type="hidden" name="command" value="resolve"><textarea class="form-control mb-2" name="outcome" placeholder="Resolution" required></textarea><button class="btn bg-gradient-success w-100">Resolve</button></form>{% endif %}
+    {% if case.status == 'resolved' %}<form method="post">{% csrf_token %}<input type="hidden" name="command" value="close"><button class="btn bg-gradient-dark w-100">Close</button></form>{% endif %}
+    <hr><h6>Attach evidence</h6><form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="command" value="attachment"><input class="form-control mb-2" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.txt" required><button class="btn btn-outline-primary w-100">Upload protected file</button><small>PDF, JPEG, PNG or text; maximum 5 MB.</small></form>
+  </div></div></div>
+</div>
+{% endblock %}

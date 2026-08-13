@@ -1,0 +1,12 @@
+{% extends 'base_public.html' %}
+{% block title %}Frequently Asked Questions | GRACEDAY INN{% endblock %}
+{% block meta_description %}Answers about direct booking, stays, payments, hotel services and accessibility at GRACEDAY INN Abuja.{% endblock %}
+{% block content %}
+<div class="breadcrumb-section"><div class="container"><div class="breadcrumb-text"><h1>Frequently asked questions</h1><p>Clear answers for planning and managing your stay.</p></div></div></div>
+<section class="spad"><div class="container">
+  {% for category, items in faq_categories %}<section class="mb-5" aria-labelledby="faq-category-{{ forloop.counter }}"><h2 id="faq-category-{{ forloop.counter }}" class="mb-3">{{ category }}</h2><div class="accordion" id="faq-{{ forloop.counter }}">
+    {% for item in items %}<details class="card mb-2"><summary class="card-header font-weight-bold">{{ item.question }}</summary><div class="card-body">{{ item.answer|linebreaks }}</div></details>{% endfor %}
+  </div></section>{% empty %}<p>Our FAQ is being reviewed. Please <a href="{% url 'frontend:public-contact' %}">contact the hotel</a> for assistance.</p>{% endfor %}
+</div></section>
+<script type="application/ld+json">{{ faq_schema_json|safe }}</script>
+{% endblock %}

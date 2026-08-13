@@ -1,4 +1,5 @@
 {% extends 'base_portal.html' %}
+{% load custom_filters %}
 {% block title %}Dashboard | GRACEDAY INN{% endblock %}
 {% block page_title %}Operations Dashboard{% endblock %}
 {% block content %}
@@ -6,7 +7,7 @@
     <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Reservations</small><h4>{{ stats.reservation_count }}</h4></div></div></div>
     <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Check-ins Today</small><h4>{{ stats.checkin_today }}</h4></div></div></div>
     <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Available Rooms</small><h4>{{ stats.available_rooms }}</h4></div></div></div>
-    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Open Balance</small><h4>₦{{ stats.invoice_balance }}</h4></div></div></div>
+    <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Open Balance</small><h4>₦{{ stats.invoice_balance|currency_format }}</h4></div></div></div>
     <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Service SLA (Avg Min)</small><h4>{{ stats.service_sla_minutes }}</h4></div></div></div>
     <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Housekeeping Turnaround (Avg Min)</small><h4>{{ stats.housekeeping_turnaround_minutes }}</h4></div></div></div>
 </div>
@@ -23,7 +24,7 @@
                     </select>
                 </form>
             </div>
-            <canvas id="operationsTrendChart" height="120"></canvas>
+            <div style="height:320px;position:relative;max-height:320px;overflow:hidden"><canvas id="operationsTrendChart"></canvas></div>
         </div></div>
     </div>
     <div class="col-lg-4">
@@ -46,12 +47,23 @@
             <h5>Recent Reservations</h5>
             <div class="table-responsive">
                 <table class="table table-sm">
-                    <thead><tr><th>Code</th><th>Guest</th><th>Room</th><th>Status</th><th>Dates</th></tr></thead>
+                    <thead><tr><th>Code</th><th>Guest</th><th>Room</th><th>Status</th><th>Dates</th><th>Actions</th></tr></thead>
                     <tbody>
                         {% for item in recent_reservations %}
-                            <tr><td>{{ item.reservation_number }}</td><td>{{ item.guest.get_full_name|default:item.guest.username }}</td><td>{{ item.room.number }}</td><td>{{ item.get_status_display }}</td><td>{{ item.check_in_date }} - {{ item.check_out_date }}</td></tr>
+                            <tr>
+                                <td>{{ item.reservation_number }}</td>
+                                <td>{{ item.guest.get_full_name|default:item.guest.username }}</td>
+                                <td>{{ item.room.number }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>{{ item.check_in_date }} - {{ item.check_out_date }}</td>
+                                <td>
+                                    {% if item.invoice %}
+                                        <a class="btn btn-outline-dark btn-sm mb-0" href="{% url 'frontend:portal-invoice-print' item.invoice.id %}">Invoice</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
                         {% empty %}
-                            <tr><td colspan="5">No reservations yet.</td></tr>
+                            <tr><td colspan="6">No reservations yet.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -72,7 +84,8 @@
 
     const ctx = document.getElementById('operationsTrendChart');
     if (ctx) {
-        new Chart(ctx, {
+        if (window.operationsTrendChart) window.operationsTrendChart.destroy();
+        window.operationsTrendChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: trendLabels,

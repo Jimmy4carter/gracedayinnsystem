@@ -1,0 +1,152 @@
+{% extends 'base_portal.html' %}
+{% load custom_filters %}
+{% block title %}Manage Reservation {{ reservation.reservation_number }} | GRACEDAY INN{% endblock %}
+
+{% block page_title %}{{ reservation.reservation_number }} — {{ reservation.guest.get_full_name|default:reservation.guest.username }}{% endblock %}
+
+{% block content %}
+<!-- FINANCIAL & PAYMENT SUMMARY BANNER -->
+<div class="card border-0 shadow-sm mb-4 bg-gray-100">
+    <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h5 class="mb-1 font-weight-bold text-dark">
+                <i class="fa fa-bookmark text-primary me-2"></i>Reservation {{ reservation.reservation_number }}
+                <span class="badge bg-gradient-info text-xs ms-2">{{ reservation.get_status_display }}</span>
+            </h5>
+            <p class="text-sm text-muted mb-0">
+                Guest: <strong>{{ reservation.guest.get_full_name|default:reservation.guest.username }}</strong> ({{ reservation.guest.email|default:'No email' }})
+                | Room: <strong>Room {{ reservation.room.number }}</strong> ({{ reservation.room.room_type.name }})
+                {% if reservation.guest.id_document %}
+                    <a href="{{ reservation.guest.id_document.url }}" target="_blank" class="badge bg-gradient-dark ms-2 text-xs"><i class="fa fa-id-card me-1"></i> ID Doc</a>
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if reservation.invoice %}
+                <div class="text-end me-3">
+                    <small class="text-xs text-uppercase font-weight-bold text-muted d-block">Invoice Balance</small>
+                    <span class="{% if reservation.invoice.balance > 0 %}text-danger{% else %}text-success{% endif %} font-weight-bolder h5 mb-0">₦{{ reservation.invoice.balance|currency_format }}</span>
+                </div>
+                <button type="button" class="btn btn-outline-dark btn-sm mb-0" onclick="openPrintOptionsModal({{ reservation.invoice.id }}, '{{ reservation.invoice.invoice_number }}', '{{ reservation.guest.get_full_name|default:reservation.guest.username|escapejs }}', '₦{{ reservation.invoice.total|currency_format }}', '₦{{ reservation.invoice.balance|currency_format }}', '{% if reservation.invoice.balance > 0 %}{% url "frontend:portal-payments" %}?invoice_id={{ reservation.invoice.id }}{% endif %}')">
+                    <i class="fa fa-print me-1"></i> Print / Options
+                </button>
+                {% if reservation.invoice.balance > 0 %}
+                    <a href="{% url 'frontend:portal-payments' %}?invoice_id={{ reservation.invoice.id }}" class="btn bg-gradient-success btn-sm mb-0">
+                        <i class="fa fa-credit-card me-1"></i> Pay Balance
+                    </a>
+                {% endif %}
+            {% else %}
+                <span class="badge bg-gradient-secondary">No invoice generated</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header pb-0"><h6 class="font-weight-bold mb-0">Stay Amendment</h6></div>
+            <div class="card-body">
+                <form method="post" class="row g-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="command" value="amend">
+                    <div class="col-6">
+                        <label class="form-label text-xs font-weight-bold">Check-In</label>
+                        <input class="form-control" type="date" name="check_in_date" value="{{ reservation.check_in_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-xs font-weight-bold">Check-Out</label>
+                        <input class="form-control" type="date" name="check_out_date" value="{{ reservation.check_out_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label text-xs font-weight-bold">Adults</label>
+                        <input class="form-control" type="number" min="1" name="num_adults" value="{{ reservation.num_adults }}">
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label text-xs font-weight-bold">Children</label>
+                        <input class="form-control" type="number" min="0" name="num_children" value="{{ reservation.num_children }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-xs font-weight-bold">Audit Reason</label>
+                        <input class="form-control" name="reason" placeholder="Reason for amendment" required>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <button class="btn bg-gradient-dark btn-sm mb-0">Save Amendment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header pb-0"><h6 class="font-weight-bold mb-0">Room Transfer / Move</h6></div>
+            <div class="card-body">
+                <p class="text-sm">Current Room: <strong>Room {{ reservation.room.number }}</strong> ({{ reservation.room.room_type.name }})</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="command" value="move">
+                    <label class="form-label text-xs font-weight-bold">Select Target Room</label>
+                    <select class="form-select mb-2" name="room" required>
+                        {% for room in available_rooms %}
+                            <option value="{{ room.id }}">Room {{ room.number }} — {{ room.room_type.name }} (₦{{ room.current_price|currency_format }}/night) [{{ room.get_status_display }}]</option>
+                        {% endfor %}
+                    </select>
+                    <input class="form-control mb-2" name="reason" placeholder="Audit reason for room move" required>
+                    <button class="btn btn-outline-warning btn-sm mb-0">Transfer Room</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header pb-0"><h6 class="font-weight-bold mb-0">Registered Companions</h6></div>
+            <div class="card-body">
+                {% for person in reservation.companions.all %}
+                    <div class="border-bottom py-2 d-flex justify-content-between">
+                        <div>
+                            <strong>{{ person.full_name }}</strong>
+                            <small class="text-muted d-block">{{ person.nationality }} · {{ person.identity_type }} ending in {{ person.identity_last_four|default:'—' }}</small>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-sm text-muted">No companions recorded for this stay.</p>
+                {% endfor %}
+
+                <form method="post" class="row g-2 mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="command" value="companion">
+                    <div class="col-6"><input class="form-control form-control-sm" name="full_name" placeholder="Full Name" required></div>
+                    <div class="col-6"><input class="form-control form-control-sm" name="nationality" placeholder="Nationality"></div>
+                    <div class="col-6"><input class="form-control form-control-sm" name="identity_type" placeholder="ID Type (Passport, NIN)"></div>
+                    <div class="col-6"><input class="form-control form-control-sm" maxlength="4" name="identity_last_four" placeholder="ID Last 4 Digits"></div>
+                    <div class="col-12"><button class="btn btn-outline-primary btn-sm mb-0">Add Companion</button></div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header pb-0"><h6 class="font-weight-bold mb-0">Privacy &amp; Data Consent Log</h6></div>
+            <div class="card-body">
+                {% for consent in consents %}
+                    <div class="border-bottom py-2 text-xs">
+                        <strong>{{ consent.purpose }}</strong> (v{{ consent.wording_version }})
+                        <span class="badge {% if consent.granted %}bg-gradient-success{% else %}bg-gradient-danger{% endif %} text-xxs ms-1">{{ consent.granted|yesno:'Granted,Withdrawn' }}</span>
+                        <span class="text-muted d-block">{{ consent.created_at|date:"d M Y H:i" }}</span>
+                    </div>
+                {% empty %}
+                    <p class="text-sm text-muted">No consent records.</p>
+                {% endfor %}
+
+                <form method="post" class="row g-2 mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="command" value="consent">
+                    <div class="col-5"><input class="form-control form-control-sm" name="purpose" placeholder="Purpose (e.g. Wi-Fi, Marketing)" required></div>
+                    <div class="col-4"><input class="form-control form-control-sm" name="wording_version" placeholder="Version (1.0)" required></div>
+                    <div class="col-3 d-flex align-items-center"><label class="text-xs mb-0"><input type="checkbox" name="granted"> Granted</label></div>
+                    <div class="col-12"><button class="btn btn-outline-dark btn-sm mb-0">Record Consent</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

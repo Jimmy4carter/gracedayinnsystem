@@ -1,0 +1,45 @@
+{% extends 'base_portal.html' %}
+{% load custom_filters %}
+{% block title %}Corporate & Discounts | GraceDay Inn{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4"><div><h3>Corporate, groups & discounts</h3><p class="text-muted mb-0">Contract accounts, room blocks and approval-controlled concessions.</p></div></div>
+  <div class="row">
+    {% if can_approve %}<div class="col-lg-6 mb-4"><div class="card"><div class="card-body"><h5>New corporate account</h5>
+      <form method="post" class="row g-2">{% csrf_token %}<input type="hidden" name="command" value="corporate_create">
+        <div class="col-md-6"><label class="form-label">Company name</label><input class="form-control" name="name" required></div>
+        <div class="col-md-6"><label class="form-label">Account code</label><input class="form-control" name="account_code" required></div>
+        <div class="col-md-6"><label class="form-label">Billing email</label><input class="form-control" type="email" name="billing_email" required></div>
+        <div class="col-md-6"><label class="form-label">Phone</label><input class="form-control" name="phone"></div>
+        <div class="col-md-6"><label class="form-label">Credit limit (NGN)</label><input class="form-control" type="number" min="0" step="0.01" name="credit_limit"></div>
+        <div class="col-md-6"><label class="form-label">Payment terms (days)</label><input class="form-control" type="number" min="0" name="payment_terms_days"></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Create account</button></div>
+      </form></div></div></div>{% endif %}
+    <div class="col-lg-6 mb-4"><div class="card"><div class="card-body"><h5>New group booking</h5>
+      <form method="post" class="row g-2">{% csrf_token %}<input type="hidden" name="command" value="group_create">
+        <div class="col-md-6"><label class="form-label">Group name</label><input class="form-control" name="name" required></div>
+        <div class="col-md-6"><label class="form-label">Corporate account</label><select class="form-select" name="corporate_account"><option value="">Direct group</option>{% for account in corporate_accounts %}<option value="{{ account.id }}">{{ account.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label">Arrival</label><input class="form-control" type="date" name="arrival_date" required></div>
+        <div class="col-md-4"><label class="form-label">Departure</label><input class="form-control" type="date" name="departure_date" required></div>
+        <div class="col-md-4"><label class="form-label">Room target</label><input class="form-control" type="number" min="1" name="room_target" value="1" required></div>
+        <div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="2"></textarea></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Open group</button></div>
+      </form></div></div></div>
+  </div>
+
+  <div class="row"><div class="col-lg-5 mb-4"><div class="card"><div class="card-body"><h5>Request a discount</h5>
+    <form method="post" class="row g-2">{% csrf_token %}<input type="hidden" name="command" value="discount_request">
+      <div class="col-12"><label class="form-label">Reservation</label><select class="form-select" name="reservation" required>{% for item in active_reservations %}<option value="{{ item.id }}">{{ item.reservation_number }} · {{ item.guest.get_full_name|default:item.guest.username }} · NGN {{ item.total_amount|currency_format }}</option>{% endfor %}</select></div>
+      <div class="col-md-4"><label class="form-label">Amount</label><input class="form-control" type="number" min="0.01" step="0.01" name="amount" required></div>
+      <div class="col-md-8"><label class="form-label">Reason</label><input class="form-control" name="reason" required></div>
+      <div class="col-12"><button class="btn btn-outline-primary" type="submit">Submit for approval</button></div>
+    </form></div></div></div>
+    <div class="col-lg-7 mb-4"><div class="card"><div class="card-body"><h5>Discount approval queue</h5><div class="table-responsive"><table class="table align-items-center"><thead><tr><th>Reservation</th><th>Amount</th><th>Requester</th><th>Status</th><th>Decision</th></tr></thead><tbody>
+      {% for item in discount_requests %}<tr><td>{{ item.reservation.reservation_number }}<small class="d-block">{{ item.reason }}</small></td><td>NGN {{ item.amount|currency_format }}</td><td>{{ item.requested_by.username }}</td><td>{{ item.get_status_display }}</td><td>{% if item.status == 'pending' and can_approve %}<form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="discount_request" value="{{ item.id }}"><button class="btn btn-sm btn-success" name="command" value="discount_approve">Approve</button><button class="btn btn-sm btn-outline-danger" name="command" value="discount_reject">Reject</button></form>{% else %}{{ item.reviewed_by|default:'—' }}{% endif %}</td></tr>{% empty %}<tr><td colspan="5">No discount requests.</td></tr>{% endfor %}
+    </tbody></table></div></div></div></div>
+  </div>
+
+  <div class="row"><div class="col-lg-6 mb-4"><div class="card"><div class="card-body"><h5>Corporate accounts</h5><div class="table-responsive"><table class="table"><thead><tr><th>Code</th><th>Name</th><th>Terms</th><th>Status</th></tr></thead><tbody>{% for item in corporate_accounts %}<tr><td>{{ item.account_code }}</td><td>{{ item.name }}</td><td>{{ item.payment_terms_days }} days</td><td>{{ item.get_status_display }}</td></tr>{% empty %}<tr><td colspan="4">No accounts.</td></tr>{% endfor %}</tbody></table></div></div></div></div>
+  <div class="col-lg-6 mb-4"><div class="card"><div class="card-body"><h5>Group bookings</h5><div class="table-responsive"><table class="table"><thead><tr><th>Group</th><th>Dates</th><th>Rooms</th><th>Status</th></tr></thead><tbody>{% for item in group_bookings %}<tr><td>{{ item.name }}<small class="d-block">{{ item.corporate_account|default:'Direct group' }}</small></td><td>{{ item.arrival_date }}–{{ item.departure_date }}</td><td>{{ item.reservations.count }}/{{ item.room_target }}</td><td>{{ item.get_status_display }}</td></tr>{% empty %}<tr><td colspan="4">No groups.</td></tr>{% endfor %}</tbody></table></div></div></div></div></div>
+</div>
+{% endblock %}

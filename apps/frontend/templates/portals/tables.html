@@ -1,8 +1,27 @@
 {% extends 'base_portal.html' %}
+{% load custom_filters %}
 {% load static %}
 {% block title %}Rooms | GRACEDAY INN{% endblock %}
 {% block page_title %}Room Inventory{% endblock %}
 {% block content %}
+{% if can_manage_sales_inventory %}
+<div class="card mb-4">
+    <div class="card-header pb-0"><h6>Date-bound sales inventory</h6></div>
+    <div class="card-body">
+        <form method="post" class="row g-3 align-items-end mb-4">{% csrf_token %}<input type="hidden" name="command" value="create_inventory_block">
+            <div class="col-md-2"><label class="form-label">Room</label><select class="form-select" name="room_id" required>{% for room in rooms %}<option value="{{ room.id }}">{{ room.number }}</option>{% endfor %}</select></div>
+            <div class="col-md-2"><label class="form-label">From</label><input class="form-control" type="date" name="start_date" required></div>
+            <div class="col-md-2"><label class="form-label">Until (exclusive)</label><input class="form-control" type="date" name="end_date" required></div>
+            <div class="col-md-2"><label class="form-label">Reason</label><select class="form-select" name="reason"><option value="owner_use">Owner use</option><option value="maintenance">Maintenance</option><option value="renovation">Renovation</option><option value="other">Other</option></select></div>
+            <div class="col-md-3"><label class="form-label">Notes</label><input class="form-control" name="notes"></div>
+            <div class="col-md-1"><button class="btn btn-primary mb-0" type="submit">Block</button></div>
+        </form>
+        <div class="table-responsive"><table class="table"><thead><tr><th>Room</th><th>Dates</th><th>Reason</th><th></th></tr></thead><tbody>
+        {% for block in inventory_blocks %}<tr><td>{{ block.room.number }}</td><td>{{ block.start_date }} to {{ block.end_date }}</td><td>{{ block.get_reason_display }}</td><td><form method="post">{% csrf_token %}<input type="hidden" name="command" value="release_inventory_block"><input type="hidden" name="block_id" value="{{ block.id }}"><button class="btn btn-sm btn-outline-danger mb-0">Release</button></form></td></tr>{% empty %}<tr><td colspan="4">No active sales blocks.</td></tr>{% endfor %}
+        </tbody></table></div>
+    </div>
+</div>
+{% endif %}
 <div class="row">
     <div class="col-12">
         <div class="card mb-4">
@@ -10,6 +29,7 @@
                 <h6>Room Inventory Table</h6>
                 {% if can_manage_rooms %}
                     <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#roomTypeModal">Add Room Category</button>
                         <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#amenityModal">
                             Add Amenity
                         </button>
@@ -106,7 +126,7 @@
 
                                 <td class="align-middle text-center">
                                     <span class="text-secondary text-xs font-weight-bold">
-                                        ₦{{ room.current_price }}
+                                        ₦{{ room.current_price|currency_format }}
                                     </span>
                                 </td>
 
@@ -130,10 +150,11 @@
 </div>
 
 {% if can_manage_rooms %}
+<div class="modal fade" id="roomTypeModal" tabindex="-1" aria-labelledby="roomTypeModalLabel" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="command" value="create_room_type"><div class="modal-header"><h5 class="modal-title" id="roomTypeModalLabel">Create Room Category</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label class="form-label">Category name</label>{{ room_type_form.name }}</div><div class="col-md-6"><label class="form-label">Slug</label>{{ room_type_form.slug }}</div><div class="col-md-6"><label class="form-label">Base price</label>{{ room_type_form.base_price }}</div><div class="col-md-6"><label class="form-label">Max occupancy</label>{{ room_type_form.max_occupancy }}</div><div class="col-12"><label class="form-label">Category amenities</label><div class="row g-2">{% for amenity in room_type_form.amenities %}<div class="col-md-4 col-6"><label class="form-check">{{ amenity.tag }} {{ amenity.choice_label }}</label></div>{% endfor %}</div></div><div class="col-12"><label class="form-label">Description</label>{{ room_type_form.description }}</div><div class="col-12"><label class="form-label">Category cover image</label>{{ room_type_form.image }}</div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary">Save Category</button></div></form></div></div></div>
 <div class="modal fade" id="amenityModal" tabindex="-1" aria-labelledby="amenityModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="post" action="{% url 'frontend:portal-rooms' %}">
+            <form method="post" action="{% url 'frontend:portal-rooms' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="amenity_submit" value="1">
                 <div class="modal-header">
@@ -176,7 +197,7 @@
 <div class="modal fade" id="roomModal" tabindex="-1" aria-labelledby="roomModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="post" action="{% url 'frontend:portal-rooms' %}">
+            <form method="post" action="{% url 'frontend:portal-rooms' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title" id="roomModalLabel">Add New Room</h5>
@@ -207,6 +228,16 @@
                             {{ room_form.status }}
                             {% if room_form.status.errors %}<div class="text-danger small">{{ room_form.status.errors|striptags }}</div>{% endif %}
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Price (Override)</label>
+                            {{ room_form.price }}
+                            {% if room_form.price.errors %}<div class="text-danger small">{{ room_form.price.errors|striptags }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Room Image</label>
+                            {{ room_form.image }}
+                            {% if room_form.image.errors %}<div class="text-danger small">{{ room_form.image.errors|striptags }}</div>{% endif %}
+                        </div>
                         <div class="col-12">
                             <label class="form-label">Description</label>
                             {{ room_form.description }}
@@ -219,14 +250,17 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label">Amenities</label>
-                            {{ room_form.amenities }}
-                            <div class="form-text">Select amenities to attach to the selected room type.</div>
+                            <div class="row g-2 border rounded p-3 bg-light">{% for amenity in room_form.amenities %}<div class="col-md-4 col-6"><label class="form-check d-flex gap-2 align-items-center">{{ amenity.tag }}<span>{{ amenity.choice_label }}</span></label></div>{% endfor %}</div>
+                            <div class="form-text">Select every amenity available in this specific room.</div>
                             {% if room_form.amenities.errors %}<div class="text-danger small">{{ room_form.amenities.errors|striptags }}</div>{% endif %}
                         </div>
+                        <div class="col-12"><label class="form-label">Additional room images</label>{{ room_form.gallery_images }}<div class="form-text">Select multiple images for the room gallery. The main room image remains the cover.</div></div>
                         <div class="col-12">
                             <div class="form-check">
                                 {{ room_form.is_active }}
                                 <label class="form-check-label" for="id_is_active">Active</label>
+                                {{ room_form.is_sellable }}
+                                <label class="form-check-label ms-3" for="id_is_sellable">Sellable</label>
                             </div>
                         </div>
                     </div>

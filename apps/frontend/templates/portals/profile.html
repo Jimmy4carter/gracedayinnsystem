@@ -4,50 +4,77 @@
 {% block page_title %}My Profile{% endblock %}
 {% block content %}
 <div class="container-fluid p-0">
-    <div class="page-header min-height-250 border-radius-lg mt-4 d-flex flex-column justify-content-end" style="background-image: url('{% static 'admin/assets/img/curved-images/curved14.jpg' %}'); background-position-y: 50%;">
-        <span class="mask bg-gradient-primary opacity-6"></span>
-        <div class="w-100 position-relative p-3">
-            <div class="d-flex justify-content-between align-items-end">
+    <div class="card stat-card mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
-                    <div class="avatar avatar-xl position-relative me-3">
-                        <img src="{% static 'admin/assets/img/bruce-mars.jpg' %}" alt="profile" class="w-100 border-radius-lg shadow-sm">
+                    <div class="avatar avatar-xl me-3 bg-gradient-primary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold fs-3" style="width:60px; height:60px;">
+                        {{ request.user.first_name|first|default:request.user.username|first|upper }}
                     </div>
                     <div>
-                        <h5 class="mb-1 text-white font-weight-bolder">{{ request.user.get_full_name|default:request.user.username }}</h5>
-                        <p class="mb-0 text-white text-sm">{{ request.user.get_role_display }}</p>
+                        <h4 class="mb-1 font-weight-bolder text-dark">{{ request.user.get_full_name|default:request.user.username }}</h4>
+                        <p class="mb-0 text-muted small"><span class="badge bg-secondary me-2">{{ request.user.get_role_display }}</span> {{ request.user.email }}</p>
                     </div>
                 </div>
-                <div class="d-flex align-items-center">
-                    <a href="{% url 'frontend:portal-billing' %}" class="btn btn-outline-white mb-0 me-1 btn-sm">Billing</a>
-                    <a href="{% url 'frontend:portal-payments' %}" class="btn btn-outline-white mb-0 btn-sm">Payments</a>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'frontend:portal-billing' %}" class="btn btn-outline-secondary btn-sm">Billing</a>
+                    <a href="{% url 'frontend:portal-payments' %}" class="btn btn-outline-secondary btn-sm">Payments</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-12 col-xl-4">
-            <div class="card h-100">
-                <div class="card-header pb-0 p-3"><h6 class="mb-0">Profile Details</h6></div>
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card stat-card h-100">
+                <div class="card-header pb-0 p-3"><h6 class="mb-0 font-weight-bold">Profile Details</h6></div>
                 <div class="card-body p-3">
-                    <p class="text-sm mb-1"><strong>Username:</strong> {{ request.user.username }}</p>
-                    <p class="text-sm mb-1"><strong>Email:</strong> {{ request.user.email|default:'-' }}</p>
-                    <p class="text-sm mb-1"><strong>Phone:</strong> {{ request.user.phone|default:'-' }}</p>
-                    <p class="text-sm mb-1"><strong>Role:</strong> {{ request.user.get_role_display }}</p>
-                    <p class="text-sm mb-0"><strong>Joined:</strong> {{ request.user.date_joined|date:'Y-m-d H:i' }}</p>
+                    <p class="text-sm mb-2"><strong>Username:</strong> {{ request.user.username }}</p>
+                    <p class="text-sm mb-2"><strong>Email Address:</strong> {{ request.user.email|default:'-' }}</p>
+                    <p class="text-sm mb-2"><strong>First Name:</strong> {{ request.user.first_name|default:'-' }}</p>
+                    <p class="text-sm mb-2"><strong>Last Name:</strong> {{ request.user.last_name|default:'-' }}</p>
+                    <p class="text-sm mb-2"><strong>Phone Number:</strong> {{ request.user.phone|default:'-' }}</p>
+                    <p class="text-sm mb-2"><strong>Role / Scope:</strong> {{ request.user.get_role_display }}</p>
+                    <p class="text-sm mb-0"><strong>Account Created:</strong> {{ request.user.date_joined|date:'d M Y, H:i' }}</p>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-xl-8">
-            <div class="card h-100">
-                <div class="card-header pb-0 p-3"><h6 class="mb-0">Portal Activity</h6></div>
+        <div class="col-lg-7">
+            <div class="card stat-card h-100">
+                <div class="card-header pb-0 p-3"><h6 class="mb-0 font-weight-bold">Edit Profile Information</h6></div>
                 <div class="card-body p-3">
-                    <p class="text-sm">Your account is linked to all operational modules: reservations, billing, payments, services, housekeeping, reports, and notifications.</p>
-                    <ul class="list-group">
-                        <li class="list-group-item border-0 ps-0 text-sm"><i class="fa fa-check text-success me-2"></i>Access dashboard KPIs and trends</li>
-                        <li class="list-group-item border-0 ps-0 text-sm"><i class="fa fa-check text-success me-2"></i>Export reports to CSV/PDF</li>
-                        <li class="list-group-item border-0 ps-0 text-sm"><i class="fa fa-check text-success me-2"></i>Manage reservations and guest services</li>
-                    </ul>
+                    <form method="post" action="{% url 'frontend:portal-profile' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label small font-weight-bold">First Name</label>
+                                <input type="text" name="first_name" id="first_name" class="form-control form-control-sm" value="{{ request.user.first_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label small font-weight-bold">Last Name</label>
+                                <input type="text" name="last_name" id="last_name" class="form-control form-control-sm" value="{{ request.user.last_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label small font-weight-bold">Phone Number</label>
+                                <input type="text" name="phone" id="phone" class="form-control form-control-sm" value="{{ request.user.phone }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small font-weight-bold">Email (Read-only)</label>
+                                <input type="email" class="form-control form-control-sm bg-light" value="{{ request.user.email }}" readonly>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="id_document" class="form-label small font-weight-bold">ID Document (Passport / National ID)</label>
+                                {% if request.user.id_document %}
+                                    <div class="mb-2"><a href="{{ request.user.id_document.url }}" target="_blank" class="badge bg-info">View current ID Document</a></div>
+                                {% endif %}
+                                <input type="file" name="id_document" id="id_document" class="form-control form-control-sm" accept="image/*,.pdf">
+                                <small class="text-muted">Upload a clear photo or scan of your ID.</small>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary btn-sm px-4">Save Changes</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

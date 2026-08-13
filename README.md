@@ -57,7 +57,7 @@ This codebase has the structure of a hotel platform, but several parts still nee
 
 ### Prerequisites
 
-- Python 3.11 or compatible Django 4.2 environment
+- Python 3.12 or another Python release supported by Django 5.2 LTS
 - `pip`
 
 ### Install dependencies

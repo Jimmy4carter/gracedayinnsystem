@@ -1,0 +1,9 @@
+{% extends 'base_public.html' %}
+{% block title %}Guest Policies | GRACEDAY INN{% endblock %}
+{% block meta_description %}Current reviewed guest policies for booking and staying at GRACEDAY INN Abuja.{% endblock %}
+{% block content %}
+<div class="breadcrumb-section"><div class="container"><div class="breadcrumb-text"><h1>Guest policies</h1><p>Current approved information for booking and staying with us.</p></div></div></div>
+<section class="spad"><div class="container"><div class="row">
+  {% for policy in policies %}<article class="col-lg-6 mb-4"><div class="card h-100"><div class="card-body"><p class="text-uppercase small text-muted">{{ policy.get_policy_type_display }}</p><h2 class="h4"><a href="{% url 'frontend:public-policy-detail' policy.slug %}">{{ policy.title }}</a></h2><p>{{ policy.summary }}</p><p class="small">Version {{ policy.version }} · Effective {{ policy.effective_date }}</p><a class="primary-btn" href="{% url 'frontend:public-policy-detail' policy.slug %}">Read policy</a></div></div></article>{% empty %}<div class="col-12"><p>Policies are under formal review. Contact the hotel before booking if you need the current booking or cancellation terms.</p><a href="{% url 'frontend:public-contact' %}" class="primary-btn">Contact us</a></div>{% endfor %}
+</div></div></section>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends 'base_portal.html' %}
+{% block title %}Inquiry Inbox | GRACEDAY INN{% endblock %}
+{% block page_title %}Inquiry & Case Inbox{% endblock %}
+{% block content %}
+<div class="card mb-4"><div class="card-body"><form method="get" class="d-flex gap-2"><select name="status" class="form-select"><option value="">All statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="btn bg-gradient-dark mb-0">Filter</button></form></div></div>
+<div class="card"><div class="table-responsive"><table class="table align-items-center mb-0"><thead><tr><th>Reference / Subject</th><th>Requester</th><th>Priority</th><th>Status / Owner</th><th>SLA</th></tr></thead><tbody>
+{% for case in cases %}<tr><td><a href="{% url 'frontend:portal-inquiry-detail' case.id %}"><strong>{{ case.subject }}</strong></a><br><small>{{ case.reference }}</small></td><td>{{ case.requester_name }}<br><small>{{ case.requester_email }}</small></td><td>{{ case.get_priority_display }}</td><td>{{ case.get_status_display }}<br><small>{{ case.owner.username|default:'Unassigned' }}</small></td><td><small>Response: {{ case.first_response_due_at }}<br>Resolve: {{ case.resolution_due_at }}</small></td></tr>{% empty %}<tr><td colspan="5">No inquiries.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

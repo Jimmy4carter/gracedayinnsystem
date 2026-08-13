@@ -1,0 +1,142 @@
+{% load custom_filters static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>POS Receipt - {{ receipt.receipt_number }}</title>
+    <link rel="stylesheet" href="{% static 'css/font-awesome.min.css' %}" type="text/css">
+    <style>
+        @page { size: {% if terminal %}{{ terminal.receipt_width_mm }}{% else %}80{% endif %}mm auto; margin: 2mm; }
+        * { box-sizing: border-box; }
+        body {
+            width: {% if terminal and terminal.receipt_width_mm == 58 %}52{% else %}74{% endif %}mm;
+            margin: 0 auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            line-height: 1.35;
+            color: #000000;
+            background: #ffffff;
+            padding: 4px;
+        }
+        .center { text-align: center; }
+        .right { text-align: right; }
+        .bold { font-weight: bold; }
+        .row { display: flex; justify-content: space-between; gap: 4px; }
+        .rule { border-top: 1px dashed #000000; margin: 6px 0; }
+        .rule-double { border-top: 2px solid #000000; margin: 6px 0; }
+        .brand-header h2 { margin: 2px 0; font-size: 16px; font-weight: bold; letter-spacing: 1px; }
+        .brand-header p { margin: 0; font-size: 10px; }
+        .actions { margin: 16px 0; text-align: center; }
+        .actions button {
+            background: #0f172a;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 2px;
+        }
+        .actions a {
+            display: inline-block;
+            background: #2563eb;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 6px 12px;
+            font-size: 11px;
+            border-radius: 4px;
+            margin: 2px;
+        }
+        .copy-tag { font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+        @media print { .actions { display: none !important; } body { width: 100%; margin: 0; padding: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="actions">
+    <button onclick="window.print()"><i class="fa fa-print"></i> Print POS Slip</button>
+    <a href="?format=a4"><i class="fa fa-file-text-o"></i> View A4 Receipt</a>
+</div>
+
+<div class="center brand-header">
+    <h2>GRACEDAY INN</h2>
+    <p>Louis Court Estate, Apo-Dutse, Abuja FCT</p>
+    <p>Tel: +234 708 007 6496</p>
+    <p class="bold" style="margin-top: 4px;">OFFICIAL PAYMENT RECEIPT</p>
+    {% if copy_number > 1 %}
+        <p class="copy-tag">*** REPRINT COPY {{ copy_number }} ***</p>
+    {% endif %}
+</div>
+
+<div class="rule"></div>
+
+<div><strong>Receipt #:</strong> {{ receipt.receipt_number }}</div>
+<div><strong>Date:</strong> {{ receipt.issued_at|date:"d/m/Y H:i" }}</div>
+<div><strong>Invoice #:</strong> {{ receipt.invoice.invoice_number }}</div>
+{% if payment %}
+<div><strong>Payment Ref:</strong> {{ payment.reference }}</div>
+<div><strong>Method:</strong> {{ payment.get_method_display|upper }}</div>
+{% endif %}
+<div><strong>Guest:</strong> {{ receipt.invoice.guest.get_full_name|default:receipt.invoice.guest.username }}</div>
+{% if payment.processed_by %}
+<div><strong>Cashier:</strong> {{ payment.processed_by.get_full_name|default:payment.processed_by.username }}</div>
+{% endif %}
+
+<div class="rule"></div>
+
+<div class="row bold">
+    <span>DESCRIPTION</span>
+    <span>TOTAL (NGN)</span>
+</div>
+<div class="rule"></div>
+
+{% for item in receipt.invoice.items.all %}
+<div class="row">
+    <span>{{ item.description|truncatechars:20 }}</span>
+    <span>₦{{ item.total|currency_format }}</span>
+</div>
+{% empty %}
+<div class="row">
+    <span>Payment Received</span>
+    <span>₦{{ receipt.amount|currency_format }}</span>
+</div>
+{% endfor %}
+
+<div class="rule-double"></div>
+
+<div class="row bold" style="font-size: 14px;">
+    <span>AMOUNT PAID</span>
+    <span>NGN {{ receipt.amount|currency_format }}</span>
+</div>
+
+<div class="rule"></div>
+
+<div class="row">
+    <span>Invoice Total:</span>
+    <span>NGN {{ receipt.invoice.total|currency_format }}</span>
+</div>
+<div class="row">
+    <span>Total Paid to Date:</span>
+    <span>NGN {{ receipt.invoice.amount_paid|currency_format }}</span>
+</div>
+<div class="row bold">
+    <span>Balance Remaining:</span>
+    <span>NGN {{ receipt.invoice.balance|currency_format }}</span>
+</div>
+
+<div class="rule"></div>
+
+<div class="center" style="margin-top: 8px;">
+    <p class="bold">THANK YOU FOR YOUR STAY!</p>
+    <p style="font-size: 9px;">www.gracedayinn.com</p>
+</div>
+
+<script>
+    if (window.opener || window.name === 'printWindow') {
+        window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 400); });
+    }
+</script>
+
+</body>
+</html>

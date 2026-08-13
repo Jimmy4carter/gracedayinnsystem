@@ -1,64 +1,53 @@
 {% extends 'base_public.html' %}
+{% load custom_filters %}
 {% load static %}
-{% block title %}GRACEDAY INN | Home{% endblock %}
+{% block title %}{% if site_page_translation %}{{ site_page_translation.browser_title }}{% else %}{{ site_page.browser_title|default:'GRACEDAY INN | Home' }}{% endif %}{% endblock %}
+{% block meta_description %}{% if site_page_translation %}{{ site_page_translation.meta_description }}{% else %}{{ site_page.meta_description|default:'Book a comfortable stay at GraceDay Inn in Apo-Dutse, Abuja, with transparent rates, direct support, dining and guest services.' }}{% endif %}{% endblock %}
 {% block header_class %}{% endblock %}
 {% block content %}
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Hotel","name":"GraceDay Inn","address":{"@type":"PostalAddress","streetAddress":"Louis Court Estate, Apo-Dutse","addressLocality":"Abuja","addressCountry":"NG"},"telephone":"+2347080076496","email":"info.gracedayinn@gmail.com","url":"{{ request.scheme }}://{{ request.get_host }}{% url 'frontend:public-home' %}"}</script>
 <section class="hero-section" id="booking">
     <div class="container">
         <div class="row">
             <div class="col-lg-6">
                 <div class="hero-text">
-                    <h1>GraceDay Inn</h1>
-                    <p>Is a premier accommodation destination, dedicated to providing guests with a relaxing experience in an elegant and serene environment. Each day, we connect and inspire millions of people across the globe. Whether you are looking to book the ideal hotel, vacation rental, apartment, meeting hall or guest house, GraceDay Inn has you covered.</p>
-                    <a href="{% url 'frontend:public-rooms' %}" class="primary-btn">Discover Now</a>
+                    <h1>{% if site_page_translation %}{{ site_page_translation.hero_title }}{% else %}{{ site_page.hero_title|default:'GraceDay Inn' }}{% endif %}</h1>
+                    <p>{% if site_page_translation %}{{ site_page_translation.hero_summary }}{% else %}{{ site_page.hero_summary|default:'A calm Abuja retreat for business trips, weekend breaks and memorable gatherings. Enjoy comfortable rooms, warm service and everything you need in one welcoming place.' }}{% endif %}</p>
+                    <a href="#booking" class="primary-btn">Book your stay</a>
                 </div>
             </div>
             <div class="col-xl-4 col-lg-5 offset-xl-2 offset-lg-1">
                 <div class="booking-form">
-                    <h3>Booking</h3>
-                    <form method="post">
-                        {% csrf_token %}
+                    <h3>Find your room</h3>
+                    <p class="booking-intro">Choose your dates and guest capacity to find available rooms.</p>
+                    <form method="get" action="{% url 'frontend:public-rooms' %}">
                         <div class="check-date">
-                            <label for="{{ booking_form.check_in_date.id_for_label }}">Check In:</label>
-                            {{ booking_form.check_in_date }}
+                            <label for="{{ search_form.check_in_date.id_for_label }}">Check In:</label>
+                            {{ search_form.check_in_date }}
                             <i class="icon_calendar"></i>
                         </div>
                         <div class="check-date">
-                            <label for="{{ booking_form.check_out_date.id_for_label }}">Check Out:</label>
-                            {{ booking_form.check_out_date }}
+                            <label for="{{ search_form.check_out_date.id_for_label }}">Check Out:</label>
+                            {{ search_form.check_out_date }}
                             <i class="icon_calendar"></i>
                         </div>
-                        <div class="select-option"><label for="{{ booking_form.num_adults.id_for_label }}">Adults:</label>{{ booking_form.num_adults }}</div>
-                        <div class="select-option"><label for="{{ booking_form.num_children.id_for_label }}">Children:</label>{{ booking_form.num_children }}</div>
                         <div class="select-option">
-                            <label for="{{ booking_form.room.id_for_label }}">Room:</label>
-                            {{ booking_form.room }}
+                            <label for="{{ search_form.num_adults.id_for_label }}">Adults:</label>
+                            {{ search_form.num_adults }}
                         </div>
-                        <div class="check-date">
-                            <label for="{{ booking_form.first_name.id_for_label }}">First Name:</label>
-                            {{ booking_form.first_name }}
+                        <div class="select-option">
+                            <label for="{{ search_form.num_children.id_for_label }}">Children:</label>
+                            {{ search_form.num_children }}
                         </div>
-                        <div class="check-date">
-                            <label for="{{ booking_form.last_name.id_for_label }}">Last Name:</label>
-                            {{ booking_form.last_name }}
+                        <div class="select-option">
+                            <label for="{{ search_form.room_type.id_for_label }}">Room Type:</label>
+                            {{ search_form.room_type }}
                         </div>
-                        <div class="check-date">
-                            <label for="{{ booking_form.email.id_for_label }}">Email:</label>
-                            {{ booking_form.email }}
-                        </div>
-                        <div class="check-date">
-                            <label for="{{ booking_form.phone.id_for_label }}">Phone:</label>
-                            {{ booking_form.phone }}
-                        </div>
-                        <div class="check-date">
-                            <label for="{{ booking_form.special_requests.id_for_label }}">Special Requests:</label>
-                            {{ booking_form.special_requests }}
-                        </div>
-                        {% for field in booking_form %}
+                        {% for field in search_form %}
                             {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                         {% endfor %}
-                        {% for error in booking_form.non_field_errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
-                        <button type="submit">Check Availability</button>
+                        {% for error in search_form.non_field_errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        <button type="submit">Search Available Rooms</button>
                     </form>
                 </div>
             </div>
@@ -80,7 +69,7 @@
                         <span>About Us</span>
                         <h2>GraceDay Inn <br />Guest House</h2>
                     </div>
-                    <p class="f-para">GraceDay Inn is a leading accommodation site. We are passionate about relaxation in an elegant and conducive atmosphere. Every day, we inspire and reach millions of people across local communities.</p>
+                    <p class="f-para">GraceDay Inn is an independently managed Abuja hotel focused on restful rooms, thoughtful service and a calm atmosphere for business and leisure guests.</p>
                     <p class="s-para">Amenities include: {% for amenity in amenity_names %}{{ amenity }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
                     <a href="{% url 'frontend:public-about' %}" class="primary-btn about-btn">Read More</a>
                 </div>
@@ -138,10 +127,16 @@
             {% for room_type in featured_rooms %}
                 <div class="col-lg-4 col-md-6">
                     <div class="room-item">
-                        <img src="{% static 'img/room/room-1.jpg' %}" alt="">
+                        {% if room_type.public_gallery %}
+                            {% with hero=room_type.public_gallery.0 %}<img src="{{ hero.image.url }}" alt="{{ hero.alt_text }}" loading="lazy" decoding="async">{% endwith %}
+                        {% elif room_type.image %}
+                            <img src="{{ room_type.image.url }}" alt="{{ room_type.name }} at GRACEDAY INN" loading="lazy" decoding="async">
+                        {% else %}
+                            <img src="{% static 'img/room/room-1.jpg' %}" alt="{{ room_type.name }} at GRACEDAY INN" loading="lazy" decoding="async">
+                        {% endif %}
                         <div class="ri-text">
                             <h4>{{ room_type.name }}</h4>
-                            <h3>₦{{ room_type.base_price }}<span>/Per-night</span></h3>
+                            <h3>₦{{ room_type.base_price|currency_format }}<span>/Per-night</span></h3>
                             <table>
                                 <thead>
                                     <tr><th>Detail</th><th>Value</th></tr>

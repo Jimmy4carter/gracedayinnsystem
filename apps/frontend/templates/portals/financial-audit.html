@@ -1,0 +1,25 @@
+{% extends 'base_portal.html' %}
+{% block title %}Financial audit | GraceDay Inn{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div><p class="text-uppercase text-muted small mb-1">Finance control room</p><h1 class="h3 mb-1">Financial audit packs</h1><p class="text-muted mb-0">Period-scoped evidence for daily close and independent review.</p></div>
+    <a class="btn btn-outline-primary" href="{% url 'frontend:portal-reports' %}">Back to reports</a>
+  </div>
+  <div class="row g-3 mb-4">
+    <div class="col-lg-7"><div class="card shadow-sm h-100"><div class="card-body">
+      <h2 class="h5">Prepare a control pack</h2>
+      <form method="post" class="row g-3">{% csrf_token %}<input type="hidden" name="action" value="prepare">
+        <div class="col-md-4"><label class="form-label" for="period_start">Start</label><input class="form-control" type="date" id="period_start" name="period_start" value="{{ today|date:'Y-m-d' }}" required></div>
+        <div class="col-md-4"><label class="form-label" for="period_end">End</label><input class="form-control" type="date" id="period_end" name="period_end" value="{{ today|date:'Y-m-d' }}" required></div>
+        <div class="col-md-4"><label class="form-label" for="run_type">Review type</label><select class="form-select" id="run_type" name="run_type"><option value="daily">Daily close</option><option value="weekly">Weekly review</option><option value="manual">Manual review</option></select></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Prepare audit pack</button></div>
+      </form>
+    </div></div></div>
+    <div class="col-lg-5"><div class="card shadow-sm h-100"><div class="card-body"><h2 class="h5">Control standard</h2><ul class="small text-muted mb-0"><li>Every pack is period-scoped and hash-sealed.</li><li>Completed payments must have a receipt and folio link.</li><li>Open shifts and cash variance remain visible exceptions.</li><li>The preparer cannot approve their own pack.</li></ul></div></div></div>
+  </div>
+  <div class="card shadow-sm"><div class="card-body"><h2 class="h5 mb-3">Audit history</h2><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Period</th><th>Type</th><th>Status</th><th>Exceptions</th><th>Prepared by</th><th>Action</th></tr></thead><tbody>
+    {% for run in audit_runs %}<tr><td>{{ run.period_start }} – {{ run.period_end }}<br><small class="text-muted">{{ run.source_hash|slice:':12' }}</small></td><td>{{ run.get_run_type_display }}</td><td><span class="badge {% if run.status == 'approved' %}bg-success{% elif run.status == 'rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %}">{{ run.get_status_display }}</span></td><td>{{ run.exceptions|length }}</td><td>{{ run.prepared_by.get_full_name|default:run.prepared_by.username }}</td><td>{% if can_approve and run.status == 'prepared' %}<form method="post" class="d-flex gap-2">{% csrf_token %}<input type="hidden" name="action" value="approve"><input type="hidden" name="audit_id" value="{{ run.pk }}"><input class="form-control form-control-sm" name="note" placeholder="Review note"><button class="btn btn-sm btn-success" type="submit">Approve</button></form>{% else %}<span class="text-muted small">{% if run.approved_by %}Approved by {{ run.approved_by.username }}{% else %}Awaiting review{% endif %}</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="text-muted">No audit packs prepared yet.</td></tr>{% endfor %}
+  </tbody></table></div></div></div>
+</div>
+{% endblock %}

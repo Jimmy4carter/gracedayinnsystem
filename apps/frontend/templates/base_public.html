@@ -1,13 +1,18 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ public_language|default:'en' }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="description" content="GRACEDAY INN">
-    <meta name="keywords" content="GRACEDAY INN hotel">
+    <meta name="description" content="{% block meta_description %}{% if site_page_translation %}{{ site_page_translation.meta_description }}{% elif site_page %}{{ site_page.meta_description }}{% else %}Stay at GraceDay Inn in Apo-Dutse, Abuja: comfortable rooms, attentive service, dining and direct booking support.{% endif %}{% endblock %}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>{% block title %}GRACEDAY INN{% endblock %}</title>
+    <title>{% block title %}{% if site_page_translation %}{{ site_page_translation.browser_title }}{% elif site_page %}{{ site_page.browser_title }}{% else %}GRACEDAY INN{% endif %}{% endblock %}</title>
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}GraceDay Inn Abuja{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Comfortable stays and warm hospitality in Apo-Dutse, Abuja.{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    {% block extra_head %}{% endblock %}
 
 
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" type="text/css">
@@ -20,9 +25,11 @@
     <link rel="stylesheet" href="{% static 'css/magnific-popup.css' %}" type="text/css">
     <link rel="stylesheet" href="{% static 'css/slicknav.min.css' %}" type="text/css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}" type="text/css">
+    <link rel="stylesheet" href="{% static 'css/public-modern.css' %}" type="text/css">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <header class="header-section {% block header_class %}header-normal{% endblock %}">
     <div class="menu-item">
         <div class="container">
@@ -62,12 +69,13 @@
                                         About Us
                                     </a>
                                 </li>
+                                <li><a href="{% url 'frontend:public-guide' %}">Local Guide</a></li>
 
                                 <li class="menu-dropdown">
 
                                     <a href="#">
                                         Services
-                                        <span class="drop-icon">▾</span>
+                                        <span class="drop-icon">&#9662;</span>
                                     </a>
 
                                     <ul class="submenu">
@@ -98,6 +106,8 @@
                                     </a>
                                 </li>
 
+                                <li class="menu-dropdown"><a href="{% url 'frontend:public-faq' %}">Help <span class="drop-icon">&#9662;</span></a><ul class="submenu"><li><a href="{% url 'frontend:public-faq' %}">FAQs</a></li><li><a href="{% url 'frontend:public-policies' %}">Guest Policies</a></li></ul></li>
+
                                 <li>
                                     <a href="{% url 'frontend:public-contact' %}">
                                         Contact
@@ -111,14 +121,14 @@
                                           action="{% url 'frontend:public-search' %}"
                                           method="get">
 
-                                        <button type="submit">
-                                            <i class="icon_search"></i>
+                                        <button type="submit" aria-label="Search">
+                                            <i class="icon_search" aria-hidden="true"></i>
                                         </button>
 
                                         <input
                                             type="search"
                                             name="q"
-                                            placeholder="Search...">
+                                            placeholder="Search the website" aria-label="Search the website">
 
                                     </form>
 
@@ -138,16 +148,6 @@
         </div>
     </div>
 </header>
-        
-
-        <div id="mobile-menu-wrap"></div>
-
-    </div>
-</div>
-                </div>
-            </div>
-        </div>
-    </header>
 
     {% if messages %}
         <div class="container mt-3">
@@ -157,21 +157,16 @@
         </div>
     {% endif %}
 
-    {% block content %}{% endblock %}
+    <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
 
     <footer class="footer-section footer-thin footer-dark">
         <div class="container">
             <div class="row">
                 <div class="col-md-3 col-6 footer-col about-col">
                     <div class="ft-about">
-                        <div class="logo"><a href="{% url 'frontend:public-home' %}"><img src="{% static 'img/Backup_of_logo-768x229.png' %}" alt=""></a></div>
+                        <div class="logo"><a href="{% url 'frontend:public-home' %}"><img src="{% static 'img/Backup_of_logo-768x229.png' %}" alt="GraceDay Inn"></a></div>
                         <p>Premium hospitality and seamless experiences at GRACEDAY INN.</p>
-                        <div class="fa-social">
-                            <a href="#"><i class="fa fa-facebook"></i></a>
-                            <a href="#"><i class="fa fa-twitter"></i></a>
-                            <a href="#"><i class="fa fa-tripadvisor"></i></a>
-                            <a href="#"><i class="fa fa-instagram"></i></a>
-                        </div>
+                        <p class="small">Direct booking support, every day.</p>
                     </div>
                 </div>
 
@@ -192,8 +187,9 @@
                         <p>Get the latest updates and offers.</p>
                         <form method="post" action="{% url 'frontend:subscribe-newsletter' %}" class="fn-form">
                             {% csrf_token %}
-                            <input type="email" name="email" placeholder="Email" required>
-                            <button type="submit"><i class="fa fa-send"></i></button>
+                            <label class="sr-only" for="newsletter-email">Email address</label>
+                            <input id="newsletter-email" type="email" name="email" placeholder="Email address" autocomplete="email" required>
+                            <button type="submit" aria-label="Subscribe to newsletter"><i class="fa fa-send" aria-hidden="true"></i></button>
                         </form>
                     </div>
                 </div>
@@ -202,19 +198,37 @@
                     <div class="footer-links">
                         <ul>
                             <li><a href="{% url 'frontend:public-contact' %}">Contact</a></li>
-                            <li><a href="#">Terms of use</a></li>
-                            <li><a href="#">Privacy</a></li>
-                            <li><a href="#">Environmental Policy</a></li>
+                            <li><a href="{% url 'frontend:public-faq' %}">FAQs</a></li>
+                            <li><a href="{% url 'frontend:public-policies' %}">Policies</a></li>
                             <li><a href="{% url 'frontend:portal-sign-in' %}">Portal</a></li>
+                            <li><label for="public-language" class="sr-only">Language</label><select id="public-language" aria-label="Language" onchange="window.location.search='lang='+this.value"><option value="en" {% if public_language == 'en' %}selected{% endif %}>English</option><option value="ha" {% if public_language == 'ha' %}selected{% endif %}>Hausa</option><option value="fr" {% if public_language == 'fr' %}selected{% endif %}>Fran&ccedil;ais</option></select></li>
                         </ul>
                     </div>
                 </div>
             </div>
         </div>
         <div class="footer-bottom text-center">
-            <p>Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved by GRACEDAY INN.</p>
+            <p>Copyright &copy; {% now "Y" %} GRACEDAY INN. All rights reserved.</p>
         </div>
     </footer>
+
+    {% if public_features.live_chat %}
+      {% if tawkto_embed_url %}
+        <!-- Tawk.to Live Chat active (loads dynamically) -->
+      {% else %}
+        <style>
+          #gdi-chat-toggle{position:fixed;right:22px;bottom:22px;z-index:9998;border:0;border-radius:28px;background:#b78b34;color:#fff;padding:13px 18px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+          #gdi-chat{display:none;position:fixed;right:22px;bottom:80px;width:min(360px,calc(100vw - 30px));height:500px;z-index:9999;background:#fff;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.28);overflow:hidden}
+          #gdi-chat header{background:#18202b;color:#fff;padding:14px 16px;font-weight:700}#gdi-chat-messages{height:330px;overflow:auto;padding:12px;background:#f7f5f0}.gdi-msg{background:#fff;padding:9px 11px;border-radius:10px;margin:6px 0}.gdi-agent{background:#efe4cb}
+          #gdi-chat form{padding:10px}#gdi-chat input,#gdi-chat textarea{width:100%;margin-bottom:7px;padding:8px;border:1px solid #ddd;border-radius:7px}#gdi-chat button{border:0;background:#b78b34;color:#fff;padding:8px 14px;border-radius:7px}
+        </style>
+        <button id="gdi-chat-toggle" type="button" aria-controls="gdi-chat" aria-expanded="false">Chat with us</button>
+        <section id="gdi-chat" aria-label="Live chat"><header>GRACEDAY INN Live Help</header><div id="gdi-chat-messages"><div class="gdi-msg gdi-agent">Welcome. How may we help you today?</div></div><div id="gdi-chat-presence" role="status" aria-live="polite" style="padding:0 12px;font-size:12px"></div>
+          <form id="gdi-chat-form"><div id="gdi-chat-identity"><label class="sr-only" for="gdi-chat-name">Your name</label><input id="gdi-chat-name" placeholder="Your name"><label class="sr-only" for="gdi-chat-email">Email address</label><input id="gdi-chat-email" type="email" placeholder="Email (required outside business hours)"></div><label class="sr-only" for="gdi-chat-body">Chat message</label><textarea id="gdi-chat-body" rows="2" maxlength="2000" placeholder="Type your message" required></textarea><button type="submit">Send</button></form>
+          <form id="gdi-chat-feedback" style="display:none"><label for="gdi-chat-rating">Rate this conversation</label><select id="gdi-chat-rating"><option value="5">5 — Excellent</option><option value="4">4 — Good</option><option value="3">3 — Fair</option><option value="2">2 — Poor</option><option value="1">1 — Very poor</option></select><button type="submit">Submit</button></form>
+        </section>
+      {% endif %}
+    {% endif %}
 
     <script src="{% static 'js/jquery-3.3.1.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
@@ -243,6 +257,77 @@
             setTimeout(revealPage, 2000);
         })();
     </script>
+    {% if public_features.live_chat %}
+      {% if tawkto_embed_url %}
+        <!--Start of Tawk.to Script-->
+        <script type="text/javascript">
+        var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+        (function(){
+        var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+        s1.async=true;
+        s1.src='{{ tawkto_embed_url }}';
+        s1.charset='UTF-8';
+        s1.setAttribute('crossorigin','*');
+        s0.parentNode.insertBefore(s1,s0);
+        })();
+        </script>
+        <!--End of Tawk.to Script-->
+      {% else %}
+        <script>
+        (function(){
+          const box=document.getElementById('gdi-chat'),toggle=document.getElementById('gdi-chat-toggle'),form=document.getElementById('gdi-chat-form'),feedback=document.getElementById('gdi-chat-feedback'),body=document.getElementById('gdi-chat-body'),messages=document.getElementById('gdi-chat-messages'),identity=document.getElementById('gdi-chat-identity'),presence=document.getElementById('gdi-chat-presence');
+          let reference=sessionStorage.getItem('gdiChatReference'),socket=null,lastId=0,poller=null;
+          function cookie(name){return document.cookie.split('; ').find(x=>x.startsWith(name+'='))?.split('=')[1]||''}
+          function add(item){if(item.id&&item.id<=lastId)return;lastId=Math.max(lastId,item.id||0);const div=document.createElement('div');div.className='gdi-msg '+(item.sender_type==='agent'?'gdi-agent':'');div.textContent=item.body;messages.appendChild(div);messages.scrollTop=messages.scrollHeight}
+          function connect(url){try{socket=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+url);socket.onmessage=e=>{const data=JSON.parse(e.data);if(data.type==='message')add(data);else if(data.type==='typing')presence.textContent=data.is_typing?'An agent is typing…':'';else if(data.type==='presence')presence.textContent=data.state==='joined'?'An agent is online.':'An agent left the chat.'};socket.onerror=startPoll;socket.onclose=startPoll}catch(e){startPoll()}}
+          function startPoll(){if(poller||!reference)return;poller=setInterval(()=>fetch(`/chat/${reference}/messages/?after=${lastId}`).then(r=>r.ok?r.json():null).then(d=>{if(!d)return;d.messages.forEach(add);if(d.status==='closed'){form.style.display='none';feedback.style.display='block'}}),4000)}
+          toggle.onclick=()=>{const open=box.style.display==='block';box.style.display=open?'none':'block';toggle.setAttribute('aria-expanded',String(!open));if(!open&&reference){identity.style.display='none';connect(`/ws/chat/${reference}/`)}};
+          form.onsubmit=async e=>{e.preventDefault();const text=body.value.trim();if(!text)return;if(!reference){const response=await fetch('{% url "frontend:chat-start" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':decodeURIComponent(cookie('csrftoken'))},body:JSON.stringify({name:document.getElementById('gdi-chat-name').value,email:document.getElementById('gdi-chat-email').value,message:text})});const data=await response.json();if(!response.ok){add({body:data.detail||data.errors?.[0]||'Unable to start chat.',sender_type:'agent'});return}reference=data.reference;sessionStorage.setItem('gdiChatReference',reference);identity.style.display='none';add({body:text,sender_type:'visitor'});if(data.offline)add({body:`Live chat is offline. We created inquiry ${data.inquiry_reference} and will reply by email.`,sender_type:'agent'});else connect(data.websocket_url);startPoll()}else if(socket&&socket.readyState===1){socket.send(JSON.stringify({body:text,client_message_id:crypto.randomUUID()}));socket.send(JSON.stringify({type:'typing',is_typing:false}))}else{await fetch(`/chat/${reference}/send/`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':decodeURIComponent(cookie('csrftoken'))},body:JSON.stringify({body:text,client_message_id:crypto.randomUUID()})});add({body:text,sender_type:'visitor'})}body.value=''};
+          let typingTimer;body.addEventListener('input',()=>{if(!socket||socket.readyState!==1)return;socket.send(JSON.stringify({type:'typing',is_typing:true}));clearTimeout(typingTimer);typingTimer=setTimeout(()=>{if(socket.readyState===1)socket.send(JSON.stringify({type:'typing',is_typing:false}))},1200)});
+          feedback.onsubmit=async e=>{e.preventDefault();const response=await fetch(`/chat/${reference}/feedback/`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':decodeURIComponent(cookie('csrftoken'))},body:JSON.stringify({rating:document.getElementById('gdi-chat-rating').value})});if(response.ok){feedback.style.display='none';add({body:'Thank you for your feedback.',sender_type:'agent'})}};
+        })();
+        </script>
+      {% endif %}
+    {% endif %}
     {% block extra_js %}{% endblock %}
+<!-- Global Loader -->
+<div id="global-loader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:99999; text-align:center;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-2 text-dark font-weight-bold">Processing...</div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var forms = document.querySelectorAll('form');
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (form.checkValidity()) {
+                var loader = document.getElementById('global-loader');
+                if (loader) loader.style.display = 'block';
+                var btns = form.querySelectorAll('button[type="submit"]');
+                btns.forEach(b => { b.disabled = true; });
+            }
+        });
+    });
+});
+</script>
+{% if tawkto_embed_url %}
+<!--Start of Tawk.to Script-->
+<script type="text/javascript">
+var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){
+var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true;
+s1.src='{{ tawkto_embed_url }}';
+s1.charset='UTF-8';
+s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0);
+})();
+</script>
+<!--End of Tawk.to Script-->
+{% endif %}
 </body>
 </html>

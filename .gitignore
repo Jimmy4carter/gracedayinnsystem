@@ -1,1 +1,11 @@
-
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+collected_static/
+media/
+.*.log
+.*.pid

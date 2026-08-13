@@ -1,0 +1,25 @@
+{% extends 'base_portal.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row"><div class="col-12"><h1 class="h3">Incidents and lost &amp; found</h1><p class="text-muted">Controlled operational records with immutable lifecycle history.</p></div></div>
+  {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}{% endif %}
+  <div class="row">
+    <div class="col-lg-6"><div class="card mb-4"><div class="card-body"><h2 class="h5">Report incident</h2><form method="post">{% csrf_token %}<input type="hidden" name="form_type" value="incident">{{ incident_form.as_p }}<button class="btn bg-gradient-danger">Record incident</button></form></div></div></div>
+    <div class="col-lg-6"><div class="card mb-4"><div class="card-body"><h2 class="h5">Register found item</h2><form method="post">{% csrf_token %}<input type="hidden" name="form_type" value="lost_found">{{ lost_form.as_p }}<button class="btn bg-gradient-dark">Register item</button></form></div></div></div>
+  </div>
+  <div class="card mb-4"><div class="card-body"><h2 class="h5">Incident register</h2><div class="table-responsive"><table class="table"><thead><tr><th>Reference</th><th>Incident</th><th>Severity</th><th>Status</th><th>Owner</th><th>Action</th></tr></thead><tbody>
+  {% for incident in incidents %}<tr><td><small>{{ incident.reference }}</small></td><td><strong>{{ incident.title }}</strong><br><small>{{ incident.location }} · {{ incident.occurred_at }}</small></td><td>{{ incident.get_severity_display }}</td><td>{{ incident.get_status_display }}</td><td>{{ incident.assigned_to|default:'Unassigned' }}</td><td>
+    {% if incident.status == 'open' %}<form method="post" action="{% url 'frontend:portal-incident-action' incident.id 'investigate' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-warning">Investigate</button></form>{% endif %}
+    {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+      {% if incident.status == 'open' or incident.status == 'investigating' %}<form method="post" action="{% url 'frontend:portal-incident-action' incident.id 'resolve' %}">{% csrf_token %}<input class="form-control form-control-sm" name="notes" required placeholder="Resolution"><button class="btn btn-sm btn-outline-success mt-1">Resolve</button></form>{% endif %}
+      {% if incident.status == 'resolved' %}<form method="post" action="{% url 'frontend:portal-incident-action' incident.id 'close' %}">{% csrf_token %}<input class="form-control form-control-sm" name="notes" required placeholder="Closure review"><button class="btn btn-sm bg-gradient-success mt-1">Close</button></form>{% endif %}
+    {% endif %}
+  </td></tr>{% empty %}<tr><td colspan="6">No incidents recorded.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="card"><div class="card-body"><h2 class="h5">Lost-and-found register</h2><div class="table-responsive"><table class="table"><thead><tr><th>Reference</th><th>Item</th><th>Location</th><th>Status</th><th>Custody / claim</th><th>Action</th></tr></thead><tbody>
+  {% for item in lost_found_items %}<tr><td><small>{{ item.reference }}</small></td><td><strong>{{ item.item_name }}</strong><br><small>{{ item.description }}</small></td><td>{{ item.found_location }}<br><small>{{ item.found_at }}</small></td><td>{{ item.get_status_display }}</td><td>{{ item.storage_location|default:'Not stored' }}{% if request.user.role != 'housekeeping' and item.claimant_name %}<br><small>Claimant: {{ item.claimant_name }} ({{ item.claimant_contact }})</small>{% endif %}</td><td>
+    {% if item.status == 'found' %}<form method="post" action="{% url 'frontend:portal-lost-found-action' item.id 'store' %}">{% csrf_token %}<input class="form-control form-control-sm" name="storage_location" required placeholder="Secure storage location"><button class="btn btn-sm btn-outline-dark mt-1">Store</button></form>{% endif %}
+    {% if item.status == 'stored' and request.user.role != 'housekeeping' %}<form method="post" action="{% url 'frontend:portal-lost-found-action' item.id 'claim' %}">{% csrf_token %}<input class="form-control form-control-sm" name="claimant_name" required placeholder="Claimant name"><input class="form-control form-control-sm" name="claimant_contact" required placeholder="Contact"><input class="form-control form-control-sm" name="claim_verification" required placeholder="Verification evidence"><button class="btn btn-sm btn-outline-info mt-1">Record claim</button></form>{% endif %}
+    {% if item.status == 'claimed' and request.user.role != 'housekeeping' %}<form method="post" action="{% url 'frontend:portal-lost-found-action' item.id 'return' %}">{% csrf_token %}<input class="form-control form-control-sm" name="notes" required placeholder="Handover evidence"><button class="btn btn-sm bg-gradient-success mt-1">Return</button></form>{% endif %}
+  </td></tr>{% empty %}<tr><td colspan="6">No items recorded.</td></tr>{% endfor %}</tbody></table></div></div></div>
+</div>
+{% endblock %}

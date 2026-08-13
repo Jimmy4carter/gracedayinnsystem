@@ -1,9 +1,49 @@
 {% extends 'base_public.html' %}
-{% block title %}GRACEDAY INN | News{% endblock %}
+{% load static %}
+{% block title %}GRACEDAY INN | Journal & Stories{% endblock %}
 {% block content %}
-<h2 class="mb-3">News and Travel Tips</h2>
-<div class="row g-3">
-    <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body"><h5>How to plan a smooth weekend stay</h5><p>Plan check-in times, room preferences, and service requests before arrival.</p><a href="{% url 'frontend:public-blog-detail' %}">Read article</a></div></div></div>
-    <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body"><h5>Hospitality technology at GRACEDAY INN</h5><p>Our integrated portal helps staff coordinate reservations, billing, and housekeeping.</p><a href="{% url 'frontend:public-blog-detail' %}">Read article</a></div></div></div>
+<div class="breadcrumb-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="breadcrumb-text">
+                    <h2>GraceDay Journal</h2>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<section class="blog-section spad">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 col-md-6 mb-4">
+                <div class="blog-item">
+                    <div class="bi-pic">
+                        <img src="{% static 'img/blog/blog-1.jpg' %}" alt="GraceDay Inn Stay Guide" class="img-fluid rounded">
+                    </div>
+                    <div class="bi-text pt-3">
+                        <span class="b-tag text-uppercase small text-muted">Travel & Stay</span>
+                        <h4 class="mt-1"><a href="{% url 'frontend:public-blog-detail' %}" class="text-dark">How to Plan a Seamless Stay in Abuja</a></h4>
+                        <p class="text-secondary mt-2">Discover curated tips on timing your check-in, selecting the optimal suite, and enjoying personalized guest services at GraceDay Inn.</p>
+                        <div class="b-time"><i class="icon_clock_alt"></i> August 2026</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-6 mb-4">
+                <div class="blog-item">
+                    <div class="bi-pic">
+                        <img src="{% static 'img/blog/blog-2.jpg' %}" alt="Hospitality Excellence" class="img-fluid rounded">
+                    </div>
+                    <div class="bi-text pt-3">
+                        <span class="b-tag text-uppercase small text-muted">Hospitality & Technology</span>
+                        <h4 class="mt-1"><a href="{% url 'frontend:public-blog-detail' %}" class="text-dark">Hospitality Excellence Through Smart Operations</a></h4>
+                        <p class="text-secondary mt-2">Explore how our unified guest portal and real-time operations engine power frictionless check-ins, instant billing, and immaculate rooms.</p>
+                        <div class="b-time"><i class="icon_clock_alt"></i> August 2026</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 {% endblock %}
