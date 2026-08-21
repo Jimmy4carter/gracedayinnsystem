@@ -60,6 +60,7 @@ if [[ "${GRACEDAY_SKIP_PIP:-0}" != "1" ]]; then
 fi
 
 "${PYTHON_BIN}" manage.py check --deploy --settings=gracedayinn.settings.prod
+"${PYTHON_BIN}" -c "from app import application; assert callable(application)"
 "${PYTHON_BIN}" manage.py makemigrations --check --dry-run
 "${PYTHON_BIN}" manage.py collectstatic --noinput
 "${PYTHON_BIN}" manage.py migrate --plan

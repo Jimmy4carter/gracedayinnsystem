@@ -13,7 +13,8 @@ The repository includes:
 - `.cpanel.yml`, the cPanel deployment entry point;
 - `deploy/namecheap_deploy.sh`, the repeatable deployment hook;
 - `deploy/namecheap_preflight.sh`, a production configuration and migration check;
-- `passenger_wsgi.py`, the WSGI startup file required by Namecheap shared hosting;
+- `app.py`, the CloudLinux startup module selected in cPanel;
+- `passenger_wsgi.py`, the Passenger wrapper/compatible direct Django entry point;
 - WhiteNoise static-file serving for collected CSS, JavaScript, fonts, and images.
 
 Namecheap shared hosting supports WSGI Python applications. GraceDay Inn therefore uses a direct WhatsApp action for public messaging and does not require WebSockets, Redis, Daphne, or an ASGI process.
@@ -59,8 +60,10 @@ In **cPanel > Setup Python App**, create the application with:
 | Python version | 3.12 (3.11 is also supported) |
 | Application root | `gracedayinnsystem` |
 | Application URL | `gracedayinn.com` |
-| Startup file | `passenger_wsgi.py` |
+| Startup file | `app.py` |
 | Entry point | `application` |
+
+Do not select `passenger_wsgi.py` as its own startup file. CloudLinux may regenerate that wrapper to load the selected startup filename; pointing it at itself causes a recursive import. `app.py` exists specifically to keep the cPanel startup target separate.
 
 The deployment hook automatically discovers the cPanel virtual environment at `/home/CPANEL_USERNAME/virtualenv/gracedayinnsystem/VERSION/bin/python`. If the application root differs, make `GRACEDAY_PYTHON` available to the deployment process with that Python binary's absolute path.
 

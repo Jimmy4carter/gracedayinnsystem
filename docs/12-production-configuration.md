@@ -57,8 +57,10 @@ Create the Python application with:
 | --- | --- |
 | Python | 3.12 |
 | Application root | `gracedayinnsystem` |
-| Startup file | `passenger_wsgi.py` |
+| Startup file | `app.py` |
 | Entry point | `application` |
+
+CloudLinux requires a startup filename and callable. Keep `app.py` separate from the generated `passenger_wsgi.py`; selecting `passenger_wsgi.py` as its own startup file can make cPanel generate a self-referencing wrapper. The deployment hook verifies that `app.application` imports successfully before applying migrations.
 
 Namecheap shared hosting serves WSGI, not ASGI. The public site uses a direct configurable WhatsApp action, so the production application has no WebSocket, Redis, Daphne, or live-chat runtime dependency.
 

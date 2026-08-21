@@ -29,8 +29,8 @@ This document provides a step-by-step guide to deploying the GraceDay Inn bookin
    - **Python Version**: Select **3.11**, **3.12**, or **3.13**. Python 3.11 is the conservative shared-hosting choice.
    - **Application root**: Enter the folder name where your files will live relative to your home directory (e.g., `gracedayinnsystem`).
    - **Application URL**: Select your domain name (e.g., `gracedayinn.com`).
-   - **Application startup file**: Enter `passenger_wsgi.py`.
-   - **Application Entry point**: Leave blank.
+   - **Application startup file**: Enter `app.py`.
+   - **Application Entry point**: Enter `application`.
 4. Click **Create** (this generates the folder and virtual environment).
 
 ---
@@ -41,8 +41,8 @@ This document provides a step-by-step guide to deploying the GraceDay Inn bookin
 2. In cPanel, open **Git Version Control** and choose **Create**.
 3. Enable **Clone a Repository**, enter the GitHub clone URL, use `/home/CPANEL_USERNAME/gracedayinnsystem` as the repository path, and create the repository.
 4. In cPanel Terminal, open the cloned repository and run `git switch production` followed by `git branch --set-upstream-to=origin/production production` once.
-5. Confirm that `.cpanel.yml`, `passenger_wsgi.py`, `manage.py`, and `requirements.txt` are at the repository root.
-6. In **Setup Python App**, use `gracedayinnsystem` as the application root, `passenger_wsgi.py` as the startup file, and `application` as the entry point.
+5. Confirm that `.cpanel.yml`, `app.py`, `passenger_wsgi.py`, `manage.py`, and `requirements.txt` are at the repository root.
+6. In **Setup Python App**, use `gracedayinnsystem` as the application root, `app.py` as the startup file, and `application` as the entry point. Do not configure `passenger_wsgi.py` to load itself.
 
 For each later release: commit on `production`, push to `origin production`, click **Update from Remote**, then **Deploy HEAD Commit**. The checked-in `.cpanel.yml` runs `deploy/namecheap_deploy.sh`; File Manager is not part of the release process. See `docs/28-namecheap-git-production-deployment.md` for the full runbook and direct-push option.
 
