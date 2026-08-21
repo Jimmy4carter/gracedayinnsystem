@@ -36,6 +36,12 @@ jobs:
       BREVO_API_KEY: ci-placeholder-key
       BREVO_WEBHOOK_TOKEN: ci-placeholder-webhook-token-long-enough
       MFA_ENCRYPTION_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
+      DEFAULT_ADMIN_PASSWORD: CI-Admin-Only-Strong-Password-41!
+      DEFAULT_MANAGER_PASSWORD: CI-Manager-Only-Strong-Password-42!
+      DEFAULT_RECEPTION_PASSWORD: CI-Reception-Only-Strong-Password-43!
+      DEFAULT_ACCOUNTANT_PASSWORD: CI-Accountant-Only-Strong-Password-44!
+      DEFAULT_HOUSEKEEPING_PASSWORD: CI-Housekeeping-Only-Strong-Password-45!
+      DEFAULT_INFO_PASSWORD: CI-Info-Only-Strong-Password-46!
       OTEL_EXPORTER_OTLP_ENDPOINT: http://127.0.0.1:4318
       OTEL_SERVICE_NAME: graceday-inn-ci
       RELEASE_VERSION: ci-test

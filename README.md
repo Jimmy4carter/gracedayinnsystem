@@ -50,7 +50,7 @@ This codebase has the structure of a hotel platform, but several parts still nee
 - `DEBUG` defaults to `True` unless overridden in environment variables
 - secrets are expected from environment variables via `python-decouple`; do not hardcode production values
 - email is configured to use the console backend by default, so outbound email will print to the terminal during local development
-- static files are served from `apps/frontend/static/` in development and collected into `staticfiles/` for deployment
+- application assets live in `apps/frontend/static/`, legacy vendor assets live in `staticfiles/`, and deployment output is generated into ignored `collected_static/`
 - CORS is currently limited to localhost origins in settings
 
 ## Local setup

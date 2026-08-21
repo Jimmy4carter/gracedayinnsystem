@@ -75,6 +75,14 @@
                                         </div>
                                         <div class="text-center"><button type="submit" class="btn bg-gradient-info w-100 mt-4 mb-0">Verify & Complete Booking</button></div>
                                     </form>
+                                    <div class="text-center mt-4 pt-3 border-top">
+                                        <p class="text-sm text-muted mb-2">Didn&rsquo;t receive the email? Check spam first, then request a fresh code.</p>
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="resend">
+                                            <button type="submit" class="btn btn-outline-dark w-100 mb-0">Resend verification code</button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>

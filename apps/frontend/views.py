@@ -1,4 +1,6 @@
 import csv
+import base64
+from io import BytesIO
 import json
 import logging
 from datetime import timedelta
@@ -16,7 +18,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Prefetch, Q, Sum
+from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Max, Prefetch, Q, Sum
 from django.db.models.functions import Coalesce, TruncDate
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -39,9 +41,10 @@ from apps.accounts.security import (
     record_authentication_event,
     record_login_failure,
 )
-from apps.billing.models import FinancialAuditRun, Folio, Invoice, InvoiceItem, Receipt
+from apps.billing.models import FinancialAuditRun, Folio, Invoice, Receipt, VATRateChange
 from apps.billing.financial_audit import approve_financial_audit, prepare_financial_audit
-from apps.billing.services import post_financial_correction, tax_summary
+from apps.billing.services import ensure_invoice_for_reservation, post_financial_correction, tax_summary
+from apps.billing.vat import current_vat_rate, set_vat_rate
 from apps.housekeeping.models import (
     HousekeepingTask, IncidentReport, LostFoundItem, MaintenanceTicket,
     StockBalance, StockMovement,
@@ -106,7 +109,7 @@ from .forms import (
     StockMovementForm,
 )
 from .models import (
-    AuditLog, DailyMetricSnapshot, FAQItem, FeatureFlag, GuestTestimonial, LocalGuidePlace, ManagementPack,
+    AuditLog, BillboardContent, DailyMetricSnapshot, FAQItem, FeatureFlag, GuestTestimonial, LocalGuidePlace, ManagementPack,
     ManagementQuery, NewsletterSubscription, NewsletterMessage, NightAuditRun, OperationalSetting,
     PolicyDocument,
 )
@@ -117,7 +120,12 @@ from .reporting import (
     calculate_booking_pace, calculate_daily_metrics, calculate_management_exceptions,
     calculate_financial_report, generate_management_pack, run_night_audit,
 )
-from .security import begin_booking_verification, check_booking_verification, clear_booking_verification
+from .security import (
+    BOOKING_SESSION_KEYS,
+    begin_booking_verification,
+    check_booking_verification,
+    clear_booking_verification,
+)
 from .analytics import record_event
 from .feature_flags import flag_enabled
 
@@ -513,24 +521,7 @@ def _notify_staff(title, message, notification_type='system', link=''):
 
 
 def _ensure_invoice_for_reservation(reservation):
-    invoice, created = Invoice.objects.get_or_create(
-        reservation=reservation,
-        defaults={
-            'guest': reservation.guest,
-            'status': 'sent',
-            'due_date': reservation.check_in_date,
-            'notes': f'Generated for reservation {reservation.reservation_number}.',
-        },
-    )
-    if created:
-        InvoiceItem.objects.create(
-            invoice=invoice,
-            description=f'Accommodation charge ({reservation.reservation_number})',
-            quantity=max(reservation.nights, 1),
-            unit_price=reservation.nightly_rate,
-        )
-        invoice.save()
-    return invoice
+    return ensure_invoice_for_reservation(reservation)
 
 
 
@@ -1877,7 +1868,6 @@ def portal_reservations(request):
         
     room_prices = {}
     if can_manage:
-        import json
         for r in Room.objects.filter(is_active=True, is_sellable=True):
             room_prices[r.id] = float(r.current_price)
             
@@ -2582,21 +2572,22 @@ def portal_payment_receipt(request, receipt_id):
             request_receipt_print(receipt=receipt, terminal=terminal, actor=request.user)
             messages.success(request, 'Receipt print job queued.')
         elif action == 'email' and receipt.invoice.guest and receipt.invoice.guest.email:
-            from django.core.mail import send_mail
-            import datetime
-            send_mail(
+            guest_name = receipt.invoice.guest.get_full_name() or receipt.invoice.guest.username
+            delivered = send_html_email(
                 subject=f'Receipt {receipt.receipt_number} from GRACEDAY INN',
-                message=(f'Hello {receipt.invoice.guest.get_full_name() or receipt.invoice.guest.username},\n\n'
-                         f'Thank you for your payment.\n'
-                         f'Amount Paid: NGN {receipt.amount}\n'
-                         f'Receipt Number: {receipt.receipt_number}\n'
-                         f'Date: {datetime.date.today().strftime("%Y-%m-%d")}\n\n'
-                         f'Thank you for staying with us.'),
-                from_email='noreply@gracedayinn.com',
+                template_name='emails/receipt_email.html',
+                context={
+                    'receipt': receipt, 'guest_name': guest_name,
+                    'receipt_url': request.build_absolute_uri(
+                        reverse('frontend:portal-payment-receipt', args=[receipt.id])
+                    ),
+                },
                 recipient_list=[receipt.invoice.guest.email],
-                fail_silently=True,
             )
-            messages.success(request, f'Receipt emailed to {receipt.invoice.guest.email}')
+            if delivered:
+                messages.success(request, f'Receipt emailed to {receipt.invoice.guest.email}')
+            else:
+                messages.warning(request, 'Receipt email was queued but has not yet been accepted by the delivery service.')
         return redirect('frontend:portal-payment-receipt', receipt_id=receipt.id)
     
     fmt = request.GET.get('format', 'pos').lower()
@@ -3179,14 +3170,47 @@ def portal_financial_audit(request):
 
 
 def public_billboard(request):
-    """High-contrast unattended reception display with rotating hotel content."""
+    """GraceDay TV: public, unattended reception signage using approved content only."""
+    now = timezone.now()
+    custom_content = BillboardContent.objects.filter(is_active=True).filter(
+        Q(start_at__isnull=True) | Q(start_at__lte=now),
+        Q(end_at__isnull=True) | Q(end_at__gte=now),
+    ).order_by('-priority', 'display_order', 'id')
+    content_version = custom_content.aggregate(latest=Max('updated_at'))['latest']
+    if request.GET.get('status') == '1':
+        return JsonResponse({'version': content_version.isoformat() if content_version else 'base'})
     promotions = Promotion.objects.filter(
         is_active=True, valid_from__lte=timezone.now(), valid_to__gte=timezone.now()
-    )[:8]
-    rooms = Room.objects.filter(is_active=True, is_sellable=True).select_related('room_type').order_by('number')[:8]
-    announcements = NewsletterMessage.objects.filter(status='sent').exclude(featured_image='').order_by('-sent_at')[:8]
+    ).prefetch_related('room_types')[:8]
+    rooms = list(Room.objects.filter(is_active=True, is_sellable=True).select_related(
+        'room_type'
+    ).prefetch_related('amenities', 'room_type__amenities', 'gallery_images').order_by('number'))
+    announcements = NewsletterMessage.objects.filter(status='sent').order_by('-sent_at')[:8]
+    faqs = FAQItem.objects.filter(is_published=True).order_by('display_order', 'id')[:8]
+    guide_places = LocalGuidePlace.objects.filter(is_published=True).order_by('display_order', 'name')[:8]
+    testimonials = GuestTestimonial.objects.filter(
+        status='approved', publication_consent=True,
+    ).order_by('-created_at')[:6]
+
+    def qr_data_uri(url):
+        try:
+            import qrcode
+            image = qrcode.make(url)
+            buffer = BytesIO()
+            image.save(buffer, format='PNG')
+            return 'data:image/png;base64,' + base64.b64encode(buffer.getvalue()).decode('ascii')
+        except Exception:
+            logger.exception('billboard_qr_generation_failed')
+            return ''
+
+    rooms_url = request.build_absolute_uri(reverse('frontend:public-rooms'))
+    contact_url = request.build_absolute_uri(reverse('frontend:public-contact'))
     return render(request, 'publicsite/billboard.html', {
         'promotions': promotions, 'rooms': rooms, 'announcements': announcements,
+        'faqs': faqs, 'guide_places': guide_places, 'testimonials': testimonials,
+        'custom_content': custom_content, 'content_version': content_version,
+        'rooms_url': rooms_url, 'contact_url': contact_url,
+        'rooms_qr': qr_data_uri(rooms_url), 'contact_qr': qr_data_uri(contact_url),
         'billboard_assets': [
             {'image': 'img/hero/hero-1.jpg', 'eyebrow': 'A warm welcome', 'title': 'Arrive curious. Leave restored.', 'body': 'A calm Abuja stay with attentive service, generous spaces, and the little details that make travel easier.', 'icon': 'flaticon-026-bed'},
             {'image': 'img/dining.png', 'eyebrow': 'Taste the moment', 'title': 'Good food. Good company.', 'body': 'Enjoy memorable dining and catering from our kitchen, prepared for relaxed evenings and busy days.', 'icon': 'flaticon-033-dinner'},
@@ -3511,6 +3535,42 @@ def portal_settings(request):
     })
 
 
+@login_required
+@role_required({'admin'})
+def portal_vat(request):
+    if request.method == 'POST':
+        try:
+            rate = Decimal(request.POST.get('rate', '').strip())
+            reason = request.POST.get('reason', '').strip()
+            if rate < 0 or rate > 100:
+                raise ValidationError('VAT must be between 0 and 100 percent.')
+            if not reason:
+                raise ValidationError('Enter a reason for this VAT change.')
+            change = set_vat_rate(rate=rate, reason=reason, actor=request.user)
+        except (InvalidOperation, ValidationError) as exc:
+            messages.error(request, '; '.join(getattr(exc, 'messages', [str(exc)])))
+        else:
+            _log_audit(
+                request, event_type='system', action='change_vat_rate',
+                target_model='VATRateChange', target_id=change.id,
+                details={
+                    'previous_rate': str(change.previous_rate),
+                    'rate': str(change.rate), 'reason': change.reason,
+                },
+            )
+            if change.rate == 0:
+                messages.success(request, 'VAT disabled. New transactions will not show a VAT line.')
+            else:
+                messages.success(request, f'VAT updated to {change.rate}%. New transactions now use this rate.')
+            return redirect('frontend:portal-vat')
+    history = VATRateChange.objects.select_related('changed_by').all()
+    return render(request, 'portals/vat.html', {
+        'current_vat_rate': current_vat_rate(),
+        'vat_history': history,
+        'stats': _portal_stats(request.user),
+    })
+
+
 def send_html_email(subject, template_name, context, recipient_list):
     html_content = render_to_string(template_name, context)
     text_content = strip_tags(html_content)
@@ -3539,6 +3599,31 @@ def portal_verify_booking(request):
     
     booking_data = request.session['booking_request_data']
     if request.method == 'POST':
+        if request.POST.get('action') == 'resend':
+            previous_verification = {
+                key: request.session.get(key)
+                for key in BOOKING_SESSION_KEYS
+                if key in request.session
+            }
+            code = begin_booking_verification(request, booking_data)
+            if code is None:
+                messages.error(request, 'Too many code requests. Please wait before trying again.')
+                return redirect('frontend:portal-verify-booking')
+            sent = send_html_email(
+                subject='GRACEDAY INN - Your new booking verification code',
+                template_name='emails/verify_email.html',
+                context={'first_name': booking_data['first_name'], 'code': code},
+                recipient_list=[booking_data['email']],
+            )
+            if not sent:
+                for key in BOOKING_SESSION_KEYS:
+                    request.session.pop(key, None)
+                request.session.update(previous_verification)
+                messages.error(request, 'We could not resend the code. Your previous code is still valid.')
+            else:
+                messages.success(request, 'A new verification code was sent. Please use the latest code.')
+            return redirect('frontend:portal-verify-booking')
+
         entered_code = request.POST.get('verification_code', '').strip()
         verification_result = check_booking_verification(request, entered_code)
         if verification_result == 'verified':

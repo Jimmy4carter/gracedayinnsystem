@@ -75,6 +75,8 @@ class CommunicationOutboxTests(TestCase):
         request = urlopen.call_args.args[0]
         self.assertEqual(request.headers['Api-key'], 'test-key')
         self.assertEqual(request.headers['Idempotencykey'], 'brevo-email')
+        payload = json.loads(request.data)
+        self.assertEqual(payload['to'], [{'email': 'guest@example.com'}])
 
 
 class BrevoContactSyncTests(TestCase):

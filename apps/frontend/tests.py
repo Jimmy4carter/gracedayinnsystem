@@ -84,6 +84,17 @@ class FrontendWorkflowTests(TestCase):
 			'guest': self.guest,
 		}
 
+	def test_reservation_page_renders_for_guest_and_front_desk(self):
+		url = reverse('frontend:portal-reservations')
+		for user in (self.guest, self.staff):
+			with self.subTest(role=user.role):
+				self.client.force_login(user)
+				response = self.client.get(url)
+				self.assertEqual(response.status_code, 200)
+				self.assertIn('room_prices_json', response.context)
+				if user.role == 'guest':
+					self.assertEqual(response.context['room_prices_json'], '{}')
+
 	def test_staff_can_create_room_from_portal(self):
 		self.client.force_login(self.staff)
 		response = self.client.post(
@@ -817,6 +828,27 @@ class FrontendWorkflowTests(TestCase):
 		)
 		self.assertRedirects(response, reverse('frontend:public-home'), fetch_redirect_response=False)
 		self.assertNotIn('booking_verify_hash', self.client.session)
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_booking_otp_can_be_resent_and_latest_code_completes_booking(self):
+		self._start_public_verification(email='resend-otp@example.com')
+		original_hash = self.client.session['booking_verify_hash']
+		response = self.client.post(
+			reverse('frontend:portal-verify-booking'), {'action': 'resend'}
+		)
+		self.assertRedirects(
+			response, reverse('frontend:portal-verify-booking'), fetch_redirect_response=False
+		)
+		self.assertEqual(len(mail.outbox), 2)
+		self.assertNotEqual(self.client.session['booking_verify_hash'], original_hash)
+		latest_code = re.search(
+			r'verification code is:\s*(\d{6})', mail.outbox[-1].body, re.IGNORECASE
+		).group(1)
+		verify_response = self.client.post(
+			reverse('frontend:portal-verify-booking'), {'verification_code': latest_code}
+		)
+		self.assertEqual(verify_response.status_code, 302)
+		self.assertTrue(Reservation.objects.filter(guest__email='resend-otp@example.com').exists())
 
 	@override_settings(
 		EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',

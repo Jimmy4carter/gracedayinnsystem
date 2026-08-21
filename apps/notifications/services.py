@@ -56,7 +56,7 @@ def _send_django(message):
     email.attach_alternative(message.html_body, 'text/html')
     if email.send() != 1:
         raise DeliveryError('Django email backend did not accept the message.')
-    return f'django:{message.reference}'
+    return f'{message.provider}:{message.reference}'
 
 
 def _send_brevo(message):
@@ -66,10 +66,13 @@ def _send_brevo(message):
     headers = {'X-Mailin-custom': f'internal-message:{message.reference}'}
     if getattr(settings, 'BREVO_SANDBOX', False):
         headers['X-Sib-Sandbox'] = 'drop'
+    recipient = {'email': message.recipient_email}
+    if message.recipient_name.strip():
+        recipient['name'] = message.recipient_name.strip()
     payload = {
         'sender': {'email': settings.DEFAULT_FROM_EMAIL,
                    'name': getattr(settings, 'BREVO_SENDER_NAME', 'GRACEDAY INN')},
-        'to': [{'email': message.recipient_email, 'name': message.recipient_name}],
+        'to': [recipient],
         'subject': message.subject, 'htmlContent': message.html_body,
         'textContent': message.text_body, 'tags': [message.purpose, str(message.reference)],
         'headers': headers,
