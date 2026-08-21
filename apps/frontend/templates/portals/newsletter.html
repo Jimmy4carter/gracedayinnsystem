@@ -489,6 +489,7 @@
                             <th>Subject</th>
                             <th>Status</th>
                             <th>Date Created</th>
+                            <th>Action</th>
                         </tr>
 
                     </thead>
@@ -513,7 +514,7 @@
                                             {{ item.get_status_display }}
                                         </span>
 
-                                    {% elif item.status == 'ready' %}
+                                    {% elif item.status == 'ready_to_send' %}
 
                                         <span class="status-badge status-ready">
                                             {{ item.get_status_display }}
@@ -528,6 +529,8 @@
                                     {% endif %}
 
                                 </td>
+
+                                <td>{% if item.status == 'ready_to_send' %}<form method="post" action="{% url 'frontend:portal-newsletter-send' item.id %}">{% csrf_token %}<button class="btn btn-sm bg-gradient-dark">Send</button></form>{% elif item.status == 'sent' %}<small>{{ item.recipient_count }} recipients</small>{% endif %}</td>
 
 
                                 <td>

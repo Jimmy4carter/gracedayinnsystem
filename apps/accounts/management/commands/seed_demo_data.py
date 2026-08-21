@@ -2,13 +2,14 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from apps.accounts.models import GuestProfile, UserProfile
-from apps.billing.models import Invoice, InvoiceItem
+from apps.billing.services import ensure_invoice_for_reservation
 from apps.housekeeping.models import HousekeepingTask
-from apps.payments.models import Payment
+from apps.payments.services import record_payment
 from apps.reservations.models import Reservation
 from apps.rooms.models import Room
 from apps.services.models import MenuItem, ServiceOrder, ServiceOrderItem
@@ -18,6 +19,8 @@ class Command(BaseCommand):
     help = 'Seed demo operational data for GRACEDAY INN website and portals.'
 
     def handle(self, *args, **options):
+        if not settings.DEBUG:
+            raise CommandError('Demo data cannot be seeded with production settings.')
         self.stdout.write('Seeding GRACEDAY INN demo data...')
         call_command('create_initial_data')
 
@@ -30,28 +33,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Demo data seeded successfully.'))
 
     def _ensure_staff_users(self):
-        staff_users = {}
-        staff_defs = [
-            ('manager1', 'manager@gracedayinn.com', 'manager', 'Grace', 'Manager'),
-            ('reception1', 'reception@gracedayinn.com', 'receptionist', 'Front', 'Desk'),
-            ('housekeeper1', 'housekeeping@gracedayinn.com', 'housekeeping', 'Clean', 'Team'),
-        ]
-        for username, email, role, first_name, last_name in staff_defs:
-            user, created = UserProfile.objects.get_or_create(
-                username=username,
-                defaults={
-                    'email': email,
-                    'role': role,
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'is_active': True,
-                },
+        return {
+            user.role: user
+            for user in UserProfile.objects.filter(
+                username__in=['manager', 'reception', 'housekeeping']
             )
-            if created or not user.has_usable_password():
-                user.set_password('demo12345')
-                user.save(update_fields=['password'])
-            staff_users[role] = user
-        return staff_users
+        }
 
     def _ensure_guests(self):
         guests = []
@@ -71,8 +58,8 @@ class Command(BaseCommand):
                     'is_active': True,
                 },
             )
-            if created or not user.has_usable_password():
-                user.set_password('demo12345')
+            if created:
+                user.set_unusable_password()
                 user.save(update_fields=['password'])
             GuestProfile.objects.get_or_create(user=user)
             guests.append(user)
@@ -126,31 +113,16 @@ class Command(BaseCommand):
 
     def _ensure_invoices_and_payments(self, staff, reservations):
         for reservation in reservations:
-            invoice, created = Invoice.objects.get_or_create(
-                reservation=reservation,
-                defaults={
-                    'guest': reservation.guest,
-                    'status': 'sent',
-                    'due_date': reservation.check_in_date,
-                },
-            )
-            if created:
-                InvoiceItem.objects.create(
-                    invoice=invoice,
-                    description=f'Accommodation ({reservation.reservation_number})',
-                    quantity=max(reservation.nights, 1),
-                    unit_price=reservation.nightly_rate,
-                )
-                invoice.save()
+            invoice = ensure_invoice_for_reservation(reservation)
 
             if reservation.status in {'confirmed', 'checked_in'} and not invoice.payments.exists():
-                Payment.objects.create(
+                record_payment(
                     invoice=invoice,
                     amount=min(invoice.total, Decimal('50000.00')),
                     method='card',
-                    status='completed',
-                    transaction_id=f'TXN-{reservation.id}',
-                    processed_by=staff['receptionist'],
+                    transaction_id=f'DEMO-TXN-{reservation.id}',
+                    actor=staff['receptionist'],
+                    idempotency_key=f'demo-payment:{reservation.id}',
                 )
 
     def _ensure_service_orders(self, guests):

@@ -31,7 +31,7 @@
                                     <div class="room-item">
                                         <div class="ri-text">
                                             <h4><a href="{% url 'frontend:public-room-detail' room.id %}">{{ room.room_type.name }} - Room {{ room.number }}</a></h4>
-                                            <p>{{ room.description|default:room.notes|truncatechars:120 }}</p>
+                                            <p>{{ room.description|default:room.room_type.description|default:'Comfortable accommodation at GRACEDAY INN.'|truncatechars:120 }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -89,7 +89,10 @@
                     </div>
                 {% endif %}
 
-                {% if not navigation_results and not room_results and not room_type_results and not service_results and not category_results %}
+                {% if faq_results %}<div class="search-results-block mb-4"><h4>Frequently asked questions</h4><ul>{% for item in faq_results %}<li><a href="{% url 'frontend:public-faq' %}">{{ item.question }}</a></li>{% endfor %}</ul></div>{% endif %}
+                {% if policy_results %}<div class="search-results-block mb-4"><h4>Guest policies</h4><ul>{% for policy in policy_results %}<li><a href="{% url 'frontend:public-policy-detail' policy.slug %}">{{ policy.title }}</a> — {{ policy.summary }}</li>{% endfor %}</ul></div>{% endif %}
+
+                {% if not navigation_results and not room_results and not room_type_results and not service_results and not category_results and not faq_results and not policy_results %}
                     <div class="search-results-block mb-4">
                         <p>No results found for "{{ query }}". Try searching for rooms, services, or navigation items.</p>
                     </div>

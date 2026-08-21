@@ -1,40 +1,319 @@
 {% extends 'base_portal.html' %}
-{% block title %}Reports | GRACEDAY INN{% endblock %}
-{% block page_title %}Performance Reports{% endblock %}
+{% load custom_filters %}
+{% block title %}Banking Audit &amp; Performance Reports | GRACEDAY INN{% endblock %}
+{% block page_title %}Banking-Standard Financial &amp; Audit Reports{% endblock %}
+{% block page_heading %}Financial Ledger &amp; Operational Reports{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    #sidenav-main, .navbar-main, .btn, form, footer, .portal-skip-link {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+    body {
+        background-color: #fff !important;
+    }
+    .print-header {
+        display: block !important;
+    }
+}
+.print-header {
+    display: none;
+}
+.metric-card {
+    border-radius: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="print-header mb-4 text-center border-bottom pb-3">
+    <h3 class="font-weight-bold mb-1">GRACEDAY INN HOTEL &amp; SUITES</h3>
+    <h5 class="text-secondary mb-0">Period-scoped Financial Control Report (Last {{ selected_days }} Days)</h5>
+    <small class="text-muted">Generated: {{ today|date:"d M Y, H:i" }} | Currency: NGN (Nigerian Naira) | Location: Apo-Dutse, Abuja</small>
+</div>
+
+<!-- ACTIONS HEADER BAR -->
 <div class="row mb-4">
-    <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
-        <form method="get" class="d-flex gap-2">
-            <select class="form-select form-select-sm" name="days" onchange="this.form.submit()">
-                {% for option in window_choices %}
-                    <option value="{{ option }}" {% if option == selected_days %}selected{% endif %}>Last {{ option }} days</option>
-                {% endfor %}
-            </select>
-        </form>
-        <a class="btn btn-outline-primary btn-sm mb-0" href="{% url 'frontend:portal-reports-export-csv' %}?days={{ selected_days }}">Export CSV</a>
-        <a class="btn btn-outline-dark btn-sm mb-0" href="{% url 'frontend:portal-reports-export-pdf' %}?days={{ selected_days }}">Export PDF</a>
+    <div class="col-12 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+        <div>
+            <span class="badge bg-gradient-success text-xs"><i class="fa fa-shield me-1"></i> Period-scoped controls</span>
+            <span class="badge bg-gradient-info text-xs ms-1"><i class="fa fa-lock me-1"></i> Cryptographic Audit Trail Active</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <form method="get" class="d-flex gap-2">
+                <select class="form-select form-select-sm" name="days" onchange="this.form.submit()">
+                    {% for option in window_choices %}
+                        <option value="{{ option }}" {% if option == selected_days %}selected{% endif %}>Last {{ option }} days window</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-sm mb-0">
+                <i class="fa fa-print me-1"></i> Print Official Report
+            </button>
+            <a class="btn btn-outline-primary btn-sm mb-0" href="{% url 'frontend:portal-reports-export-csv' %}?days={{ selected_days }}">
+                <i class="fa fa-file-text-o me-1"></i> Export CSV
+            </a>
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'accountant' %}<a class="btn btn-success btn-sm mb-0" href="{% url 'frontend:portal-reports-export-xlsx' %}?days={{ selected_days }}">
+                <i class="fa fa-file-excel-o me-1"></i> Export Excel Workbook
+            </a>{% endif %}
+            <a class="btn btn-primary bg-gradient-primary btn-sm mb-0" href="{% url 'frontend:portal-reports-export-pdf' %}?days={{ selected_days }}">
+                <i class="fa fa-file-pdf-o me-1"></i> Export PDF Summary
+            </a>
+        </div>
     </div>
 </div>
-<div class="row">
-    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Total Revenue</p><h5 class="font-weight-bolder mb-0">₦{{ report.total_revenue }}</h5></div></div></div>
-    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Open Balance</p><h5 class="font-weight-bolder mb-0">₦{{ report.open_balance }}</h5></div></div></div>
-    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Total Reservations</p><h5 class="font-weight-bolder mb-0">{{ report.total_reservations }}</h5></div></div></div>
-    <div class="col-xl-3 col-sm-6"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Confirmed Reservations</p><h5 class="font-weight-bolder mb-0">{{ report.confirmed_reservations }}</h5></div></div></div>
+
+<!-- TOP EXECUTIVE METRICS -->
+<div class="row g-3">
+    <div class="col-xl-3 col-sm-6">
+        <div class="card border-0 shadow-sm metric-card bg-gradient-primary text-white">
+            <div class="card-body p-3">
+                <p class="text-xs mb-1 text-uppercase font-weight-bold opacity-8">Net Revenue (Period)</p>
+                <h3 class="font-weight-bolder mb-0 text-white">₦{{ report.total_revenue|currency_format }}</h3>
+                <small class="opacity-8 text-xxs">Includes room &amp; service orders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card border-0 shadow-sm metric-card bg-gradient-danger text-white">
+            <div class="card-body p-3">
+                <p class="text-xs mb-1 text-uppercase font-weight-bold opacity-8">Accounts Receivable (Unpaid)</p>
+                <h3 class="font-weight-bolder mb-0 text-white">₦{{ report.open_balance|currency_format }}</h3>
+                <small class="opacity-8 text-xxs">Outstanding guest &amp; corporate balances</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card border-0 shadow-sm metric-card">
+            <div class="card-body p-3">
+                <p class="text-xs mb-1 text-uppercase text-muted font-weight-bold">Total Reservations</p>
+                <h3 class="font-weight-bolder mb-0 text-dark">{{ report.total_reservations }}</h3>
+                <small class="text-success text-xxs font-weight-bold">{{ report.confirmed_reservations }} Confirmed / Checked-in</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="card border-0 shadow-sm metric-card">
+            <div class="card-body p-3">
+                <p class="text-xs mb-1 text-uppercase text-muted font-weight-bold">Occupied Rooms Rate</p>
+                <h3 class="font-weight-bolder mb-0 text-info">{{ report.occupied_rooms }} / {{ report.occupied_rooms|add:report.available_rooms }} Rooms</h3>
+                <small class="text-muted text-xxs">Active house occupancy</small>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="row mt-4">
-    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Occupied Rooms</p><h5 class="font-weight-bolder mb-0">{{ report.occupied_rooms }}</h5></div></div></div>
-    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Pending Housekeeping</p><h5 class="font-weight-bolder mb-0">{{ report.pending_housekeeping }}</h5></div></div></div>
-    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Service SLA (Avg Min)</p><h5 class="font-weight-bolder mb-0">{{ report.service_sla_minutes }}</h5></div></div></div>
-    <div class="col-xl-3 col-sm-6"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">HK Turnaround (Avg Min)</p><h5 class="font-weight-bolder mb-0">{{ report.housekeeping_turnaround_minutes }}</h5></div></div></div>
+
+<div class="row g-3 mt-2">
+    <div class="col-xl-3 col-sm-6"><div class="card border-0 shadow-sm metric-card"><div class="card-body p-3"><p class="text-xs mb-1 text-uppercase text-muted font-weight-bold">Room Revenue</p><h5 class="mb-0">₦{{ report.room_revenue|currency_format }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card border-0 shadow-sm metric-card"><div class="card-body p-3"><p class="text-xs mb-1 text-uppercase text-muted font-weight-bold">Service Revenue</p><h5 class="mb-0">₦{{ report.service_revenue|currency_format }}</h5></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card border-0 shadow-sm metric-card"><div class="card-body p-3"><p class="text-xs mb-1 text-uppercase text-muted font-weight-bold">Net VAT Payable</p><h5 class="mb-0">₦{{ report.net_tax_payable|currency_format }}</h5><small class="text-muted text-xxs">Output {{ report.tax_collected|currency_format }} less input {{ report.input_tax_paid|currency_format }}; confirm recoverability</small></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card border-0 shadow-sm metric-card"><div class="card-body p-3"><p class="text-xs mb-1 text-uppercase text-muted font-weight-bold">Gross Guest Billings</p><h5 class="mb-0">₦{{ report.gross_billings|currency_format }}</h5><small class="text-muted text-xxs">Revenue plus VAT / tax</small></div></div></div>
 </div>
-<div class="row mt-4">
-    <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Completed Service Orders</p><h5 class="font-weight-bolder mb-0">{{ report.completed_service_orders }}</h5></div></div></div>
-    <div class="col-xl-3 col-sm-6"><div class="card"><div class="card-body p-3"><p class="text-sm mb-0 text-capitalize font-weight-bold">Completed HK Tasks</p><h5 class="font-weight-bolder mb-0">{{ report.completed_housekeeping_tasks }}</h5></div></div></div>
+
+<div class="row g-3 mt-2">
+    <div class="col-xl-3 col-sm-6"><div class="card border-0 shadow-sm metric-card bg-gradient-danger text-white"><div class="card-body p-3"><p class="text-xs mb-1 text-uppercase font-weight-bold opacity-8">Paid Operating Expenses</p><h5 class="mb-0 text-white">₦{{ report.operating_expenses|currency_format }}</h5><small class="opacity-8 text-xxs">Net of input VAT · cash outflow {{ report.expense_cash_outflow|currency_format }}</small></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card border-0 shadow-sm metric-card bg-gradient-success text-white"><div class="card-body p-3"><p class="text-xs mb-1 text-uppercase font-weight-bold opacity-8">Cash-basis Operating Result</p><h5 class="mb-0 text-white">₦{{ report.operating_profit|currency_format }}</h5><small class="opacity-8 text-xxs">Net revenue less paid expenses; not an accrual statement</small></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card border-0 shadow-sm metric-card"><div class="card-body p-3"><p class="text-xs mb-1 text-uppercase text-muted font-weight-bold">Approved Unpaid Expenses</p><h5 class="mb-0">₦{{ report.approved_expenses|currency_format }}</h5><small class="text-muted text-xxs">Committed cash requirement</small></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="card border-0 shadow-sm metric-card"><div class="card-body p-3"><p class="text-xs mb-1 text-uppercase text-muted font-weight-bold">Refunds &amp; Credits</p><h5 class="mb-0">₦{{ report.refunds|currency_format }}</h5><small class="text-muted text-xxs">Deducted from revenue</small></div></div></div>
 </div>
-<div class="card mt-4">
-    <div class="card-body">
-        <h5 class="mb-3">{{ selected_days }}-Day Performance Trend</h5>
-        <canvas id="reportsTrendChart" height="120"></canvas>
+
+{% if report.expense_by_category %}<div class="card border-0 shadow-sm mt-4"><div class="card-header pb-0"><h6 class="mb-0">Paid expenditure by category</h6></div><div class="card-body"><div class="row g-2">{% for item in report.expense_by_category %}<div class="col-lg-4 col-md-6"><div class="d-flex justify-content-between border rounded p-3"><span>{{ item.category__name }}</span><strong>₦{{ item.total|currency_format }}</strong></div></div>{% endfor %}</div></div></div>{% endif %}
+
+<!-- SETTLEMENT METHOD BREAKDOWN -->
+<div class="row g-3 mt-2">
+    <div class="col-lg-3 col-6">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-center">
+                <div class="icon icon-shape icon-sm bg-gradient-success shadow text-center border-radius-md me-3 d-flex align-items-center justify-content-center text-white">
+                    <i class="fa fa-money"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-muted font-weight-bold">Cash Payments</span>
+                    <h5 class="mb-0 font-weight-bolder text-dark">₦{{ settlements.cash|currency_format }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-center">
+                <div class="icon icon-shape icon-sm bg-gradient-dark shadow text-center border-radius-md me-3 d-flex align-items-center justify-content-center text-white">
+                    <i class="fa fa-credit-card"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-muted font-weight-bold">Card / POS Settlements</span>
+                    <h5 class="mb-0 font-weight-bolder text-dark">₦{{ settlements.pos|currency_format }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-center">
+                <div class="icon icon-shape icon-sm bg-gradient-info shadow text-center border-radius-md me-3 d-flex align-items-center justify-content-center text-white">
+                    <i class="fa fa-bank"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-muted font-weight-bold">Bank Transfers</span>
+                    <h5 class="mb-0 font-weight-bolder text-dark">₦{{ settlements.bank_transfer|currency_format }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-center">
+                <div class="icon icon-shape icon-sm bg-gradient-warning shadow text-center border-radius-md me-3 d-flex align-items-center justify-content-center text-white">
+                    <i class="fa fa-globe"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-muted font-weight-bold">Online Gateway</span>
+                    <h5 class="mb-0 font-weight-bolder text-dark">₦{{ settlements.online|currency_format }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TREND CHART -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 font-weight-bold text-dark"><i class="fa fa-line-chart me-2 text-primary"></i> {{ selected_days }}-Day Financial &amp; Occupancy Trend</h6>
+        <span class="badge bg-gradient-dark text-xxs">Daily Aggregates</span>
+    </div>
+    <div class="card-body p-4">
+        <div style="height: 320px; position: relative;">
+            <canvas id="reportsTrendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- CASHIER SHIFTS RECONCILIATION TABLE -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 font-weight-bold text-dark"><i class="fa fa-calculator me-2 text-warning"></i> Cashier Terminal Shift Reconciliations</h6>
+        <span class="text-xs text-muted">Audit Reconciliation Log</span>
+    </div>
+    <div class="card-body px-0 pt-2 pb-2">
+        <div class="table-responsive p-0">
+            <table class="table align-items-center mb-0 text-sm">
+                <thead>
+                    <tr>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-3">Cashier &amp; Terminal</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Opened / Closed</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Opening Float</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">System Cash</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Counted Cash</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Discrepancy Variance</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shift in cashier_shifts %}
+                    <tr>
+                        <td class="ps-3">
+                            <strong class="text-dark">{{ shift.cashier.get_full_name|default:shift.cashier.username }}</strong>
+                            <small class="d-block text-muted">{{ shift.terminal.name }}</small>
+                        </td>
+                        <td class="align-middle text-center">
+                            <span class="text-xs">{{ shift.opened_at|date:"d M H:i" }}</span>
+                            {% if shift.closed_at %}
+                                <small class="d-block text-muted">to {{ shift.closed_at|date:"d M H:i" }}</small>
+                            {% else %}
+                                <small class="d-block text-success font-weight-bold">STILL OPEN</small>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle text-center font-weight-bold">₦{{ shift.opening_float|currency_format }}</td>
+                        <td class="align-middle text-center font-weight-bold">₦{{ shift.expected_cash|default:0|currency_format }}</td>
+                        <td class="align-middle text-center font-weight-bold">₦{{ shift.counted_cash|default:0|currency_format }}</td>
+                        <td class="align-middle text-center">
+                            {% if shift.variance and shift.variance != 0 %}
+                                <span class="badge bg-gradient-danger">₦{{ shift.variance|currency_format }}</span>
+                            {% else %}
+                                <span class="badge bg-gradient-success">₦0.00 (Balanced)</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle text-center">
+                            {% if shift.status == 'closed' %}
+                                <span class="badge bg-gradient-secondary">Closed</span>
+                            {% else %}
+                                <span class="badge bg-gradient-success">Active Shift</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center py-3 text-muted">No cashier shift records logged.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- CRYPTOGRAPHIC AUDIT LOG TABLE -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 font-weight-bold text-dark"><i class="fa fa-lock me-2 text-danger"></i> Immutable Cryptographic Audit Log (Banking Standard)</h6>
+        <span class="badge bg-gradient-dark text-xxs">Append-Only Sequence Log</span>
+    </div>
+    <div class="card-body px-0 pt-2 pb-2">
+        <div class="table-responsive p-0">
+            <table class="table align-items-center mb-0 text-xs">
+                <thead>
+                    <tr>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-3">Seq # / Event</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Action / Target</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Actor</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">IP Address</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Timestamp</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cryptographic Hash Signature</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for audit in recent_audits %}
+                    <tr>
+                        <td class="ps-3">
+                            <span class="badge bg-gradient-dark me-1">#{{ audit.sequence }}</span>
+                            <strong class="text-dark">{{ audit.get_event_type_display }}</strong>
+                        </td>
+                        <td>
+                            <strong class="text-primary">{{ audit.action }}</strong>
+                            <small class="d-block text-muted">{{ audit.target_model }} [ID: {{ audit.target_id|default:'-' }}]</small>
+                        </td>
+                        <td class="align-middle text-center">
+                            <span class="font-weight-bold text-dark">{{ audit.actor.username|default:'System' }}</span>
+                        </td>
+                        <td class="align-middle text-center">
+                            <code>{{ audit.ip_address|default:'127.0.0.1' }}</code>
+                        </td>
+                        <td class="align-middle text-center text-muted">
+                            {{ audit.created_at|date:"d M Y, H:i:s" }}
+                        </td>
+                        <td class="align-middle text-center">
+                            <code class="text-xxs text-dark" title="Event Hash: {{ audit.event_hash }}">{{ audit.event_hash|slice:":16" }}...</code>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-3 text-muted">No audit log entries recorded.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -58,19 +337,23 @@
                     {
                         label: 'Occupancy %',
                         data: reportOccupancy,
-                        borderColor: '#0b3c49',
-                        tension: 0.3
+                        borderColor: '#5e72e4',
+                        backgroundColor: 'rgba(94, 114, 228, 0.1)',
+                        tension: 0.3,
+                        fill: true
                     },
                     {
-                        label: 'Revenue (N)',
+                        label: 'Revenue (NGN)',
                         data: reportRevenue,
-                        borderColor: '#c16622',
-                        tension: 0.3
+                        borderColor: '#2dce89',
+                        backgroundColor: 'rgba(45, 206, 137, 0.1)',
+                        tension: 0.3,
+                        fill: true
                     },
                     {
                         label: 'Service SLA (Min)',
                         data: reportSla,
-                        borderColor: '#2a9d8f',
+                        borderColor: '#fb6340',
                         tension: 0.3
                     }
                 ]

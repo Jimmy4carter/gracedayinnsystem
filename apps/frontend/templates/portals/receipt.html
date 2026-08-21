@@ -1,68 +1,377 @@
-<!doctype html>
+{% load static custom_filters %}
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Receipt - {{ invoice.invoice_number }}</title>
-  <style>
-    body { font-family: Arial, Helvetica, sans-serif; margin: 24px; color: #222 }
-    .header { text-align: center; margin-bottom: 16px }
-    .items { width: 100%; border-collapse: collapse; margin-top: 12px }
-    .items th, .items td { border: 1px solid #ddd; padding: 8px }
-    .items th { background: #f7f7f7 }
-    .totals { margin-top: 12px; float: right; min-width: 260px }
-    .muted { color: #666; font-size: 0.9em }
-    @media print { .no-print { display: none } }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Official Invoice/Receipt - {{ invoice.invoice_number }} | GRACEDAY INN</title>
+    <link rel="stylesheet" href="{% static 'css/font-awesome.min.css' %}" type="text/css">
+    <style>
+        @page { size: A4; margin: 15mm; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        .receipt-container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            padding: 40px;
+            border: 1px solid #e2e8f0;
+        }
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 14px 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        .action-bar .brand-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+        }
+        .action-bar .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+        .btn-action:hover { background: #1d4ed8; }
+        .btn-action.btn-secondary { background: #334155; }
+        .btn-action.btn-secondary:hover { background: #475569; }
+        .btn-action.btn-success { background: #059669; }
+        .btn-action.btn-success:hover { background: #047857; }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 24px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        .logo-area img {
+            max-height: 75px;
+            width: auto;
+        }
+        .logo-area h1 {
+            margin: 4px 0 0 0;
+            font-size: 1.6rem;
+            color: #0f172a;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .hotel-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            line-height: 1.5;
+            margin-top: 6px;
+        }
+        .invoice-title-box {
+            text-align: right;
+        }
+        .invoice-title-box h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: #0f172a;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .inv-num {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #2563eb;
+            margin-top: 4px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+        .status-paid { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .status-partial { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .status-unpaid { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 28px 0;
+        }
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 18px;
+        }
+        .info-card h4 {
+            margin: 0 0 10px 0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-card p {
+            margin: 4px 0;
+            font-size: 0.9rem;
+            color: #1e293b;
+        }
+        .info-card strong { color: #0f172a; }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+        }
+        .items-table th {
+            background: #0f172a;
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
+            text-align: left;
+        }
+        .items-table th.text-right { text-align: right; }
+        .items-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+        .items-table tr:nth-child(even) { background-color: #f8fafc; }
+
+        .summary-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .summary-box {
+            width: 340px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 16px 20px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+        .summary-row.total-row {
+            border-top: 2px solid #94a3b8;
+            margin-top: 8px;
+            padding-top: 10px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .summary-row.balance-row {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-weight: 700;
+        }
+        .summary-row.paid-row {
+            color: #166534;
+            font-weight: 700;
+        }
+
+        .footer-note {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px dashed #cbd5e1;
+            text-align: center;
+        }
+        .footer-note .thank-you {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .footer-note p {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin: 2px 0;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .receipt-container { box-shadow: none; border: none; padding: 0; width: 100%; max-width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
 </head>
 <body>
-  <div class="no-print" style="text-align:right;margin-bottom:8px;">
-    <button onclick="window.print()">Print</button>
-  </div>
-  <div class="header">
-    <h2>GRACEDAY INN</h2>
-    <div class="muted">Receipt for Invoice {{ invoice.invoice_number }}</div>
-  </div>
-  <div>
-    <strong>Guest:</strong> {{ invoice.guest.get_full_name|default:invoice.guest.username }}<br>
-    <strong>Reservation:</strong> {{ invoice.reservation }}<br>
-    <strong>Issued:</strong> {{ invoice.created_at|date:"Y-m-d H:i" }}
-  </div>
 
-  <table class="items">
-    <thead>
-      <tr>
-        <th>Description</th>
-        <th style="width:120px;text-align:right">Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in invoice.items.all %}
-      <tr>
-        <td>{{ item.description }}</td>
-        <td style="text-align:right">₦{{ item.amount }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="receipt-container">
 
-  <div class="totals">
-    <table>
-      <tr><td class="muted">Subtotal:</td><td style="text-align:right">₦{{ invoice.subtotal }}</td></tr>
-      <tr><td class="muted">Tax:</td><td style="text-align:right">₦{{ invoice.tax_amount }}</td></tr>
-      <tr><td class="muted">Total:</td><td style="text-align:right"><strong>₦{{ invoice.total }}</strong></td></tr>
-      <tr><td class="muted">Amount Paid:</td><td style="text-align:right">₦{{ invoice.amount_paid }}</td></tr>
-      <tr><td class="muted">Balance:</td><td style="text-align:right">₦{{ invoice.balance }}</td></tr>
+    <!-- TOP ACTION BAR -->
+    <div class="action-bar no-print">
+        <div class="brand-title"><i class="fa fa-file-text-o"></i> Official Document Viewer</div>
+        <div class="btn-group">
+            <a href="?format=pos" class="btn-action btn-secondary" title="View POS Receipt Format"><i class="fa fa-print"></i> POS Slip</a>
+            {% if receipt.invoice.guest and receipt.invoice.guest.email %}
+            <form method="post" style="display:inline; margin:0;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="email">
+                <button type="submit" class="btn-action btn-success"><i class="fa fa-envelope"></i> Email Guest</button>
+            </form>
+            {% endif %}
+            <button onclick="window.print()" class="btn-action"><i class="fa fa-print"></i> Print A4 Invoice</button>
+        </div>
+    </div>
+
+    <!-- HEADER SECTION -->
+    <div class="invoice-header">
+        <div class="logo-area">
+            <img src="{% static 'img/Header_logo.png' %}" alt="GRACEDAY INN Logo" onerror="this.style.display='none'">
+            <h1>GRACEDAY INN</h1>
+            <div class="hotel-info">
+                Louis Court Estate, Apo-Dutse, Abuja FCT, Nigeria<br>
+                Tel: +234 708 007 6496 | Email: info@gracedayinn.com<br>
+                Web: www.gracedayinn.com
+            </div>
+        </div>
+        <div class="invoice-title-box">
+            <h2>INVOICE / RECEIPT</h2>
+            <div class="inv-num">#{{ invoice.invoice_number }}</div>
+            {% if invoice.status == 'paid' %}
+                <div class="status-badge status-paid"><i class="fa fa-check-circle"></i> FULLY PAID</div>
+            {% elif invoice.status == 'partially_paid' %}
+                <div class="status-badge status-partial"><i class="fa fa-clock-o"></i> PARTIALLY PAID</div>
+            {% else %}
+                <div class="status-badge status-unpaid"><i class="fa fa-exclamation-circle"></i> PAYMENT DUE</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- DETAILS GRID -->
+    <div class="details-grid">
+        <div class="info-card">
+            <h4>Billed To (Guest Details)</h4>
+            <p><strong>Name:</strong> {{ invoice.guest.get_full_name|default:invoice.guest.username }}</p>
+            <p><strong>Email:</strong> {{ invoice.guest.email|default:'N/A' }}</p>
+            <p><strong>Phone:</strong> {{ invoice.guest.phone|default:'N/A' }}</p>
+            {% if invoice.reservation %}
+            <p><strong>Reservation #:</strong> {{ invoice.reservation.reservation_number }} (Room {{ invoice.reservation.room.number|default:'-' }})</p>
+            {% endif %}
+        </div>
+        <div class="info-card">
+            <h4>Invoice &amp; Audit Details</h4>
+            <p><strong>Issue Date:</strong> {{ invoice.created_at|date:"d M Y, H:i" }}</p>
+            <p><strong>Payment Status:</strong> {{ invoice.get_status_display }}</p>
+            <p><strong>Currency:</strong> NGN (Nigerian Naira)</p>
+            <p><strong>Issued By:</strong> Grace Day Inn Billing System</p>
+        </div>
+    </div>
+
+    <!-- ITEMIZED TABLE -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 60%;">Description / Service Item</th>
+                <th style="width: 15%;" class="text-right">Qty</th>
+                <th style="width: 25%;" class="text-right">Amount (NGN)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td><strong>{{ item.description }}</strong></td>
+                <td class="text-right">{{ item.quantity|default:1 }}</td>
+                <td class="text-right">NGN {{ item.total|currency_format }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="text-align: center; color: #94a3b8;">No itemized entries attached.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
-  </div>
 
-  <div style="clear:both;margin-top:40px;" class="muted">Thank you for your business.</div>
+    <!-- SUMMARY SECTION -->
+    <div class="summary-section">
+        <div class="summary-box">
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span>NGN {{ invoice.subtotal|currency_format }}</span>
+            </div>
+            {% if invoice.displays_vat %}
+            <div class="summary-row">
+                <span>VAT ({{ invoice.tax_rate }}%):</span>
+                <span>NGN {{ invoice.vat_amount|currency_format }}</span>
+            </div>
+            {% endif %}
+            <div class="summary-row total-row">
+                <span>Total Charge:</span>
+                <span>NGN {{ invoice.total|currency_format }}</span>
+            </div>
+            <div class="summary-row paid-row">
+                <span>Amount Paid:</span>
+                <span>NGN {{ invoice.amount_paid|currency_format }}</span>
+            </div>
+            {% if invoice.balance > 0 %}
+            <div class="summary-row balance-row">
+                <span>Balance Due:</span>
+                <span>NGN {{ invoice.balance|currency_format }}</span>
+            </div>
+            {% else %}
+            <div class="summary-row" style="color: #166534; font-weight: 700; padding-top: 6px;">
+                <span>Balance Due:</span>
+                <span>NGN 0.00</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 
-  <script>
-    // If opened as a new tab/window for printing, auto-print.
-    if (window.opener || window.name) {
-      window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 300); });
+    <!-- FOOTER NOTE -->
+    <div class="footer-note">
+        <div class="thank-you">Thank you for staying at GRACEDAY INN!</div>
+        <p>We hope you had a restful experience. For feedback, inquiries, or future reservations, please visit www.gracedayinn.com</p>
+        <p style="margin-top: 8px; font-size: 0.75rem; color: #94a3b8;">This is a computer-generated official transaction document issued by Grace Day Inn Hospitality Systems.</p>
+    </div>
+
+</div>
+
+<script>
+    if (window.opener || window.name === 'printWindow') {
+        window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 400); });
     }
-  </script>
+</script>
+
 </body>
 </html>

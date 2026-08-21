@@ -1,4 +1,5 @@
 {% extends 'base_portal.html' %}
+{% load custom_filters %}
 {% block title %}Services | GRACEDAY INN{% endblock %}
 {% block page_title %}Restaurant and Services{% endblock %}
 {% block content %}
@@ -48,7 +49,7 @@
                                 <td>{{ order.guest.get_full_name|default:order.guest.username }}</td>
                                 <td>{{ order.room.number|default:'-' }}</td>
                                 <td>{{ order.get_status_display }}</td>
-                                <td>₦{{ order.total }}</td>
+                                <td>₦{{ order.total|currency_format }}</td>
                                 <td>
                                     {% if request.user.role != 'guest' %}
                                     <div class="d-flex gap-1 flex-wrap">
@@ -83,7 +84,7 @@
                         <strong>{{ item.name }}</strong>
                         <div class="small text-muted">{{ item.category.name }}</div>
                     </div>
-                    <span>₦{{ item.price }}</span>
+                    <span>₦{{ item.price|currency_format }}</span>
                 </div>
             {% empty %}
                 <p class="text-muted">No menu items yet.</p>

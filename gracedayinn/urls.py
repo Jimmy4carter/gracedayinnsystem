@@ -2,8 +2,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from .health import liveness, readiness
 
 urlpatterns = [
+    path('health/live/', liveness, name='health-live'),
+    path('health/ready/', readiness, name='health-ready'),
     path('admin/', admin.site.urls),
     # API routes - all under /api/
     path('api/', include('apps.accounts.urls')),

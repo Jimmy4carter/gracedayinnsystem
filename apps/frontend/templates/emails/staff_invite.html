@@ -1,0 +1,14 @@
+{% extends 'emails/base_email.html' %}
+{% block email_title %}Your GraceDay Inn Staff Account{% endblock %}
+{% block email_content %}
+<h2>Welcome to the GraceDay Inn team</h2>
+<p>Hello {{ first_name }},</p>
+<p>A <strong>{{ role }}</strong> portal account has been created for you.</p>
+<div style="background-color:#fcf9f5;border-left:4px solid #c89b3c;padding:15px;margin:20px 0;">
+    <strong>Username:</strong> {{ username }}
+</div>
+<p style="text-align:center;">
+    <a href="{{ setup_url }}" class="btn" style="color:#ffffff;">Set Your Password</a>
+</p>
+<p>This link can be used once and expires after 24 hours. If you were not expecting this invitation, contact an administrator.</p>
+{% endblock %}

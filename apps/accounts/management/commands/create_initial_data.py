@@ -1,13 +1,13 @@
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 
 
 class Command(BaseCommand):
     help = 'Create initial hotel data (rooms, amenities, services)'
 
     def handle(self, *args, **options):
+        if not settings.DEBUG:
+            raise CommandError('Demo initial data cannot be generated with production settings.')
         self.stdout.write('Creating initial data...')
         self._create_superuser()
         self._create_amenities()
@@ -17,16 +17,13 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Initial data created successfully!'))
 
     def _create_superuser(self):
-        if not User.objects.filter(username='admin').exists():
-            User.objects.create_superuser(
-                username='admin',
-                email='admin@gracedayinn.com',
-                password='admin123',
-                role='admin',
-                first_name='Admin',
-                last_name='User',
-            )
-            self.stdout.write('  Created superuser: admin / admin123')
+        from apps.accounts.default_users import ensure_default_users
+        results = ensure_default_users(generate_missing=True)
+        for item in results:
+            detail = f"  {item['status']}: {item['username']} ({item['email']})"
+            if item['password']:
+                detail += f" | one-time password: {item['password']}"
+            self.stdout.write(detail)
 
     def _create_amenities(self):
         from apps.rooms.models import Amenity
@@ -46,11 +43,11 @@ class Command(BaseCommand):
         ac = Amenity.objects.get(name='Air Conditioning')
         tv = Amenity.objects.get(name='TV')
         room_types = [
-            ('Standard Room', 89.00, 2, [wifi, ac, tv]),
-            ('Deluxe Room', 149.00, 2, [wifi, ac, tv]),
-            ('Suite', 249.00, 4, [wifi, ac, tv]),
-            ('Presidential Suite', 499.00, 6, [wifi, ac, tv]),
-            ('Family Room', 179.00, 5, [wifi, ac, tv]),
+            ('Standard Room', 40000.00, 2, [wifi, ac, tv]),
+            ('Deluxe Room', 60000.00, 2, [wifi, ac, tv]),
+            ('Suite', 85000.00, 4, [wifi, ac, tv]),
+            ('Presidential Suite', 180000.00, 6, [wifi, ac, tv]),
+            ('Family Room', 100000.00, 5, [wifi, ac, tv]),
         ]
         for name, price, occ, ams in room_types:
             rt, _ = RoomType.objects.get_or_create(
@@ -100,18 +97,18 @@ class Command(BaseCommand):
         from apps.services.models import ServiceCategory, MenuItem
         categories = [
             ('Room Service', '🍽️', [
-                ('Club Sandwich', 18.00), ('Caesar Salad', 14.00),
-                ('Grilled Chicken', 24.00), ('Pasta Carbonara', 20.00),
+                ('Club Sandwich', 8500.00), ('Caesar Salad', 7500.00),
+                ('Grilled Chicken', 14000.00), ('Pasta Carbonara', 11000.00),
             ]),
             ('Beverages', '🍹', [
-                ('Orange Juice', 6.00), ('Coffee', 5.00),
-                ('Smoothie', 9.00), ('Bottled Water', 3.00),
+                ('Orange Juice', 3500.00), ('Coffee', 3000.00),
+                ('Smoothie', 4500.00), ('Bottled Water', 1500.00),
             ]),
             ('Spa & Wellness', '💆', [
-                ('60-min Massage', 80.00), ('Facial Treatment', 65.00),
+                ('60-min Massage', 30000.00), ('Facial Treatment', 25000.00),
             ]),
             ('Laundry', '👔', [
-                ('Shirt Wash', 5.00), ('Suit Dry Clean', 15.00),
+                ('Shirt Wash', 2500.00), ('Suit Dry Clean', 7500.00),
             ]),
         ]
         for cat_name, icon, items in categories:

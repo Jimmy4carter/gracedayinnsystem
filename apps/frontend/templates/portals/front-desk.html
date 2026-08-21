@@ -1,0 +1,49 @@
+{% extends 'base_portal.html' %}
+{% load custom_filters %}
+{% block title %}Front Desk | GRACEDAY INN{% endblock %}
+{% block page_title %}Front Desk — {{ business_date }}{% endblock %}
+{% block page_heading %}Today board{% endblock %}
+{% block content %}
+<section aria-labelledby="front-desk-title">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div><h1 class="h3 mb-1" id="front-desk-title">Front desk today board</h1><p class="text-muted mb-0">Business date {{ business_date }}</p></div>
+    <nav aria-label="Front desk quick actions" class="d-flex flex-wrap gap-2">
+      <a id="new-reservation-shortcut" class="btn btn-sm bg-gradient-dark mb-0" href="{% url 'frontend:portal-reservations' %}#new-reservation"><kbd>Alt+N</kbd> New reservation</a>
+      <a id="tape-chart-shortcut" class="btn btn-sm btn-outline-dark mb-0" href="{% url 'frontend:portal-tape-chart' %}"><kbd>Alt+T</kbd> Tape chart</a>
+      <a class="btn btn-sm btn-outline-secondary mb-0" href="{% url 'frontend:portal-guests' %}">Guest search</a>
+    </nav>
+  </div>
+
+  <form method="get" role="search" class="card card-body mb-4" id="front-desk-search-form">
+    <label for="front-desk-search" class="form-label">Search today’s reservations</label>
+    <div class="input-group"><input id="front-desk-search" name="q" class="form-control" value="{{ search_query }}" placeholder="Reservation, guest, phone or room" autocomplete="off"><button class="btn bg-gradient-dark mb-0" type="submit">Search</button>{% if search_query %}<a class="btn btn-outline-secondary mb-0" href="{% url 'frontend:portal-front-desk' %}">Clear</a>{% endif %}</div>
+    <small class="text-muted">Press <kbd>/</kbd> anywhere outside a form field to focus search.</small>
+  </form>
+
+  {% if search_query %}<p role="status" aria-live="polite">Showing today-board matches for “{{ search_query }}”.</p>{% endif %}
+  <div class="row mb-4" aria-label="Today summary">
+    <div class="col-md-3"><div class="card p-3"><small>Arrivals today</small><h2 class="h3">{{ arrivals|length }}</h2></div></div>
+    <div class="col-md-3"><div class="card p-3"><small>In house</small><h2 class="h3">{{ in_house|length }}</h2></div></div>
+    <div class="col-md-3"><div class="card p-3"><small>Departures today</small><h2 class="h3">{{ departures|length }}</h2></div></div>
+    <div class="col-md-3"><div class="card p-3"><small>Pending attention</small><h2 class="h3">{{ pending|length }}</h2></div></div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6 mb-4"><div class="card"><div class="card-body"><h2 class="h5" id="arrivals-heading">Arrivals today</h2><div class="table-responsive"><table class="table align-middle" aria-labelledby="arrivals-heading"><thead><tr><th scope="col">Guest</th><th scope="col">Room / reservation</th><th scope="col">Action</th></tr></thead><tbody>{% for item in arrivals %}<tr><th scope="row">{{ item.guest.get_full_name|default:item.guest.username }}</th><td>Room {{ item.room.number }} · {{ item.reservation_number }}</td><td><form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_in' %}">{% csrf_token %}<button class="btn btn-sm bg-gradient-success mb-0">Check in</button></form></td></tr>{% empty %}<tr><td colspan="3">No confirmed arrivals.</td></tr>{% endfor %}</tbody></table></div></div></div></div>
+    <div class="col-lg-6 mb-4"><div class="card"><div class="card-body"><h2 class="h5" id="departures-heading">Departures today</h2><div class="table-responsive"><table class="table align-middle" aria-labelledby="departures-heading"><thead><tr><th scope="col">Guest</th><th scope="col">Room / balance</th><th scope="col">Action</th></tr></thead><tbody>{% for item in departures %}<tr><th scope="row">{{ item.guest.get_full_name|default:item.guest.username }}</th><td>Room {{ item.room.number }} · {% if item.invoice %}Balance NGN {{ item.invoice.balance|currency_format }}{% else %}No invoice{% endif %}</td><td><form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_out' %}">{% csrf_token %}<button class="btn btn-sm bg-gradient-warning mb-0">Check out</button></form></td></tr>{% empty %}<tr><td colspan="3">No departures due.</td></tr>{% endfor %}</tbody></table></div></div></div></div>
+  </div>
+
+  <div class="card mb-4"><div class="card-body"><div class="d-flex justify-content-between"><h2 class="h5" id="room-readiness-heading">Room readiness</h2><a href="{% url 'frontend:portal-rooms' %}">Manage rooms</a></div><div class="row" aria-labelledby="room-readiness-heading">{% for room in rooms %}<div class="col-6 col-md-3 col-xl-2 mb-2"><div class="border rounded p-2"><strong>Room {{ room.number }}</strong><br><small>{{ room.room_type.name }}</small><br><span class="badge {% if room.status == 'available' %}bg-gradient-success{% elif room.status == 'occupied' %}bg-gradient-info{% else %}bg-gradient-warning{% endif %}">{{ room.get_status_display }}</span></div></div>{% endfor %}</div></div></div>
+  <div class="card"><div class="card-body"><h2 class="h5">Needs attention</h2>{% for item in pending %}<div class="border-bottom py-2">{{ item.reservation_number }} · {{ item.guest.get_full_name|default:item.guest.username }} · arrival {{ item.check_in_date }}</div>{% empty %}<p class="text-secondary">Nothing overdue.</p>{% endfor %}</div></div>
+</section>
+<script>
+document.addEventListener('keydown', function (event) {
+  const typing = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName);
+  if (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault(); document.getElementById('front-desk-search').focus();
+  }
+  if (event.altKey && event.key.toLowerCase() === 'n') { event.preventDefault(); document.getElementById('new-reservation-shortcut').click(); }
+  if (event.altKey && event.key.toLowerCase() === 't') { event.preventDefault(); document.getElementById('tape-chart-shortcut').click(); }
+});
+</script>
+{% endblock %}

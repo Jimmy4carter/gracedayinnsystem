@@ -1,39 +1,87 @@
 {% extends 'base_portal.html' %}
 {% block title %}Guests | GRACEDAY INN{% endblock %}
 {% block page_title %}Guest Directory{% endblock %}
+{% block page_heading %}Guest Directory{% endblock %}
+
 {% block content %}
+{% if can_merge_guests and duplicate_guests %}
+<div class="card bg-gradient-warning text-white mb-4 border-0 shadow-sm">
+    <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <h6 class="text-white mb-1"><i class="fa fa-copy me-2"></i>Duplicate Guest Records Detected</h6>
+            <p class="mb-0 text-xs opacity-9">There are {{ duplicate_guests|length }} group(s) of potential duplicate guest accounts. Merge them to unify stay history and billing.</p>
+        </div>
+        <button type="button" class="btn btn-white text-dark btn-sm font-weight-bold mb-0" data-bs-toggle="modal" data-bs-target="#mergeGuestModal">
+            Review Duplicates &amp; Merge
+        </button>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-12">
-        <div class="card mb-4">
-            <div class="card-header pb-0 d-flex justify-content-between align-items-center">
-                <h6>Guest Directory</h6>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#guestModal">
-                    Add Guest
-                </button>
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2 bg-white">
+                <div>
+                    <h6 class="mb-0 font-weight-bold">Registered Guests</h6>
+                    <small class="text-muted">Total active guest profiles: {{ guests|length }}</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-primary bg-gradient-primary btn-sm mb-0" data-bs-toggle="modal" data-bs-target="#guestModal">
+                        <i class="fa fa-user-plus me-1"></i> Add Guest Profile
+                    </button>
+                </div>
             </div>
-            <div class="card-body px-0 pt-0 pb-2">
+            <div class="card-body px-0 pt-3 pb-2">
                 <div class="table-responsive p-0">
                     <table class="table align-items-center mb-0">
                         <thead>
                             <tr>
-                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Name</th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Guest Name</th>
                                 <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Username</th>
                                 <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Email</th>
                                 <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Phone</th>
-                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Joined</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">ID Verification</th>
+                                <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Registered</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for guest in guests %}
                                 <tr>
-                                    <td><p class="text-xs font-weight-bold mb-0">{{ guest.get_full_name|default:'-' }}</p></td>
-                                    <td><p class="text-xs font-weight-bold mb-0">{{ guest.username }}</p></td>
+                                    <td>
+                                        <div class="d-flex px-3 py-1">
+                                            <div class="avatar avatar-sm me-3 bg-gradient-primary rounded-circle text-white font-weight-bold d-flex align-items-center justify-content-center">
+                                                {{ guest.first_name|first|default:guest.username|first|upper }}
+                                            </div>
+                                            <div class="d-flex flex-column justify-content-center">
+                                                <h6 class="mb-0 text-sm font-weight-bold">{{ guest.get_full_name|default:guest.username }}</h6>
+                                                {% if guest.nationality %}<span class="text-xs text-secondary"><i class="fa fa-globe me-1"></i>{{ guest.nationality }}</span>{% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><p class="text-xs font-weight-bold mb-0">@{{ guest.username }}</p></td>
                                     <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">{{ guest.email|default:'-' }}</span></td>
                                     <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">{{ guest.phone|default:'-' }}</span></td>
+                                    <td class="align-middle text-center">
+                                        {% if guest.id_document %}
+                                            <a href="{{ guest.id_document.url }}" target="_blank" class="badge bg-gradient-info text-white text-xs">
+                                                <i class="fa fa-id-card me-1"></i>View {{ guest.get_id_type_display|default:"ID" }}
+                                            </a>
+                                        {% elif guest.id_type %}
+                                            <span class="badge bg-gradient-secondary text-white text-xs">{{ guest.get_id_type_display }}</span>
+                                        {% else %}
+                                            <span class="text-secondary text-xs">Not uploaded</span>
+                                        {% endif %}
+                                    </td>
                                     <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">{{ guest.date_joined|date:'Y-m-d' }}</span></td>
                                 </tr>
                             {% empty %}
-                                <tr><td colspan="5" class="text-center">No guest records.</td></tr>
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        <i class="fa fa-users fa-2x mb-2 d-block text-secondary"></i>
+                                        No guest profiles found. Click "Add Guest Profile" to create one.
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -48,54 +96,104 @@
         <div class="modal-content">
             <form method="post" action="{% url 'frontend:portal-guests' %}">
                 {% csrf_token %}
+                <input type="hidden" name="command" value="create_guest">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="guestModalLabel">Add New Guest</h5>
+                    <h5 class="modal-title font-weight-bold" id="guestModalLabel">Add New Guest Profile</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     {% if guest_form.non_field_errors %}
-                        <div class="alert alert-danger">{{ guest_form.non_field_errors }}</div>
+                        <div class="alert alert-danger text-white mb-3">{{ guest_form.non_field_errors }}</div>
                     {% endif %}
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Username</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Username *</label>
                             {{ guest_form.username }}
-                            {% if guest_form.username.errors %}<div class="text-danger small">{{ guest_form.username.errors|striptags }}</div>{% endif %}
+                            {% if guest_form.username.errors %}<div class="text-danger text-xs mt-1">{{ guest_form.username.errors|striptags }}</div>{% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Email Address *</label>
                             {{ guest_form.email }}
-                            {% if guest_form.email.errors %}<div class="text-danger small">{{ guest_form.email.errors|striptags }}</div>{% endif %}
+                            {% if guest_form.email.errors %}<div class="text-danger text-xs mt-1">{{ guest_form.email.errors|striptags }}</div>{% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">First name</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">First Name</label>
                             {{ guest_form.first_name }}
-                            {% if guest_form.first_name.errors %}<div class="text-danger small">{{ guest_form.first_name.errors|striptags }}</div>{% endif %}
+                            {% if guest_form.first_name.errors %}<div class="text-danger text-xs mt-1">{{ guest_form.first_name.errors|striptags }}</div>{% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Last name</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Last Name</label>
                             {{ guest_form.last_name }}
-                            {% if guest_form.last_name.errors %}<div class="text-danger small">{{ guest_form.last_name.errors|striptags }}</div>{% endif %}
+                            {% if guest_form.last_name.errors %}<div class="text-danger text-xs mt-1">{{ guest_form.last_name.errors|striptags }}</div>{% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Phone</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Phone Number</label>
                             {{ guest_form.phone }}
-                            {% if guest_form.phone.errors %}<div class="text-danger small">{{ guest_form.phone.errors|striptags }}</div>{% endif %}
+                            {% if guest_form.phone.errors %}<div class="text-danger text-xs mt-1">{{ guest_form.phone.errors|striptags }}</div>{% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Temporary password</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Temporary Password</label>
                             {{ guest_form.password }}
-                            {% if guest_form.password.errors %}<div class="text-danger small">{{ guest_form.password.errors|striptags }}</div>{% endif %}
-                            <div class="form-text">Leave blank if you plan to invite the guest later.</div>
+                            {% if guest_form.password.errors %}<div class="text-danger text-xs mt-1">{{ guest_form.password.errors|striptags }}</div>{% endif %}
+                            <small class="form-text text-muted d-block mt-1">Leave blank to send set-password invitation later.</small>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Guest</button>
+                <div class="modal-footer border-top pt-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary bg-gradient-primary">Save Guest Profile</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+{% if can_merge_guests and duplicate_guests %}
+<div class="modal fade" id="mergeGuestModal" tabindex="-1" aria-labelledby="mergeGuestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'frontend:portal-guests' %}">
+                {% csrf_token %}
+                <input type="hidden" name="command" value="merge_guest">
+                <div class="modal-header">
+                    <h5 class="modal-title font-weight-bold" id="mergeGuestModalLabel">Merge Duplicate Guest Accounts</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-sm text-secondary">Select the primary profile (which will be kept) and the duplicate profile (which will be merged and deactivated).</p>
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Primary Guest Account (Keep)</label>
+                            <select name="primary_id" class="form-select" required>
+                                <option value="">Select primary guest profile...</option>
+                                {% for g in duplicate_guests %}
+                                    <option value="{{ g.id }}">{{ g.get_full_name|default:g.username }} ({{ g.email }}) — ID: {{ g.id }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">Duplicate Account (Merge &amp; Close)</label>
+                            <select name="duplicate_id" class="form-select" required>
+                                <option value="">Select duplicate profile to absorb...</option>
+                                {% for g in duplicate_guests %}
+                                    <option value="{{ g.id }}">{{ g.get_full_name|default:g.username }} ({{ g.email }}) — ID: {{ g.id }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label font-weight-bold">Merge Reason / Audit Note</label>
+                            <input type="text" name="reason" class="form-control" placeholder="e.g. Duplicate account created during walk-in check-in" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top pt-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-white bg-gradient-warning font-weight-bold">Execute Merge</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}

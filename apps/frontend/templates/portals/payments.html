@@ -1,62 +1,148 @@
 {% extends 'base_portal.html' %}
-{% block title %}Payments | GRACEDAY INN{% endblock %}
-{% block page_title %}Payment Ledger{% endblock %}
+{% load custom_filters %}
+{% block title %}Payment Processing &amp; Ledger | GRACEDAY INN{% endblock %}
+{% block page_title %}Payments &amp; Transactions{% endblock %}
+{% block page_heading %}Financial Payment Ledger{% endblock %}
+
 {% block content %}
 {% if can_manage_payments %}
-<div class="card mb-4">
-    <div class="card-header pb-0"><h6>Record Payment</h6></div>
-    <div class="card-body">
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-gradient-dark text-white d-flex align-items-center justify-content-between py-3">
+        <h6 class="text-white mb-0 font-weight-bold"><i class="fa fa-credit-card me-2"></i> Receive &amp; Confirm Payment</h6>
+        <span class="badge bg-gradient-info">Banking-Grade Immutable Ledger</span>
+    </div>
+    <div class="card-body p-4">
         <form method="post" class="row g-3">
             {% csrf_token %}
-            <div class="col-md-4">{{ payment_form.invoice.label_tag }}{{ payment_form.invoice }}</div>
-            <div class="col-md-2">{{ payment_form.amount.label_tag }}{{ payment_form.amount }}</div>
-            <div class="col-md-2">{{ payment_form.method.label_tag }}{{ payment_form.method }}</div>
-            <div class="col-md-2">{{ payment_form.status.label_tag }}{{ payment_form.status }}</div>
-            <div class="col-md-2">{{ payment_form.transaction_id.label_tag }}{{ payment_form.transaction_id }}</div>
-            <div class="col-12">{{ payment_form.notes.label_tag }}{{ payment_form.notes }}</div>
+            {{ payment_form.idempotency_key }}
+
+            <div class="col-lg-5 col-md-6">
+                <label class="form-label font-weight-bold text-dark text-xs text-uppercase">Select Invoice to Pay</label>
+                {{ payment_form.invoice }}
+                <small class="text-muted d-block mt-1">Shows guest name, invoice number &amp; balance due</small>
+            </div>
+
+            <div class="col-lg-3 col-md-3">
+                <label class="form-label font-weight-bold text-dark text-xs text-uppercase">Payment Amount (NGN)</label>
+                {{ payment_form.amount }}
+            </div>
+
+            <div class="col-lg-2 col-md-3">
+                <label class="form-label font-weight-bold text-dark text-xs text-uppercase">Payment Method</label>
+                {{ payment_form.method }}
+            </div>
+
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label font-weight-bold text-dark text-xs text-uppercase">Tx Ref / POS Code</label>
+                {{ payment_form.transaction_id }}
+            </div>
+
+            <div class="col-12">
+                <label class="form-label font-weight-bold text-dark text-xs text-uppercase">Audit Notes / Cashier Memo</label>
+                {{ payment_form.notes }}
+            </div>
+
             <div class="col-12">
                 {% for field in payment_form %}
-                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger text-white text-sm py-2 px-3 mb-1"><i class="fa fa-exclamation-triangle me-1"></i> {{ field.label }}: {{ error }}</div>
+                    {% endfor %}
                 {% endfor %}
-                {% for error in payment_form.non_field_errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                {% for error in payment_form.non_field_errors %}
+                    <div class="alert alert-danger text-white text-sm py-2 px-3 mb-1"><i class="fa fa-exclamation-triangle me-1"></i> {{ error }}</div>
+                {% endfor %}
             </div>
-            <div class="col-12"><button class="btn bg-gradient-dark btn-sm mb-0" type="submit">Save Payment</button></div>
+
+            <div class="col-12 d-flex justify-content-end mt-3">
+                <button class="btn bg-gradient-success btn-lg mb-0 px-4" type="submit">
+                    <i class="fa fa-check-circle me-1"></i> Confirm &amp; Post Payment
+                </button>
+            </div>
         </form>
     </div>
 </div>
 {% endif %}
 
-<div class="card mb-4">
-    <div class="card-header pb-0"><h6>Payment Ledger</h6></div>
-    <div class="card-body px-0 pt-0 pb-2">
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 font-weight-bold text-dark"><i class="fa fa-list-alt me-2 text-primary"></i> Payment Audit Trail Ledger</h6>
+        <span class="text-xs text-muted">Real-Time Financial Log</span>
+    </div>
+    <div class="card-body px-0 pt-2 pb-2">
         <div class="table-responsive p-0">
             <table class="table align-items-center mb-0">
                 <thead>
                     <tr>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Reference</th>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Invoice</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Transaction Reference</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Invoice &amp; Guest</th>
                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Method</th>
                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Amount</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Amount Paid</th>
                         <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Processed By</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Receipt Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for payment in payments %}
                         <tr>
-                            <td><p class="text-xs font-weight-bold mb-0">{{ payment.reference }}</p></td>
-                            <td><p class="text-xs font-weight-bold mb-0">{{ payment.invoice.invoice_number }}</p></td>
-                            <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">{{ payment.get_method_display }}</span></td>
-                            <td class="align-middle text-center"><span class="badge badge-sm bg-gradient-info">{{ payment.get_status_display }}</span></td>
-                            <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ payment.amount }}</span></td>
-                            <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">{{ payment.processed_by.username|default:'-' }}</span></td>
+                            <td class="ps-3">
+                                <p class="text-xs font-weight-bold mb-0 text-dark">{{ payment.reference }}</p>
+                                <small class="text-muted text-xxs">{{ payment.created_at|date:"d M Y, H:i" }}</small>
+                            </td>
+                            <td>
+                                <p class="text-xs font-weight-bold mb-0">#{{ payment.invoice.invoice_number }}</p>
+                                <small class="text-muted text-xs">{{ payment.invoice.guest.get_full_name|default:payment.invoice.guest.username }}</small>
+                            </td>
+                            <td class="align-middle text-center">
+                                <span class="badge badge-sm bg-gradient-secondary">{{ payment.get_method_display|upper }}</span>
+                            </td>
+                            <td class="align-middle text-center">
+                                {% if payment.status == 'completed' %}
+                                    <span class="badge badge-sm bg-gradient-success"><i class="fa fa-check-circle me-1"></i> Completed</span>
+                                {% elif payment.status == 'pending' %}
+                                    <span class="badge badge-sm bg-gradient-warning"><i class="fa fa-clock-o me-1"></i> Pending</span>
+                                {% elif payment.status == 'refunded' %}
+                                    <span class="badge badge-sm bg-gradient-secondary"><i class="fa fa-undo me-1"></i> Refunded</span>
+                                {% else %}
+                                    <span class="badge badge-sm bg-gradient-danger"><i class="fa fa-times-circle me-1"></i> {{ payment.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle text-center">
+                                <span class="text-success text-xs font-weight-bold">₦{{ payment.amount|currency_format }}</span>
+                            </td>
+                            <td class="align-middle text-center">
+                                <span class="text-dark text-xs font-weight-bold">{{ payment.processed_by.get_full_name|default:payment.processed_by.username|default:'System Auto' }}</span>
+                            </td>
+                            <td class="align-middle text-center">
+                                {% if payment.receipt_id %}
+                                <button type="button" class="btn btn-outline-primary btn-xs mb-0 px-2 py-1" onclick="openPrintOptionsModal({{ payment.invoice.id }}, '{{ payment.invoice.invoice_number }}', '{{ payment.invoice.guest.get_full_name|default:payment.invoice.guest.username|escapejs }}', '₦{{ payment.invoice.total|currency_format }}', '₦{{ payment.invoice.balance|currency_format }}', '')">
+                                    <i class="fa fa-print me-1"></i> Receipt Options
+                                </button>
+                                <a href="{% url 'frontend:portal-payment-receipt' payment.receipt_id %}" target="_blank" class="btn btn-xs btn-outline-secondary mb-0 ms-1 px-2 py-1">
+                                    <i class="fa fa-external-link"></i>
+                                </a>
+                                {% else %}
+                                <span class="text-muted text-xs">No receipt</span>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="6" class="text-center">No payments recorded.</td></tr>
+                        <tr><td colspan="7" class="text-center py-4 text-muted text-sm">No payment records currently in ledger.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+(function(){
+  const invoice=document.getElementById('id_invoice'), amount=document.getElementById('id_amount'), method=document.getElementById('id_method'), ref=document.getElementById('id_transaction_id');
+  function sync(){ if(!invoice||!amount)return; const text=invoice.options[invoice.selectedIndex]?.text||''; const match=text.match(/(?:balance|due).*?([\d,.]+)/i); if(match) amount.value=match[1].replace(/,/g,''); }
+  invoice?.addEventListener('change',sync); sync(); method?.addEventListener('change',()=>{if(ref) ref.required=method.value!=='cash';}); method?.dispatchEvent(new Event('change'));
+})();
+</script>
 {% endblock %}

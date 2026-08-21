@@ -1,0 +1,100 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>GraceDay TV | Reception</title>
+  <link rel="icon" type="image/png" href="{% static 'img/Header_logo.png' %}">
+  <link rel="stylesheet" href="{% static 'css/flaticon.css' %}">
+  <link rel="stylesheet" href="{% static 'css/font-awesome.min.css' %}">
+  <link rel="stylesheet" href="{% static 'billboard/css/graceday-tv.css' %}">
+</head>
+<body>
+<main class="tv" data-graceday-tv data-version="{{ content_version|date:'c'|default:'base' }}" data-status-url="{% url 'frontend:public-billboard' %}?status=1" aria-label="GraceDay Inn reception television">
+  <div class="tv__noise" aria-hidden="true"></div><div class="tv__orb tv__orb--a" aria-hidden="true"></div><div class="tv__orb tv__orb--b" aria-hidden="true"></div>
+  <header><div class="tv__brand"><img src="{% static 'img/Header_logo.png' %}" alt=""><span>GRACEDAY TV</span></div><div class="tv__clock"><span class="tv__clock-time" data-time></span><span class="tv__clock-date" data-date></span></div><div class="tv__channel">Welcome · Discover · Stay</div><div class="tv__programme" data-programme>Now showing</div></header>
+
+  <section id="scene-welcome" class="scene scene--cinematic" data-category="brand" data-programme="Welcome to GraceDay" data-duration="8" data-transition="cinematic">
+    <img class="scene__media" src="{% static 'img/hero/hero-1.jpg' %}" alt="GraceDay Inn" data-pan="left"><div class="scene__veil"></div><div class="scene__safe"><div class="scene__content"><div class="scene__eyebrow" data-animate>Welcome to</div><h1 class="scene__title" data-animate>GraceDay<br><span style="color:var(--gd-mint)">Inn.</span></h1><div class="brand-line"></div><p class="scene__copy" data-animate>Comfort begins here.</p></div></div><div class="scene__micro">Apo-Dutse · Abuja · Nigeria</div>
+  </section>
+
+  <section id="scene-promise" class="scene scene--split" data-category="experience" data-programme="The GraceDay Promise" data-duration="10" data-transition="split">
+    <img class="scene__media" src="{% static 'img/graceday home.png' %}" alt="GraceDay Inn hospitality"><div class="scene__veil"></div><div class="scene__safe"><div class="scene__content"><div class="icon-seal" data-animate><i class="flaticon-026-bed"></i></div><div class="scene__eyebrow" data-animate>The GraceDay promise</div><h1 class="scene__title" data-animate>Arrive curious.<br>Leave restored.</h1><p class="scene__copy" data-animate>A warm Abuja stay shaped by attentive service, comfortable spaces, and thoughtful details.</p><div class="amenities"><span class="amenity"><i class="flaticon-029-wifi"></i> Connected</span><span class="amenity"><i class="flaticon-044-clock-1"></i> Supported</span><span class="amenity"><i class="flaticon-036-parking"></i> Convenient</span></div></div></div>
+  </section>
+
+  <section id="scene-services" class="scene scene--cards" data-category="service" data-programme="Guest Services" data-duration="13" data-transition="mosaic" data-ticker="true">
+    <img class="scene__media" src="{% static 'img/lounge 2.png' %}" alt="GraceDay Inn lounge"><div class="scene__veil"></div><div class="scene__safe"><div class="scene__content"><div class="scene__eyebrow" data-animate>Need something?</div><h1 class="scene__title" data-animate>We can help.</h1><div class="card-grid"><div class="broadcast-card"><i class="flaticon-033-dinner"></i><strong>Dining</strong><span>Ask reception about current dining and catering options.</span></div><div class="broadcast-card"><i class="flaticon-024-towel"></i><strong>Laundry</strong><span>Convenient laundry support during your stay.</span></div><div class="broadcast-card"><i class="flaticon-036-parking"></i><strong>Transport</strong><span>Speak with our team about transport assistance.</span></div><div class="broadcast-card"><i class="flaticon-029-wifi"></i><strong>Connectivity</strong><span>Reception can provide current guest Wi-Fi details.</span></div><div class="broadcast-card"><i class="flaticon-044-clock-1"></i><strong>Local help</strong><span>Directions and recommendations for your Abuja plans.</span></div><div class="broadcast-card"><i class="flaticon-026-bed"></i><strong>Stay support</strong><span>Extra assistance begins with a conversation.</span></div></div></div></div><div class="ticker"><span>GRACEDAY · RECEPTION IS AVAILABLE TO ASSIST · DINING · LAUNDRY · TRANSPORT · LOCAL RECOMMENDATIONS · GRACEDAY · RECEPTION IS AVAILABLE TO ASSIST · DINING · LAUNDRY · TRANSPORT · LOCAL RECOMMENDATIONS ·</span></div>
+  </section>
+
+  <section id="scene-dining" class="scene scene--split" data-category="experience" data-programme="Food & Dining" data-duration="10" data-transition="wipe">
+    <img class="scene__media" src="{% static 'img/dining.png' %}" alt="GraceDay Inn dining"><div class="scene__veil"></div><div class="offer-badge">GOOD FOOD<br>GOOD MOOD</div><div class="scene__safe"><div class="scene__content"><div class="scene__eyebrow" data-animate>Taste the moment</div><h1 class="scene__title" data-animate>Dine well.<br>Stay awhile.</h1><p class="scene__copy" data-animate>Ask reception about today’s dining and catering options.</p><span class="scene__cta" data-animate><i class="flaticon-033-dinner"></i> Discover dining</span></div></div>
+  </section>
+
+  <section id="scene-laundry" class="scene scene--cinematic" data-category="tip" data-programme="GraceDay Tip" data-duration="9" data-transition="iris">
+    <img class="scene__media" src="{% static 'img/Laundry room.png' %}" alt="Laundry room"><div class="scene__veil"></div><div class="scene__safe"><div class="scene__content"><div class="icon-seal" data-animate><i class="flaticon-024-towel"></i></div><div class="scene__eyebrow" data-animate>GraceDay tip</div><h1 class="scene__title" data-animate>Travel lighter.</h1><p class="scene__copy" data-animate>Ask reception about the laundry options available during your stay.</p></div></div>
+  </section>
+
+  <section id="scene-meet" class="scene scene--split" data-category="experience" data-programme="Meet at GraceDay" data-duration="10" data-transition="curtain">
+    <img class="scene__media" src="{% static 'img/Conference  room.PNG' %}" alt="Conference room"><div class="scene__veil"></div><div class="scene__safe"><div class="scene__content"><div class="scene__eyebrow" data-animate>Bring people together</div><h1 class="scene__title" data-animate>Room to<br>think.</h1><p class="scene__copy" data-animate>Ask our team about conference, gathering, and event-space availability.</p><span class="scene__cta" data-animate>Plan with reception</span></div></div>
+  </section>
+
+  {% for room in rooms %}{% with gallery=room.gallery_images.all %}
+  <section id="scene-room-{{ room.id }}" class="scene scene--room" data-category="room" data-programme="Room Spotlight" data-duration="11" data-transition="{{ forloop.counter|divisibleby:2|yesno:'split,blur' }}" data-pan="{% cycle 'left' 'right' %}">
+    {% if gallery %}<img class="scene__media" src="{{ gallery.0.image.url }}" alt="{{ gallery.0.alt_text|default:room.room_type.name }}">{% elif room.image %}<img class="scene__media" src="{{ room.image.url }}" alt="Room {{ room.number }}">{% elif room.room_type.image %}<img class="scene__media" src="{{ room.room_type.image.url }}" alt="{{ room.room_type.name }}">{% else %}<img class="scene__media" src="{% static 'img/room/room-details.jpg' %}" alt="GraceDay Inn room">{% endif %}<div class="scene__veil"></div><div class="scene__safe"><article class="keycard"><div class="keycard__type" data-animate>GraceDay / Room spotlight</div><h2 data-animate>{{ room.room_type.name }}</h2><p class="scene__copy clamp-copy" data-animate>{{ room.description|default:room.room_type.description|default:'A comfortable base for your Abuja stay.' }}</p><div class="keycard__price" data-animate>NGN <span class="js-counter" data-value="{{ room.current_price }}">{{ room.current_price }}</span> <small>/ night</small></div><div class="amenities">{% for amenity in room.amenities.all|slice:':4' %}<span class="amenity">{% if amenity.icon %}<i class="{{ amenity.icon }}"></i>{% endif %}{{ amenity.name }}</span>{% empty %}{% for amenity in room.room_type.amenities.all|slice:':4' %}<span class="amenity">{% if amenity.icon %}<i class="{{ amenity.icon }}"></i>{% endif %}{{ amenity.name }}</span>{% endfor %}{% endfor %}</div><span class="scene__cta" data-animate>Ask reception about availability</span></article></div>
+  </section>{% endwith %}{% endfor %}
+
+  {% for promo in promotions %}
+  <section id="scene-promo-{{ promo.id }}" class="scene scene--split" data-category="promotion" data-programme="Deal of the Moment" data-duration="10" data-transition="wipe" data-end="{{ promo.valid_to|date:'c' }}">
+    {% with type=promo.room_types.first %}{% if type and type.image %}<img class="scene__media" src="{{ type.image.url }}" alt="{{ promo.name }}">{% else %}<img class="scene__media" src="{% static 'img/room/room-2.jpg' %}" alt="GraceDay Inn offer">{% endif %}{% endwith %}<div class="scene__veil"></div><div class="offer-badge">{% if promo.discount_type == 'percentage' %}<span class="js-counter" data-value="{{ promo.amount }}">{{ promo.amount }}</span>% OFF{% else %}SAVE<br>NGN {{ promo.amount }}{% endif %}</div><div class="scene__safe"><div class="scene__content"><div class="scene__eyebrow" data-animate>Deal of the moment</div><h1 class="scene__title clamp-title" data-animate>{{ promo.name }}</h1><p class="scene__copy clamp-copy" data-animate>{{ promo.description|default:'A GraceDay offer for your next stay.' }}</p><span class="scene__cta" data-animate>Use code {{ promo.code|upper }}</span></div></div>
+  </section>{% endfor %}
+
+  {% for faq in faqs %}
+  <section id="scene-faq-{{ faq.id }}" class="scene scene--question" data-category="question" data-programme="Did You Know?" data-duration="13" data-transition="iris">
+    <div class="scene__safe"><div class="scene__content"><div class="question-label" data-animate>Did you know? / {{ faq.get_category_display }}</div><h2 class="question-text clamp-title" data-animate>{{ faq.question }}</h2><div class="question-timer" data-animate><span></span></div><div class="answer-panel clamp-copy">{{ faq.answer }}</div></div></div><div class="scene__micro">Question first · answer follows</div>
+  </section>{% endfor %}
+
+  {% for place in guide_places %}
+  <section id="scene-guide-{{ place.id }}" class="scene scene--travel" data-category="travel" data-programme="Around Abuja" data-duration="11" data-transition="cinematic">
+    {% if place.image %}<img class="scene__media" src="{{ place.image.url }}" alt="{{ place.name }}">{% else %}<img class="scene__media" src="{% static 'img/hero/hero-3.jpg' %}" alt="Discover Abuja">{% endif %}<div class="scene__veil"></div><div class="scene__safe"><div class="scene__content"><span class="travel-stamp" data-animate>Discover Abuja</span><h1 class="scene__title clamp-title" data-animate>{{ place.name }}</h1><p class="scene__copy clamp-copy" data-animate>{{ place.summary }}</p><div class="travel-meta" data-animate><span>{{ place.get_category_display }}</span>{% if place.address %}<span>{{ place.address }}</span>{% endif %}{% if place.travel_minutes %}<span>{{ place.travel_minutes }} min estimate</span>{% endif %}</div></div></div>
+  </section>{% endfor %}
+
+  {% for testimonial in testimonials %}
+  <section id="scene-quote-{{ testimonial.id }}" class="scene scene--quote" data-category="testimonial" data-programme="Guest Moment" data-duration="10" data-transition="blur">
+    <div class="quote-mark">“</div><div class="scene__safe"><div class="scene__content"><div class="stars" data-animate>{% for star in '12345' %}{% if forloop.counter <= testimonial.rating %}★{% endif %}{% endfor %}</div><blockquote class="quote-copy clamp-copy" data-animate>“{{ testimonial.body }}”</blockquote><div class="quote-by" data-animate>{{ testimonial.display_name }} · Verified guest feedback</div></div></div>
+  </section>{% endfor %}
+
+  {% for item in announcements %}
+  <section id="scene-news-{{ item.id }}" class="scene scene--broadcast" data-category="announcement" data-programme="GraceDay Update" data-duration="11" data-transition="wipe" data-ticker="true">
+    {% if item.featured_image %}<img class="scene__media" src="{{ item.featured_image.url }}" alt="">{% else %}<img class="scene__media" src="{% static 'img/hero/hero-2.jpg' %}" alt="GraceDay Inn update">{% endif %}<div class="scene__veil"></div><div class="lower-third"><div class="lower-third__label">GraceDay update</div><div class="lower-third__body"><strong>{{ item.title }}</strong> · {{ item.message|truncatechars:260 }}</div></div><div class="ticker"><span>NOW SHOWING · GRACEDAY UPDATE · WELCOME TO GRACEDAY INN · RECEPTION IS AVAILABLE TO ASSIST · NOW SHOWING · GRACEDAY UPDATE · WELCOME TO GRACEDAY INN · RECEPTION IS AVAILABLE TO ASSIST ·</span></div>
+  </section>{% endfor %}
+
+  {% for content in custom_content %}
+  <section id="scene-custom-{{ content.id }}" class="scene scene--{{ content.layout_variant }}{% if content.priority == 'important' %} scene--important{% endif %}" data-category="{% if content.priority == 'important' %}important{% else %}{{ content.content_type }}{% endif %}" data-programme="{{ content.get_content_type_display }}" data-duration="{{ content.duration_seconds }}" data-transition="{{ content.transition_variant }}">
+    {% if content.content_type == 'video' and content.video %}<video class="scene__video" muted playsinline preload="metadata"{% if content.fallback_image %} poster="{{ content.fallback_image.url }}"{% endif %}><source src="{{ content.video.url }}"></video>{% elif content.image %}<img class="scene__media" src="{{ content.image.url }}" alt="">{% elif content.fallback_image %}<img class="scene__media" src="{{ content.fallback_image.url }}" alt="">{% endif %}<div class="media-fallback"></div><div class="scene__veil"></div><div class="scene__safe"><div class="scene__content">{% if content.icon %}<div class="icon-seal" data-animate><i class="{{ content.icon }}"></i></div>{% endif %}<div class="scene__eyebrow" data-animate>{{ content.subtitle|default:content.get_content_type_display }}</div><h1 class="scene__title clamp-title" data-animate>{{ content.title }}</h1>{% if content.body %}<p class="scene__copy clamp-copy" data-animate>{{ content.body }}</p>{% endif %}{% if content.cta_text %}<span class="scene__cta" data-animate>{{ content.cta_text }}</span>{% endif %}</div></div>
+  </section>{% endfor %}
+
+  <section id="scene-this-that" class="scene scene--split" data-category="playful" data-programme="This or That?" data-duration="10" data-transition="split">
+    <img class="scene__media" src="{% static 'img/room view.png' %}" alt="GraceDay Inn room"><div class="scene__veil"></div><div class="scene__safe"><div class="scene__content"><div class="scene__eyebrow" data-animate>This or that?</div><h1 class="scene__title" data-animate>Movie & relax<br><span style="color:var(--gd-gold)">or</span> explore Abuja?</h1><p class="scene__copy" data-animate>Whatever your pace, make tonight your own.</p></div></div><div class="offer-badge">YOU<br>CHOOSE</div>
+  </section>
+
+  <section id="scene-trivia" class="scene scene--question" data-category="playful" data-programme="Quick Question" data-duration="12" data-transition="mosaic">
+    <div class="scene__safe"><div class="scene__content"><div class="question-label" data-animate>Quick question</div><h2 class="question-text" data-animate>What makes a stay memorable?</h2><div class="question-timer" data-animate><span></span></div><div class="answer-panel">Comfort, care, and the feeling that someone thought ahead. That is the GraceDay goal.</div></div></div>
+  </section>
+
+  <section id="scene-qr-rooms" class="scene scene--qr" data-category="qr" data-programme="Explore GraceDay" data-duration="14" data-transition="iris">
+    <div class="scene__safe"><div class="qr-layout"><div class="scene__content"><div class="scene__eyebrow" data-animate>Take GraceDay with you</div><h1 class="scene__title" data-animate>Explore rooms.<br>Plan your stay.</h1><p class="scene__copy" data-animate>Scan with your phone to view rooms and availability on the official GraceDay Inn website.</p><div class="qr-url" data-animate>{{ rooms_url }}</div></div>{% if rooms_qr %}<div class="qr-card" data-animate><img src="{{ rooms_qr }}" alt="QR code for GraceDay Inn rooms"></div>{% endif %}</div></div>
+  </section>
+
+  <section id="scene-brand-reset" class="scene scene--minimal" data-category="brand" data-programme="GraceDay Interstitial" data-duration="6" data-transition="cinematic">
+    <div class="scene__safe"><div class="scene__content"><div class="scene__eyebrow" data-animate>Apo-Dutse · Abuja</div><h1 class="scene__title" data-animate>GRACEDAY</h1><div class="brand-line"></div><p class="scene__copy" data-animate>Your comfort. Our pleasure.</p></div></div>
+  </section>
+
+  <div class="transition" aria-hidden="true"><div class="transition__gold"></div><div class="transition__ink"></div><div class="transition__curtain"><i></i><i></i></div><div class="transition__iris"></div><div class="transition__tiles">{% for tile in '12345678abcdefghijklmnop' %}<i></i>{% endfor %}</div></div>
+  <div class="tv__progress"><span data-progress></span></div><div class="tv__controls"><button type="button" data-prev>Previous</button><button type="button" data-pause>Pause</button><button type="button" data-next>Next</button><button type="button" data-restart>Restart</button><button type="button" data-full>Fullscreen</button></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" defer></script>
+<script src="{% static 'billboard/js/graceday-tv.js' %}" defer></script>
+</body>
+</html>

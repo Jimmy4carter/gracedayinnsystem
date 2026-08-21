@@ -6,6 +6,8 @@ app_name = 'frontend'
 
 
 urlpatterns = [
+    path('robots.txt', views.robots_txt, name='robots-txt'),
+    path('sitemap.xml', views.public_sitemap, name='public-sitemap'),
 
     # =====================================================
     # PUBLIC WEBSITE
@@ -22,6 +24,8 @@ urlpatterns = [
         views.about,
         name='public-about'
     ),
+    path('local-guide/', views.public_guide, name='public-guide'),
+    path('billboard/', views.public_billboard, name='public-billboard'),
 
     path(
         'rooms/',
@@ -99,6 +103,24 @@ urlpatterns = [
         views.portal_verify_booking,
         name='portal-verify-booking'
     ),
+    path('faq/', views.public_faq, name='public-faq'),
+    path('policies/', views.public_policies, name='public-policies'),
+    path('policies/<slug:slug>/', views.public_policy_detail, name='public-policy-detail'),
+    path('portal/mfa/challenge/', views.portal_mfa_challenge, name='portal-mfa-challenge'),
+    path('portal/mfa/enroll/', views.portal_mfa_enroll, name='portal-mfa-enroll'),
+    path('booking/quote/', views.public_quote_confirm, name='public-quote-confirm'),
+
+    path(
+        'portal/password-reset/',
+        views.portal_password_reset,
+        name='portal-password-reset'
+    ),
+
+    path(
+        'portal/set-password/<uidb64>/<token>/',
+        views.portal_set_password,
+        name='portal-set-password'
+    ),
 
     path(
         'portal/logout/',
@@ -166,6 +188,19 @@ path(
         views.portal_reservations,
         name='portal-reservations'
     ),
+    path('portal/my-stay/', views.portal_my_stay, name='portal-my-stay'),
+    path('portal/privacy/', views.portal_privacy, name='portal-privacy'),
+    path(
+        'portal/privacy/<int:pk>/download/',
+        views.portal_privacy_download,
+        name='portal-privacy-download',
+    ),
+
+    path(
+        'portal/reservations/<int:pk>/manage/',
+        views.portal_reservation_manage,
+        name='portal-reservation-manage'
+    ),
 
     path(
         'portal/reservations/<int:pk>/<str:action>/',
@@ -189,6 +224,26 @@ path(
         'portal/receipt/<int:invoice_id>/',
         views.portal_invoice_receipt,
         name='portal-invoice-print'
+    ),
+
+    path(
+        'portal/front-desk/',
+        views.portal_front_desk,
+        name='portal-front-desk'
+    ),
+    path('portal/tape-chart/', views.portal_tape_chart, name='portal-tape-chart'),
+    path('portal/commercial/', views.portal_commercial, name='portal-commercial'),
+
+    path(
+        'portal/payment-receipt/<int:receipt_id>/',
+        views.portal_payment_receipt,
+        name='portal-payment-receipt'
+    ),
+
+    path(
+        'portal/cashier/',
+        views.portal_cashier,
+        name='portal-cashier'
     ),
 
     path(
@@ -220,6 +275,23 @@ path(
         views.portal_housekeeping_action,
         name='portal-housekeeping-action'
     ),
+
+    path('portal/maintenance/', views.portal_maintenance, name='portal-maintenance'),
+    path(
+        'portal/maintenance/<int:pk>/<str:action>/',
+        views.portal_maintenance_action,
+        name='portal-maintenance-action',
+    ),
+    path('portal/operations/', views.portal_operations, name='portal-operations'),
+    path(
+        'portal/operations/incidents/<int:pk>/<str:action>/',
+        views.portal_incident_action, name='portal-incident-action',
+    ),
+    path(
+        'portal/operations/lost-found/<int:pk>/<str:action>/',
+        views.portal_lost_found_action, name='portal-lost-found-action',
+    ),
+    path('portal/operations/stock/', views.portal_stock, name='portal-stock'),
 
 
     # =====================================================
@@ -254,6 +326,7 @@ path(
         views.portal_newsletter_action,
         name='portal-newsletter-action'
     ),
+    path('portal/newsletter-message/<int:pk>/send/', views.portal_newsletter_send, name='portal-newsletter-send'),
 
 
     # =====================================================
@@ -265,6 +338,13 @@ path(
         views.portal_reports,
         name='portal-reports'
     ),
+    path('portal/financial-audit/', views.portal_financial_audit, name='portal-financial-audit'),
+    path('portal/expenditures/', views.portal_expenditures, name='portal-expenditures'),
+    path(
+        'portal/expenditures/<int:pk>/evidence/', views.portal_expenditure_evidence,
+        name='portal-expenditure-evidence',
+    ),
+    path('portal/finance-controls/', views.portal_finance_controls, name='portal-finance-controls'),
 
     path(
         'portal/reports/export/csv/',
@@ -294,12 +374,26 @@ path(
         views.portal_notifications,
         name='portal-notifications'
     ),
+    path(
+        'portal/reports/export/xlsx/',
+        views.portal_reports_export_xlsx,
+        name='portal-reports-export-xlsx'
+    ),
+    path('portal/management/', views.portal_management, name='portal-management'),
+    path('portal/management/packs/<int:pk>/<str:file_format>/', views.portal_management_pack_download, name='portal-management-pack-download'),
+    path('portal/management/queries/<int:pk>/', views.portal_management_query, name='portal-management-query'),
+    path('portal/management/night-audit/', views.portal_night_audit, name='portal-night-audit'),
+
+    path('portal/inquiries/', views.portal_inquiries, name='portal-inquiries'),
+    path('portal/inquiries/<int:pk>/', views.portal_inquiry_detail, name='portal-inquiry-detail'),
+    path('portal/inquiry-attachments/<int:pk>/download/', views.portal_inquiry_attachment_download, name='portal-inquiry-attachment-download'),
 
     path(
         'portal/settings/',
         views.portal_settings,
         name='portal-settings'
     ),
+    path('portal/vat/', views.portal_vat, name='portal-vat'),
 
 
     # =====================================================

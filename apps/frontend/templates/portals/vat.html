@@ -1,0 +1,70 @@
+{% extends 'base_portal.html' %}
+{% block title %}VAT Control | GRACEDAY INN{% endblock %}
+{% block page_title %}VAT{% endblock %}
+{% block page_heading %}VAT Control &amp; Change History{% endblock %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-xl-4">
+        <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <p class="text-uppercase text-xs font-weight-bolder text-muted mb-1">Current rate</p>
+                        <h2 class="display-4 font-weight-bolder mb-0">{{ current_vat_rate }}%</h2>
+                    </div>
+                    <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-xl">
+                        <i class="fa fa-percent text-white opacity-10"></i>
+                    </div>
+                </div>
+                {% if current_vat_rate > 0 %}
+                <div class="alert alert-success text-white py-2">VAT is active for newly priced transactions.</div>
+                {% else %}
+                <div class="alert alert-secondary text-white py-2">VAT is disabled. New invoices and receipts omit VAT completely.</div>
+                {% endif %}
+                <form method="post" class="mt-4" novalidate>
+                    {% csrf_token %}
+                    <label for="vat-rate" class="form-label font-weight-bold">New VAT percentage</label>
+                    <div class="input-group mb-3">
+                        <input id="vat-rate" name="rate" type="number" min="0" max="100" step="0.01" value="{{ current_vat_rate }}" class="form-control" required>
+                        <span class="input-group-text">%</span>
+                    </div>
+                    <label for="vat-reason" class="form-label font-weight-bold">Reason for change</label>
+                    <textarea id="vat-reason" name="reason" rows="3" maxlength="255" class="form-control" placeholder="For example: VAT enabled under current management policy" required></textarea>
+                    <p class="text-xs text-muted mt-2">The change takes effect immediately for new quotes and bills. Existing transactions retain their original totals.</p>
+                    <button class="btn bg-gradient-dark w-100 mb-0" type="submit" onclick="return confirm('Apply this VAT rate to all new transactions?')">
+                        <i class="fa fa-shield me-1"></i> Apply VAT rate
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header pb-0">
+                <h2 class="h5 mb-1">VAT change log</h2>
+                <p class="text-sm text-muted mb-0">Append-only evidence of every rate decision.</p>
+            </div>
+            <div class="card-body px-0 pb-0">
+                <div class="table-responsive">
+                    <table class="table align-items-center mb-0">
+                        <thead><tr><th>Date and time</th><th>Changed by</th><th>Previous</th><th>New rate</th><th>Reason</th></tr></thead>
+                        <tbody>
+                        {% for change in vat_history %}
+                            <tr>
+                                <td class="text-sm">{{ change.effective_at|date:'d M Y, H:i' }}</td>
+                                <td><span class="text-sm font-weight-bold">{{ change.changed_by.get_full_name|default:change.changed_by.username }}</span></td>
+                                <td><span class="badge bg-gradient-secondary">{{ change.previous_rate }}%</span></td>
+                                <td><span class="badge {% if change.rate > 0 %}bg-gradient-success{% else %}bg-gradient-dark{% endif %}">{{ change.rate }}%</span></td>
+                                <td class="text-sm text-wrap" style="min-width:220px">{{ change.reason }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-5">No VAT changes have been recorded. The effective rate is 0%.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

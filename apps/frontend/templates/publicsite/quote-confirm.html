@@ -1,0 +1,50 @@
+{% extends 'base_public.html' %}
+{% load custom_filters %}
+{% block title %}Review your stay | GraceDay Inn{% endblock %}
+{% block meta_description %}Review your GraceDay Inn dates, room, taxes, discount and booking policy before confirming.{% endblock %}
+{% block content %}
+<section class="spad quote-review">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="quote-card">
+          <p class="quote-eyebrow">Secure 10-minute hold</p>
+          <h1>Review your stay</h1>
+          <p>Room {{ quote.room.number }} · {{ quote.room.room_type.name }} · {{ quote.check_in_date|date:'j M Y' }} to {{ quote.check_out_date|date:'j M Y' }}</p>
+
+          <div class="quote-grid">
+            <div><span>Guests</span><strong>{{ quote.num_adults }} adult{{ quote.num_adults|pluralize }}{% if quote.num_children %}, {{ quote.num_children }} child{{ quote.num_children|pluralize:'ren' }}{% endif %}</strong></div>
+            <div><span>Rate</span><strong>{{ quote.rate_plan.name }}</strong></div>
+          </div>
+
+          <h2>Price details</h2>
+          <dl class="quote-lines">
+            {% for night in quote.price_snapshot.nightly %}
+              <div><dt>{{ night.date }}</dt><dd>{{ quote.currency }} {{ night.amount|currency_format }}</dd></div>
+            {% endfor %}
+            {% for supplement in quote.price_snapshot.occupant_supplements %}<div><dt>{{ supplement.name }} × {{ supplement.quantity }}</dt><dd>{{ quote.currency }} {{ supplement.amount|currency_format }}</dd></div>{% endfor %}
+            {% if quote.discount_total %}<div class="discount"><dt>{{ quote.price_snapshot.promotion_name|default:'Offer discount' }}</dt><dd>− {{ quote.currency }} {{ quote.discount_total|currency_format }}</dd></div>{% endif %}
+            {% for extra in quote.price_snapshot.extras %}<div><dt>{{ extra.name }} × {{ extra.quantity }}</dt><dd>{{ quote.currency }} {{ extra.amount|currency_format }}</dd></div>{% endfor %}
+            <div><dt>Accommodation subtotal</dt><dd>{{ quote.currency }} {{ quote.subtotal|currency_format }}</dd></div>
+            {% for tax in quote.price_snapshot.taxes %}<div><dt>{{ tax.name }}</dt><dd>{{ quote.currency }} {{ tax.amount|currency_format }}</dd></div>{% endfor %}
+            <div class="quote-total"><dt>Total</dt><dd>{{ quote.currency }} {{ quote.total|currency_format }}</dd></div>
+            <div><dt>Deposit required</dt><dd>{{ quote.currency }} {{ quote.price_snapshot.deposit_required|currency_format }}</dd></div>
+          </dl>
+
+          <div class="policy-box">
+            <h2>Booking policy</h2>
+            <p>{{ quote.policy_snapshot.cancellation_policy|default:'Contact the hotel for cancellation terms.' }}</p>
+            <p>{% if not quote.policy_snapshot.is_refundable %}This rate is non-refundable.{% elif quote.policy_snapshot.cancellation_fee_percent != '0.00' %}Free cancellation applies until {{ quote.policy_snapshot.free_cancellation_hours }} hours before arrival; after that, {{ quote.policy_snapshot.cancellation_fee_percent }}% may be charged.{% else %}This flexible rate can be cancelled without a hotel cancellation fee.{% endif %}</p>
+          </div>
+
+          <p class="hold-expiry">This price is held until {{ quote.expires_at|date:'H:i T' }}.</p>
+          <div class="quote-actions">
+            <form method="post">{% csrf_token %}<button class="primary-btn" type="submit">Confirm and continue</button></form>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="cancel"><button class="text-button" type="submit">Cancel quote</button></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

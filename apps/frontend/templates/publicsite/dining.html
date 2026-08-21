@@ -1,36 +1,74 @@
 {% extends 'base_public.html' %}
+{% load custom_filters %}
 {% load static %}
-{% block title %}GRACEDAY INN | Dining{% endblock %}
+{% block title %}GRACEDAY INN | Fine Dining & Room Service{% endblock %}
 {% block content %}
-<div class="breadcrumb-section"><div class="container"><div class="row"><div class="col-lg-12"><div class="breadcrumb-text"><h2>Dining</h2></div></div></div></div></div>
-
-<section class="services-section spad">
+<div class="breadcrumb-section">
     <div class="container">
-        <div class="row"><div class="col-lg-12"><div class="section-title"><span>Dining</span><h2>Dining at GRACEDAY INN</h2><p>Our Menu Categories</p></div></div></div>
-        <div class="row mb-5">
+        <div class="row">
             <div class="col-lg-12">
-                <div class="dining-image mb-4">
-                    <img src="{% static 'img/dining.png' %}" alt="Restaurant and Dining" class="img-fluid rounded-4 shadow-sm">
+                <div class="breadcrumb-text">
+                    <h2>Fine Dining & Room Service</h2>
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<section class="services-section spad">
+    <div class="container">
         <div class="row">
-            {% for category in categories %}
-                <div class="col-lg-6 col-sm-6 mb-4">
-                    <div class="service-item">
-                        <h4>{{ category.name }}</h4>
-                        <p>{{ category.description|default:'Signature selection from our kitchen.' }}</p>
-                        {% for item in category.menu_items.all %}
-                            <p><strong>{{ item.name }}</strong> - ₦{{ item.price }}</p>
-                        {% empty %}
-                            <p>No menu items in this category yet.</p>
-                        {% endfor %}
-                    </div>
+            <div class="col-lg-12">
+                <div class="section-title text-center mb-5">
+                    <span>Culinary Excellence</span>
+                    <h2>Dining at GraceDay Inn</h2>
+                    <p class="mt-2 text-muted">Savor authentic Nigerian delicacies and international cuisine crafted by our master chefs.</p>
                 </div>
-            {% empty %}
-                <p>Dining categories are not configured yet.</p>
-            {% endfor %}
+            </div>
         </div>
+        <div class="row mb-5 justify-content-center">
+            <div class="col-lg-10">
+                <div class="dining-image text-center">
+                    <img src="{% static 'img/dining.png' %}" alt="Restaurant and Dining" class="img-fluid rounded-4 shadow">
+                </div>
+            </div>
+        </div>
+
+        {% for category in categories %}
+            <div class="mb-5">
+                <div class="d-flex align-items-center mb-4 border-bottom pb-2">
+                    <h3 class="mb-0 text-dark font-weight-bold">{{ category.name }}</h3>
+                    {% if category.description %}
+                        <span class="ms-3 text-muted small">— {{ category.description }}</span>
+                    {% endif %}
+                </div>
+                <div class="row g-4">
+                    {% for item in category.menu_items.all %}
+                        {% if item.is_available %}
+                        <div class="col-lg-6 col-md-6">
+                            <div class="p-3 border rounded-3 bg-white shadow-sm h-100 d-flex justify-content-between align-items-start">
+                                <div class="pe-3">
+                                    <h5 class="mb-1 text-dark">{{ item.name }}</h5>
+                                    {% if item.description %}
+                                        <p class="small text-secondary mb-0">{{ item.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-warning text-dark font-weight-bold fs-6">₦{{ item.price|currency_format }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% empty %}
+                        <div class="col-12"><p class="text-muted fst-italic">No menu items listed under {{ category.name }} at this time.</p></div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="text-center py-5">
+                <p class="text-muted">Dining menu is currently being updated. Please contact guest services for today's specials.</p>
+            </div>
+        {% endfor %}
     </div>
 </section>
 {% endblock %}

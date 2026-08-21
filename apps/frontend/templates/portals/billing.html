@@ -1,7 +1,26 @@
 {% extends 'base_portal.html' %}
+{% load custom_filters %}
 {% block title %}Billing | GRACEDAY INN{% endblock %}
 {% block page_title %}Invoice Management{% endblock %}
 {% block content %}
+{% if can_correct %}
+<div class="row mb-4">
+    <div class="col-lg-7"><div class="card h-100"><div class="card-header pb-0"><h6>Controlled folio correction</h6></div><div class="card-body">
+        <p class="text-sm">Corrections never edit history. They post an immutable debit adjustment or compensating credit note with your identity and reason.</p>
+        <form method="post" class="row g-3">{% csrf_token %}
+            <div class="col-md-6"><label class="form-label">Open folio</label><select class="form-select" name="folio_id" required>{% for folio in folios %}<option value="{{ folio.id }}">{{ folio.reservation.reservation_number }} — {{ folio.guest.get_full_name|default:folio.guest.username }} — balance ₦{{ folio.balance|currency_format }}</option>{% endfor %}</select></div>
+            <div class="col-md-3"><label class="form-label">Correction</label><select class="form-select" name="kind"><option value="adjustment">Debit adjustment</option><option value="credit_note">Credit note</option></select></div>
+            <div class="col-md-3"><label class="form-label">Amount (NGN)</label><input class="form-control" type="number" min="0.01" step="0.01" name="amount" required></div>
+            <div class="col-md-9"><label class="form-label">Audit reason</label><input class="form-control" name="reason" maxlength="255" required></div>
+            <div class="col-md-3 d-flex align-items-end"><button class="btn btn-warning mb-0 w-100" type="submit">Post correction</button></div>
+        </form>
+    </div></div></div>
+    <div class="col-lg-5"><div class="card h-100"><div class="card-header pb-0"><h6>Ledger tax summary</h6></div><div class="card-body">
+        <form method="get" class="row g-2 mb-3"><div class="col"><input class="form-control" type="date" name="start_date" value="{{ request.GET.start_date }}"></div><div class="col"><input class="form-control" type="date" name="end_date" value="{{ request.GET.end_date }}"></div><div class="col-auto"><button class="btn btn-outline-primary mb-0">Apply</button></div></form>
+        {% for row in tax_summary.rows %}<div class="d-flex justify-content-between text-sm"><span>{{ row.description }}</span><strong>₦{{ row.total|currency_format }}</strong></div>{% empty %}<p class="text-sm">No tax entries in this period.</p>{% endfor %}<hr><div class="d-flex justify-content-between"><strong>Total tax</strong><strong>₦{{ tax_summary.total|currency_format }}</strong></div>
+    </div></div></div>
+</div>
+{% endif %}
 <div class="row">
     <div class="col-lg-8">
         <div class="card">
@@ -25,12 +44,27 @@
                                 <tr>
                                     <td><p class="text-xs font-weight-bold mb-0">{{ invoice.invoice_number }}</p></td>
                                     <td><p class="text-xs font-weight-bold mb-0">{{ invoice.guest.get_full_name|default:invoice.guest.username }}</p></td>
-                                    <td class="align-middle text-center"><span class="badge badge-sm bg-gradient-dark">{{ invoice.get_status_display }}</span></td>
-                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.total }}</span></td>
-                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.amount_paid }}</span></td>
-                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.balance }}</span></td>
                                     <td class="align-middle text-center">
-                                        <a href="{% url 'frontend:portal-invoice-print' invoice.id %}" target="_blank" class="btn btn-outline-primary btn-sm">Print</a>
+                                        {% if invoice.status == 'paid' %}
+                                            <span class="badge badge-sm bg-gradient-success"><i class="fa fa-check-circle me-1"></i> Paid</span>
+                                        {% elif invoice.status == 'partially_paid' %}
+                                            <span class="badge badge-sm bg-gradient-warning"><i class="fa fa-clock-o me-1"></i> Partial</span>
+                                        {% else %}
+                                            <span class="badge badge-sm bg-gradient-danger"><i class="fa fa-exclamation-circle me-1"></i> Unpaid</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-center"><span class="text-secondary text-xs font-weight-bold">₦{{ invoice.total|currency_format }}</span></td>
+                                    <td class="align-middle text-center"><span class="text-success text-xs font-weight-bold">₦{{ invoice.amount_paid|currency_format }}</span></td>
+                                    <td class="align-middle text-center"><span class="{% if invoice.balance > 0 %}text-danger{% else %}text-secondary{% endif %} text-xs font-weight-bold">₦{{ invoice.balance|currency_format }}</span></td>
+                                    <td class="align-middle text-center">
+                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 px-2 py-1" onclick="openPrintOptionsModal({{ invoice.id }}, '{{ invoice.invoice_number }}', '{{ invoice.guest.get_full_name|default:invoice.guest.username|escapejs }}', '₦{{ invoice.total|currency_format }}', '₦{{ invoice.balance|currency_format }}', '{% if invoice.balance > 0 %}{% url "frontend:portal-payments" %}?invoice_id={{ invoice.id }}{% endif %}')">
+                                            <i class="fa fa-print me-1"></i> Options
+                                        </button>
+                                        {% if invoice.balance > 0 %}
+                                        <a href="{% url 'frontend:portal-payments' %}?invoice_id={{ invoice.id }}" class="btn btn-xs bg-gradient-success mb-0 ms-1 px-2 py-1">
+                                            <i class="fa fa-credit-card me-1"></i> Pay
+                                        </a>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% empty %}

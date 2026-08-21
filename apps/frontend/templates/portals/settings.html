@@ -1,0 +1,109 @@
+{% extends 'base_portal.html' %}
+{% block title %}Settings | GRACEDAY INN{% endblock %}
+{% block page_title %}System Settings & Feature Flags{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card stat-card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Feature Flags</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Feature Key</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                {% if can_manage_settings %}<th>Action</th>{% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for flag in feature_flags %}
+                                <tr>
+                                    <td><code>{{ flag.key }}</code></td>
+                                    <td><small class="text-muted">{{ flag.description }}</small></td>
+                                    <td>
+                                        {% if flag.is_enabled %}
+                                            <span class="badge bg-success">Enabled</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if can_manage_settings %}
+                                    <td>
+                                        <form method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="flag_id" value="{{ flag.id }}">
+                                            <input type="hidden" name="is_enabled" value="{% if flag.is_enabled %}off{% else %}on{% endif %}">
+                                            <button type="submit" class="btn btn-sm {% if flag.is_enabled %}btn-outline-secondary{% else %}btn-outline-primary{% endif %}">
+                                                {% if flag.is_enabled %}Disable{% else %}Enable{% endif %}
+                                            </button>
+                                        </form>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-muted text-center py-3">No feature flags configured.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        {% if can_manage_settings %}
+        <div class="card stat-card mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-2"><i class="fa fa-whatsapp text-success fa-lg"></i><h5 class="card-title mb-0">Public WhatsApp contact</h5></div>
+                <p class="text-muted small">This replaces the retired website live-chat system on every public page.</p>
+                <form method="post" class="row g-3">{% csrf_token %}<input type="hidden" name="action" value="whatsapp">
+                    <div class="col-12"><label class="form-label" for="whatsapp-number">Number with country code</label><input class="form-control" id="whatsapp-number" name="whatsapp_number" inputmode="tel" value="{{ whatsapp_number }}" placeholder="2347080076496" required><small class="text-muted">Digits only; omit +, spaces and leading local zero.</small></div>
+                    <div class="col-12"><label class="form-label" for="whatsapp-message">Pre-filled greeting</label><textarea class="form-control" id="whatsapp-message" name="whatsapp_message" rows="3" maxlength="500" required>{{ whatsapp_message }}</textarea></div>
+                    <div class="col-12"><button class="btn btn-success w-100 mb-0" type="submit">Save WhatsApp contact</button></div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        <div class="card stat-card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">System Environment</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span>Property</span> <strong>GRACEDAY INN</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span>Location</span> <strong>Abuja, Nigeria</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span>Framework</span> <strong>Django 5.2 / WSGI</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span>Audit Log Integrity</span> <span class="badge bg-success">SHA-256 Immutable</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {% if operational_settings %}
+        <div class="card stat-card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Operational Configuration</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Setting Key</th><th>Description</th></tr></thead>
+                        <tbody>
+                            {% for setting in operational_settings %}
+                                <tr>
+                                    <td><code>{{ setting.key }}</code></td>
+                                    <td><small class="text-muted">{{ setting.description }}</small></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -4,665 +4,430 @@
 <html lang="en">
 
 <head>
-
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="apple-touch-icon" sizes="76x76" href="{% static 'admin/assets/img/apple-icon.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'admin/assets/img/favicon.png' %}">
+    <title>{% block title %}GRACEDAY INN Portal{% endblock %}</title>
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <link rel="apple-touch-icon"
-          sizes="76x76"
-          href="{% static 'admin/assets/img/apple-icon.png' %}">
-
-    <link rel="icon"
-          type="image/png"
-          href="{% static 'admin/assets/img/favicon.png' %}">
-
-    <title>
-        {% block title %}
-            GRACEDAY INN Portal
-        {% endblock %}
-    </title>
-
-    <link rel="stylesheet"
-          href="{% static 'css/font-awesome.min.css' %}"
-          type="text/css">
-
-    <link id="pagestyle"
-          href="{% static 'admin/assets/css/soft-ui-dashboard.css' %}"
-          rel="stylesheet">
-
+    <link rel="stylesheet" href="{% static 'css/font-awesome.min.css' %}" type="text/css">
+    <link id="pagestyle" href="{% static 'admin/assets/css/soft-ui-dashboard.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 
+    <style>
+    .portal-skip-link { position: absolute; left: 1rem; top: -5rem; z-index: 9999; background: #111827; color: #fff; padding: .75rem 1rem; border-radius: .4rem; }
+    .portal-skip-link:focus { top: 1rem; color: #fff; }
+    .sidenav .nav-link.active {
+        background-image: linear-gradient(310deg, #5e72e4 0%, #825ee4 100%) !important;
+        color: #ffffff !important;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .sidenav .nav-link.active .icon {
+        background-color: #ffffff !important;
+    }
+    .sidenav .nav-link.active .icon i {
+        color: #5e72e4 !important;
+    }
+    .sidenav .nav-link.active span {
+        color: #ffffff !important;
+        font-weight: 700;
+    }
+    </style>
 </head>
-
 
 <body class="g-sidenav-show bg-gray-100">
 
+<a class="portal-skip-link" href="#portal-main-content">Skip to main content</a>
 
-<!-- =====================================================
-     SIDEBAR
-===================================================== -->
-
-<aside
-    class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3"
-    id="sidenav-main">
-
-
-    <!-- BRAND -->
-
+<!-- SIDEBAR -->
+<aside class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3" id="sidenav-main">
     <div class="sidenav-header d-flex align-items-center justify-content-between">
-
-        <i
-            class="fa fa-times p-3 cursor-pointer text-secondary opacity-5 position-absolute end-0 top-0 d-none d-xl-none"
-            aria-hidden="true"
-            id="iconSidenav">
-        </i>
-
-        <a
-            class="navbar-brand m-0 d-flex align-items-center"
-            href="{% url 'frontend:portal-dashboard' %}">
-
-            <img
-                src="{% static 'img/Header_logo.png' %}"
-                class="navbar-brand-img"
-                alt="GRACEDAY INN Logo"
-                style="max-height:64px;height:auto;"> 
-
+        <i class="fa fa-times p-3 cursor-pointer text-secondary opacity-5 position-absolute end-0 top-0 d-none d-xl-none" aria-hidden="true" id="iconSidenav"></i>
+        <a class="navbar-brand m-0 d-flex align-items-center" href="{% url 'frontend:portal-dashboard' %}">
+            <img src="{% static 'img/Header_logo.png' %}" class="navbar-brand-img" alt="GRACEDAY INN Logo" style="max-height:64px;height:auto;">
         </a>
-
     </div>
-
 
     <hr class="horizontal dark mt-0">
 
-
-    <!-- =====================================================
-         SIDEBAR NAVIGATION
-    ===================================================== -->
-
-    <div
-        class="collapse navbar-collapse w-auto"
-        id="sidenav-collapse-main">
-
-
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
         <ul class="navbar-nav">
-
-
-            <!-- =========================
-                 MAIN MENU
-            ========================== -->
-
+            <!-- MAIN MENU -->
             <li class="nav-item mt-2">
-
-                <h6
-                    class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
-
-                    Main Menu
-
-                </h6>
-
+                <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Main Menu</h6>
             </li>
 
-
-            <!-- DASHBOARD -->
-
             <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-dashboard' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
+                <a class="nav-link {% if request.path == '/portal/dashboard/' %}active{% endif %}" href="{% url 'frontend:portal-dashboard' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-dashboard text-dark"></i>
-
                     </div>
-
-                    <span class="nav-link-text ms-1">
-                        Dashboard
-                    </span>
-
+                    <span class="nav-link-text ms-1">Dashboard</span>
                 </a>
-
             </li>
 
-
-            <!-- ROOMS -->
-
+            {% if request.user.role == 'guest' %}
             <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-rooms' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-building text-dark"></i>
-
+                <a class="nav-link {% if 'portal/my-stay' in request.path %}active{% endif %}" href="{% url 'frontend:portal-my-stay' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-suitcase text-dark"></i>
                     </div>
-
-                    <span class="nav-link-text ms-1">
-                        Rooms
-                    </span>
-
+                    <span class="nav-link-text ms-1">My Stay</span>
                 </a>
-
             </li>
-
-
-            <!-- RESERVATIONS -->
-
             <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-reservations' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-calendar text-dark"></i>
-
+                <a class="nav-link {% if 'portal/privacy' in request.path %}active{% endif %}" href="{% url 'frontend:portal-privacy' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-shield text-dark"></i>
                     </div>
-
-                    <span class="nav-link-text ms-1">
-                        Reservations
-                    </span>
-
+                    <span class="nav-link-text ms-1">My Privacy</span>
                 </a>
-
             </li>
-
-
-            <!-- GUESTS -->
-
-            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' %}
-
-            <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-guests' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-users text-dark"></i>
-
-                    </div>
-
-                    <span class="nav-link-text ms-1">
-                        Guests
-                    </span>
-
-                </a>
-
-            </li>
-
             {% endif %}
-
-
-            <!-- =========================
-                 FINANCE & SERVICES
-            ========================== -->
-
-            <li class="nav-item mt-3">
-
-                <h6
-                    class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
-
-                    Finance & Services
-
-                </h6>
-
-            </li>
-
-
-            <!-- BILLING -->
-
-            <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-billing' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-credit-card text-dark"></i>
-
-                    </div>
-
-                    <span class="nav-link-text ms-1">
-                        Billing
-                    </span>
-
-                </a>
-
-            </li>
-
-
-            <!-- PAYMENTS -->
-
-            <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-payments' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-money text-dark"></i>
-
-                    </div>
-
-                    <span class="nav-link-text ms-1">
-                        Payments
-                    </span>
-
-                </a>
-
-            </li>
-
-
-            <!-- SERVICES -->
-
-            <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-services' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-archive text-dark"></i>
-
-                    </div>
-
-                    <span class="nav-link-text ms-1">
-                        Services
-                    </span>
-
-                </a>
-
-            </li>
-
-
-            <!-- HOUSEKEEPING -->
-
-            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' or request.user.role == 'housekeeping' %}
-
-            <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-housekeeping' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-check-square-o text-dark"></i>
-
-                    </div>
-
-                    <span class="nav-link-text ms-1">
-                        Housekeeping
-                    </span>
-
-                </a>
-
-            </li>
-
-            {% endif %}
-
-
-            <!-- =========================
-                 ADMINISTRATION
-            ========================== -->
 
             {% if request.user.role == 'admin' or request.user.role == 'manager' %}
-
-
-            <li class="nav-item mt-3">
-
-                <h6
-                    class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
-
-                    Administration
-
-                </h6>
-
-            </li>
-
-
-            <!-- STAFF -->
-
             <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-staff' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-id-badge text-dark"></i>
-
-                    </div>
-
-                    <span class="nav-link-text ms-1">
-                        Staff
-                    </span>
-
-                </a>
-
-            </li>
-
-
-            <!-- NEWSLETTER -->
-
-            <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-newsletter' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-envelope text-dark"></i>
-
-                    </div>
-
-                    <span class="nav-link-text ms-1">
-                        Newsletter
-                    </span>
-                </a>
-
-            </li>
-
-
-            <!-- REPORTS -->
-
-            <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-reports' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
+                <a class="nav-link {% if 'portal/management' in request.path and 'night-audit' not in request.path %}active{% endif %}" href="{% url 'frontend:portal-management' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-line-chart text-dark"></i>
-
                     </div>
-
-                    <span class="nav-link-text ms-1">
-                        Reports
-                    </span>
-
+                    <span class="nav-link-text ms-1">Executive Summary</span>
                 </a>
-
             </li>
-
-
+            <li class="nav-item">
+                <a class="nav-link {% if 'night-audit' in request.path %}active{% endif %}" href="{% url 'frontend:portal-night-audit' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-moon-o text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Night Audit</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/privacy' in request.path %}active{% endif %}" href="{% url 'frontend:portal-privacy' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-shield text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Privacy Requests</span>
+                </a>
+            </li>
             {% endif %}
 
-
-            <!-- =========================
-                 ACCOUNT
-            ========================== -->
-
+            <!-- FRONT OFFICE & GUESTS -->
+            {% if request.user.role != 'guest' %}
             <li class="nav-item mt-3">
-
-                <h6
-                    class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">
-
-                    Account
-
-                </h6>
-
+                <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Front Office &amp; Guests</h6>
             </li>
+            {% endif %}
 
-
-            <!-- NOTIFICATIONS -->
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/front-desk' in request.path %}active{% endif %}" href="{% url 'frontend:portal-front-desk' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-desktop text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Front Desk Control</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/tape-chart' in request.path %}active{% endif %}" href="{% url 'frontend:portal-tape-chart' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-th text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Tape Chart Grid</span>
+                </a>
+            </li>
+            {% endif %}
 
             <li class="nav-item">
+                <a class="nav-link {% if 'portal/rooms' in request.path %}active{% endif %}" href="{% url 'frontend:portal-rooms' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-building text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Rooms Inventory</span>
+                </a>
+            </li>
 
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-notifications' %}">
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/reservations' in request.path %}active{% endif %}" href="{% url 'frontend:portal-reservations' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-calendar text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Reservations</span>
+                </a>
+            </li>
 
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/guests' in request.path %}active{% endif %}" href="{% url 'frontend:portal-guests' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-users text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Guest Directory</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/commercial' in request.path %}active{% endif %}" href="{% url 'frontend:portal-commercial' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-briefcase text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Corporate &amp; Rates</span>
+                </a>
+            </li>
+            {% endif %}
 
+            <!-- FINANCIAL MANAGEMENT -->
+            {% if request.user.role != 'guest' %}
+            <li class="nav-item mt-3">
+                <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Finance &amp; Billing</h6>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/billing' in request.path %}active{% endif %}" href="{% url 'frontend:portal-billing' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-credit-card text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Billing &amp; Folios</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/payments' in request.path %}active{% endif %}" href="{% url 'frontend:portal-payments' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-money text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Payment Log</span>
+                </a>
+            </li>
+            {% if request.user.role == 'admin' or request.user.is_superuser %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/vat' in request.path %}active{% endif %}" href="{% url 'frontend:portal-vat' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-percent text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">VAT</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'accountant' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/expenditures' in request.path %}active{% endif %}" href="{% url 'frontend:portal-expenditures' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-file-text-o text-dark"></i></div>
+                    <span class="nav-link-text ms-1">Expenditure</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/finance-controls' in request.path %}active{% endif %}" href="{% url 'frontend:portal-finance-controls' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-balance-scale text-dark"></i></div>
+                    <span class="nav-link-text ms-1">Ledger &amp; Reconciliation</span>
+                </a>
+            </li>
+            {% endif %}
+            {% endif %}
+
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' or request.user.role == 'accountant' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/cashier' in request.path %}active{% endif %}" href="{% url 'frontend:portal-cashier' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-calculator text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Cashier Shifts</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- OPERATIONS & SERVICES -->
+            <li class="nav-item mt-3">
+                <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Operations &amp; Services</h6>
+            </li>
+
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' or request.user.role == 'housekeeping' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/housekeeping' in request.path %}active{% endif %}" href="{% url 'frontend:portal-housekeeping' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-check-square-o text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Housekeeping</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% if request.user.role != 'guest' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/maintenance' in request.path %}active{% endif %}" href="{% url 'frontend:portal-maintenance' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-wrench text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Maintenance</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/operations' in request.path and 'stock' not in request.path %}active{% endif %}" href="{% url 'frontend:portal-operations' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-clipboard text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Incidents &amp; Lost Items</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'stock' in request.path %}active{% endif %}" href="{% url 'frontend:portal-stock' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-cubes text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Inventory &amp; Stock</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/services' in request.path %}active{% endif %}" href="{% url 'frontend:portal-services' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-cutlery text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Room Services &amp; Dining</span>
+                </a>
+            </li>
+
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/inquiries' in request.path %}active{% endif %}" href="{% url 'frontend:portal-inquiries' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-inbox text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Inquiry Inbox</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <!-- ADMINISTRATION & SYSTEM -->
+            <li class="nav-item mt-3">
+                <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Administration &amp; System</h6>
+            </li>
+
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'accountant' %}
+            {% if request.user.role != 'accountant' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/staff' in request.path %}active{% endif %}" href="{% url 'frontend:portal-staff' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-id-badge text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Staff Directory</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/newsletter' in request.path %}active{% endif %}" href="{% url 'frontend:portal-newsletter' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-envelope text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Newsletter Broadcasts</span>
+                </a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/reports' in request.path %}active{% endif %}" href="{% url 'frontend:portal-reports' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-bar-chart text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Financial Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/financial-audit' in request.path %}active{% endif %}" href="{% url 'frontend:portal-financial-audit' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-check-square-o text-dark"></i></div>
+                    <span class="nav-link-text ms-1">Financial Audit</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/notifications' in request.path %}active{% endif %}" href="{% url 'frontend:portal-notifications' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-bell text-dark"></i>
-
                     </div>
-
-                    <span class="nav-link-text ms-1">
-                        Notifications
-                    </span>
-
+                    <span class="nav-link-text ms-1">Notifications</span>
                 </a>
-
             </li>
 
-
-            <!-- PROFILE -->
-
             <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-profile' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
+                <a class="nav-link {% if 'portal/profile' in request.path %}active{% endif %}" href="{% url 'frontend:portal-profile' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-user-circle-o text-dark"></i>
-
                     </div>
-
-                    <span class="nav-link-text ms-1">
-                        Profile
-                    </span>
-
+                    <span class="nav-link-text ms-1">My Profile</span>
                 </a>
-
             </li>
 
-
-            <!-- SETTINGS -->
-
+            {% if request.user.role != 'guest' %}
             <li class="nav-item">
+                <a class="nav-link {% if 'portal/mfa' in request.path %}active{% endif %}" href="{% url 'frontend:portal-mfa-enroll' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-lock text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Security &amp; MFA</span>
+                </a>
+            </li>
+            {% endif %}
 
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-settings' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
+            {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/settings' in request.path %}active{% endif %}" href="{% url 'frontend:portal-settings' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-cog text-dark"></i>
-
                     </div>
-
-                    <span class="nav-link-text ms-1">
-                        Settings
-                    </span>
-
+                    <span class="nav-link-text ms-1">Settings</span>
                 </a>
-
             </li>
-
-
-            <!-- LOGOUT -->
+            {% endif %}
 
             <li class="nav-item">
-
-                <a
-                    class="nav-link"
-                    href="{% url 'frontend:portal-logout' %}">
-
-                    <div
-                        class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-
-                        <i class="fa fa-sign-out text-dark"></i>
-
+                <a class="nav-link" href="{% url 'frontend:public-home' %}" target="_blank">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-globe text-dark"></i>
                     </div>
-
-                    <span class="nav-link-text ms-1">
-                        Logout
-                    </span>
-
+                    <span class="nav-link-text ms-1">Public Website</span>
                 </a>
-
             </li>
 
-
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'frontend:portal-logout' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-sign-out text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Logout</span>
+                </a>
+            </li>
         </ul>
-
     </div>
-
 </aside>
 
-
-<!-- =====================================================
-     MAIN CONTENT
-===================================================== -->
-
-<main
-    class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-
-
+<!-- MAIN CONTENT -->
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
     <!-- TOP NAVIGATION -->
-
-    <nav
-        class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl"
-        id="navbarBlur"
-        navbar-scroll="true"
-        aria-label="Portal top navigation">
-
-
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" navbar-scroll="true" aria-label="Portal top navigation">
         <div class="container-fluid py-1 px-3">
-
-
-            <!-- PAGE TITLE -->
-            <!-- MOBILE TOGGLER (visible on small screens) -->
             <button class="btn btn-outline-secondary d-xl-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#mobileMenu" aria-expanded="false" aria-controls="mobileMenu" title="Menu">
                 <i class="fa fa-bars"></i>
             </button>
 
             <nav aria-label="breadcrumb">
-
-                <ol
-                    class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-
-                    <li
-                        class="breadcrumb-item text-sm">
-
-                        <a
-                            class="opacity-5 text-dark"
-                            href="javascript:;">
-
-                            Pages
-
-                        </a>
-
-                    </li>
-
-
-                    <li
-                        class="breadcrumb-item text-sm text-dark active"
-                        aria-current="page">
-
-                        {% block page_title %}
-                            Portal
-                        {% endblock %}
-
-                    </li>
-
+                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{% block page_title %}Portal{% endblock %}</li>
                 </ol>
-
-
-                <h6 class="font-weight-bolder mb-0">
-
-                    {% block page_heading %}
-                        Portal
-                    {% endblock %}
-
-                </h6>
-
+                <h6 class="font-weight-bolder mb-0">{% block page_heading %}Portal{% endblock %}</h6>
             </nav>
 
-
-            <!-- TOP NAVIGATION RIGHT -->
-
-            <div
-                class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4"
-                id="navbar">
-
-
-                <!-- SEARCH -->
-
-                <div
-                    class="ms-md-auto pe-md-3 d-flex align-items-center">
-
-                    <div class="input-group">
-
-                        <span
-                            class="input-group-text text-body">
-
-                            <i
-                                class="fa fa-search"
-                                aria-hidden="true">
-                            </i>
-
+            <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+                <ul class="navbar-nav justify-content-end ms-auto">
+                    <li class="nav-item d-flex align-items-center">
+                        <span class="badge bg-gradient-dark">
+                            {{ request.user.get_full_name|default:request.user.username }} ({{ request.user.get_role_display }})
                         </span>
-
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            placeholder="Type here...">
-
-                    </div>
-
-                </div>
-
-
-                <!-- USER -->
-
-                <ul
-                    class="navbar-nav justify-content-end">
-
-                    <li
-                        class="nav-item d-flex align-items-center">
-
-                        <span
-                            class="badge bg-gradient-dark">
-
-                            {{ request.user.get_full_name|default:request.user.username }}
-
-                        </span>
-
                     </li>
-
                 </ul>
-
             </div>
-
         </div>
-
     </nav>
 
-    <!-- MOBILE COLLAPSE MENU (cloned from sidebar) -->
+    <!-- MOBILE COLLAPSE MENU -->
     <div class="container-fluid d-xl-none">
         <div class="collapse" id="mobileMenu">
             <div class="card card-body">
@@ -671,67 +436,29 @@
         </div>
     </div>
 
-
-    <!-- =====================================================
-         PAGE CONTENT
-    ===================================================== -->
-
-    <div class="container-fluid py-2">
-
-
-        <!-- MESSAGES -->
-
+    <!-- PAGE CONTENT -->
+    <div class="container-fluid py-2" id="portal-main-content" tabindex="-1">
         {% if messages %}
-
             {% for message in messages %}
-
-                <div
-                    class="alert alert-{{ message.tags|default:'info' }} text-white bg-gradient-info">
-
+                <div class="alert alert-{{ message.tags|default:'info' }} text-white bg-gradient-info">
                     {{ message }}
-
                 </div>
-
             {% endfor %}
-
         {% endif %}
 
-
-        <!-- CHILD CONTENT -->
-
         {% block content %}
-
         {% endblock %}
-
-
     </div>
-
-
 </main>
 
-
-<!-- =====================================================
-     JAVASCRIPT
-===================================================== -->
-
-<script src="{% static 'admin/assets/js/core/popper.min.js' %}">
-</script>
-
-<script src="{% static 'admin/assets/js/core/bootstrap.min.js' %}">
-</script>
-
-<script src="{% static 'admin/assets/js/plugins/perfect-scrollbar.min.js' %}">
-</script>
-
-<script src="{% static 'admin/assets/js/plugins/smooth-scrollbar.min.js' %}">
-</script>
-
-<script src="{% static 'admin/assets/js/soft-ui-dashboard.min.js' %}">
-</script>
-
+<!-- JAVASCRIPT -->
+<script src="{% static 'admin/assets/js/core/popper.min.js' %}"></script>
+<script src="{% static 'admin/assets/js/core/bootstrap.min.js' %}"></script>
+<script src="{% static 'admin/assets/js/plugins/perfect-scrollbar.min.js' %}"></script>
+<script src="{% static 'admin/assets/js/plugins/smooth-scrollbar.min.js' %}"></script>
+<script src="{% static 'admin/assets/js/soft-ui-dashboard.min.js' %}"></script>
 
 {% block extra_js %}
-
 {% endblock %}
 
 <script>
@@ -740,7 +467,6 @@ document.addEventListener('DOMContentLoaded', function () {
         var sidebarNav = document.querySelector('#sidenav-main .navbar-nav');
         var mobileContainer = document.getElementById('mobile-menu-container');
         if (sidebarNav && mobileContainer && mobileContainer.innerHTML.trim() === '') {
-            // Build a simple stacked list of links for mobile
             var list = document.createElement('div');
             list.className = 'list-group';
             sidebarNav.querySelectorAll('a.nav-link').forEach(function (a) {
@@ -769,6 +495,119 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+<div id="global-loader" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:99999; text-align:center;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-2 text-dark font-weight-bold">Processing...</div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var forms = document.querySelectorAll('form');
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (form.checkValidity()) {
+                var loader = document.getElementById('global-loader');
+                if (loader) loader.style.display = 'block';
+                var btns = form.querySelectorAll('button[type="submit"]');
+                btns.forEach(b => { b.disabled = true; });
+            }
+        });
+    });
+});
+</script>
+<!-- GLOBAL PRINT & DOCUMENT OPTIONS MODAL -->
+<div class="modal fade" id="printOptionsModal" tabindex="-1" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-dark text-white">
+                <h5 class="modal-title text-white" id="printOptionsModalLabel"><i class="fa fa-print me-2"></i> Print &amp; Document Options</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <span class="badge bg-gradient-info text-xs p-2" id="printModalInvoiceNum">Invoice #---</span>
+                </div>
+                <h6 class="text-dark font-weight-bold mb-1" id="printModalGuestName">Guest Name</h6>
+                <p class="text-muted text-sm mb-4" id="printModalAmounts">Total: ₦0.00 | Balance: ₦0.00</p>
+
+                <div class="d-grid gap-3">
+                    <a id="btnPrintA4" href="#" target="_blank" class="btn btn-outline-primary btn-lg d-flex align-items-center justify-content-between text-start shadow-sm">
+                        <div>
+                            <div class="font-weight-bold text-dark"><i class="fa fa-file-text-o text-primary me-2"></i> Official A4 Document / Invoice</div>
+                            <small class="text-muted">Standard full-page format with hotel header, itemized breakdown &amp; tax details</small>
+                        </div>
+                        <i class="fa fa-external-link"></i>
+                    </a>
+
+                    <a id="btnPrintPOS" href="#" target="_blank" class="btn btn-outline-dark btn-lg d-flex align-items-center justify-content-between text-start shadow-sm">
+                        <div>
+                            <div class="font-weight-bold text-dark"><i class="fa fa-print text-dark me-2"></i> Thermal POS Slip (80mm / 58mm)</div>
+                            <small class="text-muted">Compact slip format optimized for thermal receipt printers</small>
+                        </div>
+                        <i class="fa fa-external-link"></i>
+                    </a>
+
+                    <a id="btnPayNow" href="#" class="btn btn-success btn-lg d-none align-items-center justify-content-between text-start shadow-sm">
+                        <div>
+                            <div class="font-weight-bold text-white"><i class="fa fa-credit-card text-white me-2"></i> Pay Outstanding Balance Now</div>
+                            <small class="text-white opacity-8">Proceed to record/confirm payment for this bill</small>
+                        </div>
+                        <i class="fa fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-sm mb-0" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPrintOptionsModal(invoiceId, invoiceNum, guestName, totalStr, balanceStr, payUrl) {
+    document.getElementById('printModalInvoiceNum').textContent = 'Invoice #' + (invoiceNum || invoiceId);
+    document.getElementById('printModalGuestName').textContent = guestName || 'Hotel Guest';
+    document.getElementById('printModalAmounts').textContent = 'Total: ' + (totalStr || '₦0.00') + ' | Balance: ' + (balanceStr || '₦0.00');
+    
+    document.getElementById('btnPrintA4').href = '/portal/receipt/' + invoiceId + '?format=a4';
+    document.getElementById('btnPrintPOS').href = '/portal/receipt/' + invoiceId + '?format=pos';
+    
+    var payBtn = document.getElementById('btnPayNow');
+    if (payUrl) {
+        payBtn.href = payUrl;
+        payBtn.classList.remove('d-none');
+        payBtn.classList.add('d-flex');
+    } else {
+        payBtn.classList.add('d-none');
+        payBtn.classList.remove('d-flex');
+    }
+    
+    var modalEl = document.getElementById('printOptionsModal');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+        var modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    } else {
+        window.open('/portal/receipt/' + invoiceId + '?format=a4', '_blank');
+    }
+}
+</script>
+
+{% if tawkto_embed_url %}
+<script type="text/javascript">
+var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){
+var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true;
+s1.src='{{ tawkto_embed_url }}';
+s1.charset='UTF-8';
+s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0);
+})();
+</script>
+{% endif %}
 </body>
 
 </html>

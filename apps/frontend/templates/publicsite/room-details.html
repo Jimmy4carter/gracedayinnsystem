@@ -1,4 +1,5 @@
 {% extends 'base_public.html' %}
+{% load custom_filters %}
 {% load static %}
 {% block title %}GRACEDAY INN | Room {{ room.number }}{% endblock %}
 {% block content %}
@@ -11,22 +12,34 @@
         <div class="row">
             <div class="col-lg-8">
                 <div class="room-details-item">
-                    <img src="{% static 'img/room/room-details.jpg' %}" alt="">
+                    {% if room.gallery_images.all %}
+                        {% with hero=room.gallery_images.all.0 %}<img src="{{ hero.image.url }}" alt="{{ hero.alt_text|default:room.room_type.name }} accommodation at GRACEDAY INN" decoding="async">{% endwith %}
+                        {% if room.gallery_images.all|length > 1 %}<div class="row mt-3" aria-label="Room photo gallery">{% for photo in room.gallery_images.all|slice:"1:" %}<div class="col-4 mb-2"><img src="{{ photo.image.url }}" alt="{{ photo.alt_text|default:'Room gallery image' }}" class="img-fluid rounded" loading="lazy"></div>{% endfor %}</div>{% endif %}
+                    {% elif room.room_type.public_gallery %}
+                        {% with hero=room.room_type.public_gallery.0 %}<img src="{{ hero.image.url }}" alt="{{ hero.alt_text }}" decoding="async">{% endwith %}
+                    {% elif room.room_type.image %}
+                        <img src="{{ room.room_type.image.url }}" alt="{{ room.room_type.name }} accommodation at GRACEDAY INN" decoding="async">
+                    {% else %}
+                        <img src="{% static 'img/room/room-details.jpg' %}" alt="{{ room.room_type.name }} accommodation at GRACEDAY INN" decoding="async">
+                    {% endif %}
+                    {% if room.room_type.public_gallery|length > 1 %}
+                    <div class="row mt-3" aria-label="{{ room.room_type.name }} photo gallery">
+                        {% for photo in room.room_type.public_gallery|slice:"1:" %}
+                        <figure class="col-sm-6 mb-3">
+                            <img src="{{ photo.image.url }}" alt="{{ photo.alt_text }}" loading="lazy" decoding="async">
+                            {% if photo.caption %}<figcaption class="small text-muted mt-1">{{ photo.caption }}</figcaption>{% endif %}
+                        </figure>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     <div class="rd-text">
                         <div class="rd-title">
                             <h3>{{ room.room_type.name }} - Room {{ room.number }}</h3>
                             <div class="rdt-right">
-                                <div class="rating">
-                                    <i class="icon_star"></i>
-                                    <i class="icon_star"></i>
-                                    <i class="icon_star"></i>
-                                    <i class="icon_star"></i>
-                                    <i class="icon_star-half_alt"></i>
-                                </div>
-                                <a href="{% url 'frontend:public-home' %}#booking">Booking Now</a>
+                                <a href="#reserve-room">Book this room</a>
                             </div>
                         </div>
-                        <h2>₦{{ room.current_price }}<span>/Pernight</span></h2>
+                        <h2>₦{{ room.current_price|currency_format }}<span>/Pernight</span></h2>
                         <table>
                             <thead>
                                 <tr><th>Detail</th><th>Value</th></tr>
@@ -42,66 +55,130 @@
                         <p>Whether you are unwinding after a long day or planning a peaceful retreat, every detail is tailored to make your stay unforgettable at GRACEDAY INN.</p>
                     </div>
                 </div>
-                <div class="rd-reviews">
-                    <h4>Reviews</h4>
-                    <div class="review-item">
-                        <div class="ri-pic"><img src="{% static 'img/room/avatar/avatar-1.jpg' %}" alt=""></div>
-                        <div class="ri-text">
-                            <span>27 Aug 2019</span>
-                            <div class="rating"><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star-half_alt"></i></div>
-                            <h5>Brandon Kelley</h5>
-                            <p>Excellent service and a very comfortable room experience.</p>
-                        </div>
-                    </div>
-                    <div class="review-item">
-                        <div class="ri-pic"><img src="{% static 'img/room/avatar/avatar-2.jpg' %}" alt=""></div>
-                        <div class="ri-text">
-                            <span>27 Aug 2019</span>
-                            <div class="rating"><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star-half_alt"></i></div>
-                            <h5>Bernard Morgan</h5>
-                            <p>This is home away from home and I always return when in Abuja.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="review-add">
-                    <h4>Add Review</h4>
-                    <form action="#" class="ra-form">
-                        <div class="row">
-                            <div class="col-lg-6"><input type="text" placeholder="Name*"></div>
-                            <div class="col-lg-6"><input type="text" placeholder="Email*"></div>
-                            <div class="col-lg-12">
-                                <div>
-                                    <h5>You Rating:</h5>
-                                    <div class="rating"><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star"></i><i class="icon_star-half_alt"></i></div>
-                                </div>
-                                <textarea placeholder="Your Review"></textarea>
-                                <button type="submit">Submit Now</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
             </div>
             <div class="col-lg-4">
-                <div class="room-booking">
-                    <h3>Your Reservation</h3>
-                    <form action="{% url 'frontend:public-home' %}#booking">
-                        <div class="check-date"><label for="rd-date-in">Check In:</label><input id="rd-date-in" type="text" class="date-input" value="{{ room.created_at|date:'Y-m-d' }}"><i class="icon_calendar"></i></div>
-                        <div class="check-date"><label for="rd-date-out">Check Out:</label><input id="rd-date-out" type="text" class="date-input" value="{{ room.updated_at|date:'Y-m-d' }}"><i class="icon_calendar"></i></div>
-                        <div class="select-option"><label for="rd-guests">Guests:</label><select id="rd-guests"><option>Max {{ room.room_type.max_occupancy }} persons</option></select></div>
-                        <div class="select-option"><label for="rd-room">Room:</label><select id="rd-room"><option>Room {{ room.number }}</option></select></div>
-                        <button type="submit">Check Availability</button>
+                <div class="room-booking p-4 rounded-4 shadow-sm bg-white" id="reserve-room" style="border-top: 4px solid #b78b34;">
+                    <h3 class="font-weight-bold mb-4" style="color: #18202b;">Your Reservation</h3>
+                    <form method="post" action="{% url 'frontend:public-room-detail' room.id %}">
+                        {% csrf_token %}
+                        {{ booking_form.room }}
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ booking_form.check_in_date.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Check In</label>
+                                {{ booking_form.check_in_date }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ booking_form.check_out_date.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Check Out</label>
+                                {{ booking_form.check_out_date }}
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ booking_form.num_adults.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Adults</label>
+                                {{ booking_form.num_adults }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ booking_form.num_children.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Children</label>
+                                {{ booking_form.num_children }}
+                            </div>
+                        </div>
+                        <div class="gdi-form-group mb-3">
+                            <label for="{{ booking_form.first_name.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">First Name</label>
+                            {{ booking_form.first_name }}
+                        </div>
+                        <div class="gdi-form-group mb-3">
+                            <label for="{{ booking_form.last_name.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Last Name</label>
+                            {{ booking_form.last_name }}
+                        </div>
+                        <div class="gdi-form-group mb-3">
+                            <label for="{{ booking_form.email.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Email</label>
+                            {{ booking_form.email }}
+                        </div>
+                        <div class="gdi-form-group mb-3">
+                            <label for="{{ booking_form.phone.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Phone</label>
+                            {{ booking_form.phone }}
+                        </div>
+                        <div class="gdi-form-group mb-3">
+                            <label for="{{ booking_form.special_requests.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Special Requests</label>
+                            {{ booking_form.special_requests }}
+                        </div>
+                        <div class="gdi-form-group mb-4">
+                            <label for="{{ booking_form.promotion_code.id_for_label }}" class="small fw-bold text-muted text-uppercase mb-1">Offer Code</label>
+                            {{ booking_form.promotion_code }}
+                        </div>
+                        
+                        {% if booking_form.extras.field.queryset.exists %}
+                            <fieldset class="booking-extras mb-4 p-3 rounded bg-light border">
+                                <legend class="h6 font-weight-bold text-dark w-auto px-2 m-0" style="font-size: 0.9rem;">Enhance your stay</legend>
+                                <div class="mt-2">
+                                    {{ booking_form.extras }}
+                                </div>
+                            </fieldset>
+                        {% endif %}
+                        
+                        {% for field in booking_form %}
+                            {% for error in field.errors %}<div class="text-danger small mb-2 fw-bold"><i class="icon_error-circle_alt"></i> {{ error }}</div>{% endfor %}
+                        {% endfor %}
+                        {% for error in booking_form.non_field_errors %}<div class="text-danger small mb-2 fw-bold"><i class="icon_error-circle_alt"></i> {{ error }}</div>{% endfor %}
+                        
+                        <div id="cost-preview" class="alert alert-info mt-3 p-2 text-center" style="display:none; background-color: #f8f9fa; border-color: #b78b34; color: #18202b;">
+                            <strong class="text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Estimated Cost:</strong><br>
+                            <span class="fs-5 fw-bold" style="color: #b78b34;">₦<span id="cost-amount">0.00</span></span>
+                        </div>
+                        <button type="submit" class="btn gdi-btn-gold w-100 py-3 text-uppercase font-weight-bold" style="letter-spacing: 1px;">Confirm Booking</button>
                     </form>
-                    <div class="mt-4">
-                        <h5>Similar Rooms</h5>
+                    
+                    <div class="mt-5 pt-4 border-top">
+                        <h5 class="font-weight-bold mb-3" style="color: #18202b;">Similar Rooms</h5>
                         {% for item in similar_rooms %}
-                            <p><a href="{% url 'frontend:public-room-detail' item.id %}">Room {{ item.number }} - {{ item.room_type.name }}</a></p>
+                            <div class="mb-2">
+                                <a href="{% url 'frontend:public-room-detail' item.id %}?check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&num_adults={{ num_adults }}&num_children={{ num_children }}" class="text-decoration-none d-flex justify-content-between align-items-center p-2 rounded hover-bg-light" style="color: #b78b34; transition: all 0.2s ease;">
+                                    <span>Room {{ item.number }} - <small class="text-muted">{{ item.room_type.name }}</small></span>
+                                    <i class="arrow_right text-muted"></i>
+                                </a>
+                            </div>
                         {% empty %}
-                            <p>No similar rooms found.</p>
+                            <p class="text-muted small italic">No similar rooms found.</p>
                         {% endfor %}
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </section>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var checkIn = document.getElementById('{{ booking_form.check_in_date.id_for_label }}');
+    var checkOut = document.getElementById('{{ booking_form.check_out_date.id_for_label }}');
+    var costPreview = document.getElementById('cost-preview');
+    var costAmount = document.getElementById('cost-amount');
+    var pricePerNight = {{ room.current_price|stringformat:"f" }};
+    
+    function updateCost() {
+        if (checkIn && checkOut && checkIn.value && checkOut.value) {
+            var start = new Date(checkIn.value);
+            var end = new Date(checkOut.value);
+            var nights = (end - start) / (1000 * 60 * 60 * 24);
+            if (nights > 0) {
+                var total = (nights * pricePerNight).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                costAmount.innerText = total;
+                costPreview.style.display = 'block';
+            } else {
+                costPreview.style.display = 'none';
+            }
+        } else {
+            costPreview.style.display = 'none';
+        }
+    }
+    
+    if (checkIn && checkOut) {
+        checkIn.addEventListener('change', updateCost);
+        checkOut.addEventListener('change', updateCost);
+        updateCost();
+    }
+});
+</script>
 {% endblock %}

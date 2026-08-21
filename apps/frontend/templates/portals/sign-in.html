@@ -1,85 +1,56 @@
+{% extends 'base_public.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="apple-touch-icon" sizes="76x76" href="{% static 'admin/assets/img/apple-icon.png' %}">
-    <link rel="icon" type="image/png" href="{% static 'admin/assets/img/favicon.png' %}">
-    <title>GRACEDAY INN | Portal Sign In</title>
-    <link id="pagestyle" href="{% static 'admin/assets/css/soft-ui-dashboard.css' %}" rel="stylesheet" />
-    <style>
-        body {
-            background: linear-gradient(135deg, #fdf8f2, #f6eee3);
-        }
-        .main-content {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 0;
-        }
-        .card.card-plain {
-            background: #ffffff;
-            border-radius: 22px;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
-            padding: 30px;
-        }
-        .card-body {
-            padding: 0;
-        }
-        .card-header h3 {
-            color: #222222;
-        }
-        .text-info.text-gradient {
-            color: #c89b3c !important;
-            background: none !important;
-        }
-        .btn.bg-gradient-info {
-            background: linear-gradient(135deg, #c89b3c, #e7be67) !important;
-            border: none !important;
-        }
-        .page-header {
-            background: transparent !important;
-            min-height: auto !important;
-        }
-        label {
-            font-weight: 700;
-            color: #333;
-        }
-    </style>
-</head>
-<body>
-    <main class="main-content mt-0">
-        <section>
-            <div class="page-header min-vh-75">
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-xl-7 col-lg-8 col-md-10">
-                            <div class="card card-plain mt-8">
-                                <div class="card-header pb-3 text-left bg-transparent">
-                                    <h3 class="font-weight-bolder text-info text-gradient mb-1">Welcome back</h3>
-                                    <p class="mb-0 text-muted">Sign in to GRACEDAY INN portal</p>
-                                </div>
-                                <div class="card-body">
-                                    <form method="post">
-                                        {% csrf_token %}
-                                        <label for="{{ form.username.id_for_label }}">Username</label>
-                                        <div class="mb-3">{{ form.username }}</div>
-                                        <label for="{{ form.password.id_for_label }}">Password</label>
-                                        <div class="mb-3">{{ form.password }}</div>
-                                        {% for error in form.non_field_errors %}<div class="text-danger small mb-2">{{ error }}</div>{% endfor %}
-                                        <div class="text-center"><button type="submit" class="btn bg-gradient-info w-100 mt-4 mb-0">Sign In</button></div>
-                                    </form>
-                                </div>
+{% block title %}GRACEDAY INN | Sign In{% endblock %}
+{% block content %}
+<section class="public-auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                <div class="public-auth-card">
+                    <div class="text-center mb-4">
+                        <h2>Welcome Back</h2>
+                        <p class="subtitle">Sign in to your GraceDay Inn account</p>
+                    </div>
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} text-sm mb-3" role="alert">
+                                {{ message }}
                             </div>
+                        {% endfor %}
+                    {% endif %}
+                    <form method="post" action="{% url 'frontend:portal-sign-in' %}">
+                        {% csrf_token %}
+                        <div class="gdi-form-group">
+                            <label for="username">Username</label>
+                            <input type="text" name="username" id="username" class="gdi-input" placeholder="Enter your username" required autofocus value="{{ form.username.value|default:'' }}">
+                            {% for error in form.username.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
                         </div>
+                        <div class="gdi-form-group">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="password" class="mb-0">Password</label>
+                                <a href="{% url 'frontend:portal-password-reset' %}" class="small text-muted font-weight-bold">Forgot Password?</a>
+                            </div>
+                            <input type="password" name="password" id="password" class="gdi-input" placeholder="Enter your password" required>
+                            {% for error in form.password.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% for error in form.non_field_errors %}
+                            <div class="text-danger small mb-3"><i class="fa fa-exclamation-circle"></i> {{ error }}</div>
+                        {% endfor %}
+                        {% if blocked_error %}
+                            <div class="text-danger small mb-3"><i class="fa fa-lock"></i> {{ blocked_error }}</div>
+                        {% endif %}
+                        <button type="submit" class="gdi-btn-gold mt-3">Sign In</button>
+                    </form>
+                    <div class="text-center mt-4">
+                        <p class="small text-muted mb-0">Don't have an account? <a href="{% url 'frontend:portal-sign-up' %}" class="text-dark font-weight-bold">Create Account</a></p>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
-    <script src="{% static 'admin/assets/js/core/popper.min.js' %}"></script>
-    <script src="{% static 'admin/assets/js/core/bootstrap.min.js' %}"></script>
-</body>
-</html>
+        </div>
+    </div>
+</section>
+{% endblock %}

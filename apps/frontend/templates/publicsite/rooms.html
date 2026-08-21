@@ -1,10 +1,11 @@
 {% extends 'base_public.html' %}
+{% load custom_filters %}
 {% load static %}
 {% block title %}GRACEDAY INN | Rooms{% endblock %}
 {% block content %}
 <div class="breadcrumb-section">
     <div class="container">
-        <div class="row"><div class="col-lg-12"><div class="breadcrumb-text"><h2>Our Rooms</h2></div></div></div>
+        <div class="row"><div class="col-lg-12"><div class="breadcrumb-text"><h1>Our Rooms</h1></div></div></div>
     </div>
 </div>
 
@@ -12,29 +13,60 @@
     <div class="container">
         <div class="row mb-4">
             <div class="col-lg-12">
-                <form method="get" class="row g-2">
-                    <div class="col-md-4">
-                        <select class="form-control" name="room_type">
-                            <option value="">All room types</option>
-                            {% for item in room_types %}
-                                <option value="{{ item.id }}" {% if selected_room_type == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3"><input class="form-control" type="number" min="1" name="occupancy" placeholder="Min Guests" value="{{ selected_occupancy }}"></div>
-                    <div class="col-md-3"><input class="form-control" type="number" min="0" step="1000" name="max_price" placeholder="Max Price" value="{{ selected_max_price }}"></div>
-                    <div class="col-md-2"><button class="primary-btn" type="submit">Filter</button></div>
-                </form>
+                <div class="filter-bar-card">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-lg-3 col-md-4">
+                            <label class="form-label" for="id_room_type">Room Type:</label>
+                            <select class="form-control" name="room_type" id="id_room_type">
+                                <option value="">All room types</option>
+                                {% for item in room_types %}
+                                    <option value="{{ item.id }}" {% if selected_room_type == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label" for="id_check_in_date">Check In:</label>
+                            <input class="form-control" type="date" name="check_in_date" id="id_check_in_date" value="{{ check_in_date }}">
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label" for="id_check_out_date">Check Out:</label>
+                            <input class="form-control" type="date" name="check_out_date" id="id_check_out_date" value="{{ check_out_date }}">
+                        </div>
+                        <div class="col-lg-1 col-md-2">
+                            <label class="form-label" for="id_num_adults">Adults:</label>
+                            <input class="form-control" type="number" min="1" name="num_adults" id="id_num_adults" value="{{ num_adults }}">
+                        </div>
+                        <div class="col-lg-1 col-md-2">
+                            <label class="form-label" for="id_num_children">Children:</label>
+                            <input class="form-control" type="number" min="0" name="num_children" id="id_num_children" value="{{ num_children }}">
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label class="form-label" for="id_max_price">Max Price:</label>
+                            <input class="form-control" type="number" min="0" step="1000" name="max_price" id="id_max_price" placeholder="Max Price" value="{{ selected_max_price|currency_format }}">
+                        </div>
+                        <div class="col-lg-1 col-md-4">
+                            <button class="primary-btn w-100 py-3 border-0" type="submit">Filter</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
         <div class="row">
             {% for room in rooms %}
                 <div class="col-lg-4 col-md-6">
                     <div class="room-item">
-                        <img src="{% if forloop.counter == 1 %}{% static 'img/room/room-1.jpg' %}{% elif forloop.counter == 2 %}{% static 'img/room/room-2.jpg' %}{% elif forloop.counter == 3 %}{% static 'img/room/room-3.jpg' %}{% elif forloop.counter == 4 %}{% static 'img/room/room-4.jpg' %}{% elif forloop.counter == 5 %}{% static 'img/room/room-5.jpg' %}{% else %}{% static 'img/room/room-6.jpg' %}{% endif %}" alt="">
+                        {% if room.gallery_images.all %}
+                            {% with hero=room.gallery_images.all.0 %}<img src="{{ hero.image.url }}" alt="{{ hero.alt_text|default:room.room_type.name }} accommodation at GRACEDAY INN" loading="lazy" decoding="async">{% endwith %}
+                        {% elif room.room_type.public_gallery %}
+                            {% with hero=room.room_type.public_gallery.0 %}<img src="{{ hero.image.url }}" alt="{{ hero.alt_text }}" loading="lazy" decoding="async">{% endwith %}
+                        {% elif room.room_type.image %}
+                            <img src="{{ room.room_type.image.url }}" alt="{{ room.room_type.name }} accommodation at GRACEDAY INN" loading="lazy" decoding="async">
+                        {% else %}
+                            <img src="{% if forloop.counter == 1 %}{% static 'img/room/room-1.jpg' %}{% elif forloop.counter == 2 %}{% static 'img/room/room-2.jpg' %}{% elif forloop.counter == 3 %}{% static 'img/room/room-3.jpg' %}{% elif forloop.counter == 4 %}{% static 'img/room/room-4.jpg' %}{% elif forloop.counter == 5 %}{% static 'img/room/room-5.jpg' %}{% else %}{% static 'img/room/room-6.jpg' %}{% endif %}" alt="{{ room.room_type.name }} accommodation at GRACEDAY INN" loading="lazy" decoding="async">
+                        {% endif %}
                         <div class="ri-text">
                             <h4>{{ room.room_type.name }} - Room {{ room.number }}</h4>
-                            <h3>₦{{ room.current_price }}<span>/Per-night</span></h3>
+                            <h3>₦{{ room.current_price|currency_format }}<span>/Per-night</span></h3>
                             <table>
                                 <thead>
                                     <tr><th>Detail</th><th>Value</th></tr>
@@ -46,12 +78,12 @@
                                     <tr><td class="r-o">Services:</td><td>{{ room.room_type.description|default:'Wifi, Television, Bathroom, Water heater, Refrigerator, AC' }}</td></tr>
                                 </tbody>
                             </table>
-                            <a href="{% url 'frontend:public-room-detail' room.id %}" class="primary-btn">More Details</a>
+                            <a href="{% url 'frontend:public-room-detail' room.id %}?check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&num_adults={{ num_adults }}&num_children={{ num_children }}" class="primary-btn">More Details</a>
                         </div>
                     </div>
                 </div>
             {% empty %}
-                <div class="col-lg-12"><p>No rooms available yet.</p></div>
+                <div class="col-lg-12"><p>No rooms available matching the search criteria.</p></div>
             {% endfor %}
             <div class="col-lg-12">
                 <div class="room-pagination">

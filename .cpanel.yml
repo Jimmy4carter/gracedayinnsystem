@@ -1,0 +1,4 @@
+---
+deployment:
+  tasks:
+    - /bin/bash deploy/namecheap_deploy.sh

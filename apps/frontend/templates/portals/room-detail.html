@@ -1,4 +1,5 @@
 {% extends 'base_portal.html' %}
+{% load custom_filters %}
 {% block title %}Room {{ room.number }} | GRACEDAY INN{% endblock %}
 {% block page_title %}Room {{ room.number }} Details{% endblock %}
 {% block content %}
@@ -10,7 +11,8 @@
                 <p>{{ room.room_type.description }}</p>
                 <p><strong>Floor:</strong> {{ room.floor }}</p>
                 <p><strong>Status:</strong> {{ room.get_status_display }}</p>
-                <p><strong>Price:</strong> ₦{{ room.current_price }}</p>
+                <p><strong>Price:</strong> ₦{{ room.current_price|currency_format }}</p>
+                <div class="row g-2 mb-4">{% for image in room.gallery_images.all %}<div class="col-6 col-md-4"><img src="{{ image.image.url }}" alt="{{ image.alt_text|default:'Room image' }}" class="img-fluid rounded shadow-sm w-100" style="height:150px;object-fit:cover"></div>{% empty %}{% if room.image %}<div class="col-6"><img src="{{ room.image.url }}" alt="Room {{ room.number }}" class="img-fluid rounded"></div>{% endif %}{% endfor %}</div>
                 <h5>Amenities</h5>
                 <ul>
                     {% for amenity in room.room_type.amenities.all %}
@@ -43,7 +45,7 @@
                 <h5>Room Summary</h5>
                 <p><strong>Type:</strong> {{ room.room_type.name }}</p>
                 <p><strong>Capacity:</strong> {{ room.room_type.max_occupancy }}</p>
-                <p><strong>Base Price:</strong> ₦{{ room.room_type.base_price }}</p>
+                <p><strong>Base Price:</strong> ₦{{ room.room_type.base_price|currency_format }}</p>
                 <p class="text-muted small">Stats: {{ stats.available_rooms }} available</p>
             </div>
         </div>

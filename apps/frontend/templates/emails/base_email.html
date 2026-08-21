@@ -27,8 +27,8 @@
             overflow: hidden;
         }
         .header {
-            background-color: #0b3c49;
-            padding: 30px;
+            background: linear-gradient(135deg, #071827, #123f4b);
+            padding: 34px 30px;
             text-align: center;
         }
         .header h1 {
@@ -38,11 +38,15 @@
             letter-spacing: 2px;
             text-transform: uppercase;
         }
+        .email-logo { display: block; width: 190px; max-width: 70%; height: auto; margin: 0 auto 14px; }
         .body {
             padding: 40px 30px;
             line-height: 1.6;
             font-size: 16px;
         }
+        .eyebrow { color: #f0c96c; font-size: 11px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; }
+        h2 { color: #0b3c49; margin-top: 0; font-size: 25px; line-height: 1.25; }
+        .panel { background: #f8f6f1; border-left: 4px solid #c89b3c; border-radius: 6px; padding: 16px; margin: 22px 0; }
         .btn {
             display: inline-block;
             background-color: #c89b3c;
@@ -72,6 +76,8 @@
     <div class="wrapper">
         <div class="container">
             <div class="header">
+                <img class="email-logo" src="https://gracedayinn.com/static/img/logo.png" width="190" alt="GraceDay Inn">
+                <div class="eyebrow">Welcome · Discover · Stay</div>
                 <h1>GraceDay Inn</h1>
             </div>
             <div class="body">
@@ -80,7 +86,8 @@
             <div class="footer">
                 <p>&copy; {% now "Y" %} GraceDay Inn. All rights reserved.</p>
                 <p>Louis Court Estate, Apo-Dutse, Abuja FCT, Nigeria</p>
-                <p>If you have any questions, contact us at <a href="mailto:info.gracedayinn@gmail.com">info.gracedayinn@gmail.com</a></p>
+                <p>This transactional email was sent by GraceDay Inn using our secure delivery service.</p>
+                <p>Questions? <a href="mailto:info@gracedayinn.com">info@gracedayinn.com</a></p>
             </div>
         </div>
     </div>

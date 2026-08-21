@@ -1,0 +1,9 @@
+{% extends 'emails/base_email.html' %}
+{% block email_title %}Update on Your GraceDay Inn Inquiry{% endblock %}
+{% block email_content %}
+<h2>An update from our team</h2>
+<p>Hello {{ case.requester_name }},</p>
+<div class="panel">{{ reply.body|linebreaksbr }}</div>
+<p><strong>Reference:</strong> {{ case.reference }}<br><strong>Subject:</strong> {{ case.subject }}</p>
+<p>Warm regards,<br>{{ agent_name }}<br>GraceDay Inn Guest Services</p>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base_portal.html' %}
+{% block title %}Confirm Night Audit | GRACEDAY INN{% endblock %}
+{% block page_title %}Night Audit Confirmation{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card stat-card">
+            <div class="card-body p-4 text-center">
+                <div class="mb-3">
+                    <i class="fa fa-moon fa-3x text-warning"></i>
+                </div>
+                <h4 class="mb-2">Run Night Audit Procedures</h4>
+                <p class="text-muted mb-4">You are about to execute the Night Audit run for business date <strong>{{ business_date }}</strong>.</p>
+                <div class="alert alert-warning text-start mb-4" role="alert">
+                    <i class="fa fa-exclamation-triangle me-2"></i>
+                    Night Audit creates immutable metric snapshots, closes active folios, reconciles room statuses, and locks business date accounting records.
+                </div>
+                <form method="post" action="{% url 'frontend:portal-night-audit' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="business_date" value="{{ business_date }}">
+                    <input type="hidden" name="confirmed" value="true">
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'frontend:portal-management' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-warning font-weight-bold px-4">Execute Night Audit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

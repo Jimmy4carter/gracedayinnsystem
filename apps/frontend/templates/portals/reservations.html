@@ -1,64 +1,228 @@
 {% extends 'base_portal.html' %}
+{% load custom_filters %}
 {% block title %}Reservations | GRACEDAY INN{% endblock %}
 {% block page_title %}Reservations{% endblock %}
+{% block page_heading %}Reservations &amp; Booking Management{% endblock %}
+
 {% block content %}
 {% if can_manage_reservations %}
-<div class="card stat-card p-3 mb-3">
-    <h5 class="mb-3">Create Reservation</h5>
-    <form method="post" class="row g-2">
+<div class="card border-0 shadow-sm p-4 mb-4" id="new-reservation">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 font-weight-bold"><i class="fa fa-calendar-plus-o me-2 text-primary"></i>Create Front Desk Reservation</h5>
+        <span class="badge bg-gradient-info">Staff Direct Entry</span>
+    </div>
+    <form method="post" class="row g-3">
         {% csrf_token %}
-        <div class="col-md-4">{{ reservation_form.guest.label_tag }}{{ reservation_form.guest }}</div>
-        <div class="col-md-4">{{ reservation_form.room.label_tag }}{{ reservation_form.room }}</div>
-        <div class="col-md-2">{{ reservation_form.check_in_date.label_tag }}{{ reservation_form.check_in_date }}</div>
-        <div class="col-md-2">{{ reservation_form.check_out_date.label_tag }}{{ reservation_form.check_out_date }}</div>
-        <div class="col-md-2">{{ reservation_form.num_adults.label_tag }}{{ reservation_form.num_adults }}</div>
-        <div class="col-md-2">{{ reservation_form.num_children.label_tag }}{{ reservation_form.num_children }}</div>
-        <div class="col-md-8">{{ reservation_form.special_requests.label_tag }}{{ reservation_form.special_requests }}</div>
-        <div class="col-12">
-            {% for field in reservation_form %}
-                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
-            {% endfor %}
-            {% for error in reservation_form.non_field_errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        <div class="col-md-4">
+            <label class="form-label font-weight-bold">Guest Account *</label>
+            {{ reservation_form.guest }}
+            {% if reservation_form.guest.errors %}<div class="text-danger text-xs mt-1">{{ reservation_form.guest.errors|join:", " }}</div>{% endif %}
         </div>
-        <div class="col-12"><button class="btn btn-primary btn-sm" type="submit">Create Reservation</button></div>
+        <div class="col-md-4">
+            <label class="form-label font-weight-bold">Assigned Room *</label>
+            {{ reservation_form.room }}
+            {% if reservation_form.room.errors %}<div class="text-danger text-xs mt-1">{{ reservation_form.room.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label font-weight-bold">Check-In *</label>
+            {{ reservation_form.check_in_date }}
+            {% if reservation_form.check_in_date.errors %}<div class="text-danger text-xs mt-1">{{ reservation_form.check_in_date.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label font-weight-bold">Check-Out *</label>
+            {{ reservation_form.check_out_date }}
+            {% if reservation_form.check_out_date.errors %}<div class="text-danger text-xs mt-1">{{ reservation_form.check_out_date.errors|join:", " }}</div>{% endif %}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label font-weight-bold">Adults</label>
+            {{ reservation_form.num_adults }}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label font-weight-bold">Children</label>
+            {{ reservation_form.num_children }}
+        </div>
+        <div class="col-md-8">
+            <label class="form-label font-weight-bold">Special Requests / Notes</label>
+            {{ reservation_form.special_requests }}
+        </div>
+        <div class="col-12">
+            {% if reservation_form.non_field_errors %}
+                <div class="alert alert-danger text-white mb-2">{% for error in reservation_form.non_field_errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+            <div id="cost-preview" class="alert bg-gradient-success text-white p-2 text-center font-weight-bold" style="display:none;">
+                Estimated Accommodation Total: NGN <span id="cost-amount">0.00</span>
+            </div>
+            <div class="d-flex justify-content-end mt-2">
+                <button class="btn btn-primary bg-gradient-primary font-weight-bold" type="submit">
+                    <i class="fa fa-check me-1"></i> Confirm &amp; Save Reservation
+                </button>
+            </div>
+        </div>
     </form>
 </div>
 {% endif %}
 
-<div class="table-responsive card stat-card p-3">
-    <table class="table table-sm align-middle">
-        <thead><tr><th>Code</th><th>Guest</th><th>Room</th><th>Status</th><th>Stay Dates</th><th>Action</th></tr></thead>
-        <tbody>
-            {% for item in reservations %}
+<div class="card border-0 shadow-sm p-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+            <h5 class="mb-0 font-weight-bold">Reservation Records</h5>
+            <small class="text-muted">Showing reservations across all operational statuses.</small>
+        </div>
+        <form method="get" class="d-flex align-items-center gap-2">
+            <input type="text" name="q" value="{{ request.GET.q|default:'' }}" class="form-control form-control-sm" placeholder="Search code, guest or room...">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="confirmed" {% if request.GET.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                <option value="checked_in" {% if request.GET.status == 'checked_in' %}selected{% endif %}>Checked In</option>
+                <option value="checked_out" {% if request.GET.status == 'checked_out' %}selected{% endif %}>Checked Out</option>
+                <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                <option value="no_show" {% if request.GET.status == 'no_show' %}selected{% endif %}>No-Show</option>
+            </select>
+            {% if request.GET.q or request.GET.status %}
+                <a href="{% url 'frontend:portal-reservations' %}" class="btn btn-outline-secondary btn-sm mb-0">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+            <thead>
                 <tr>
-                    <td>{{ item.reservation_number }}</td>
-                    <td>{{ item.guest.get_full_name|default:item.guest.username }}</td>
-                    <td>{{ item.room.number }}</td>
-                    <td>{{ item.get_status_display }}</td>
-                    <td>{{ item.check_in_date }} - {{ item.check_out_date }}</td>
-                    <td>
-                        <div class="d-flex flex-wrap gap-1">
-                            {% if item.status == 'pending' and can_manage_reservations %}
-                                <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'confirm' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm">Confirm</button></form>
-                            {% endif %}
-                            {% if item.status == 'confirmed' and can_manage_reservations %}
-                                <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_in' %}">{% csrf_token %}<button class="btn btn-outline-success btn-sm">Check In</button></form>
-                            {% endif %}
-                            {% if item.status == 'checked_in' and can_manage_reservations %}
-                                <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_out' %}">{% csrf_token %}<button class="btn btn-outline-warning btn-sm">Check Out</button></form>
-                            {% endif %}
-                            {% if item.status == 'pending' or item.status == 'confirmed' %}
-                                {% if can_manage_reservations or request.user.id == item.guest.id %}
-                                    <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'cancel' %}">{% csrf_token %}<button class="btn btn-outline-danger btn-sm">Cancel</button></form>
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                    </td>
+                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Code / Guest</th>
+                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Room</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Stay Dates</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Amount (NGN)</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Payment</th>
+                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Actions</th>
                 </tr>
-            {% empty %}
-                <tr><td colspan="6">No reservations available.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {% for item in reservations %}
+                    <tr>
+                        <td>
+                            <div class="d-flex px-2 py-1">
+                                <div class="d-flex flex-column justify-content-center">
+                                    <h6 class="mb-0 text-sm font-weight-bold">{{ item.reservation_number }}</h6>
+                                    <p class="text-xs text-secondary mb-0">{{ item.guest.get_full_name|default:item.guest.username }} ({{ item.guest.email|default:"no-email" }})</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="text-xs font-weight-bold">Room {{ item.room.number }}</span>
+                            <small class="d-block text-muted">{{ item.room.room_type.name }}</small>
+                        </td>
+                        <td class="align-middle text-center">
+                            {% if item.status == 'confirmed' %}
+                                <span class="badge bg-gradient-info text-white">Confirmed</span>
+                            {% elif item.status == 'checked_in' %}
+                                <span class="badge bg-gradient-success text-white">Checked In</span>
+                            {% elif item.status == 'checked_out' %}
+                                <span class="badge bg-gradient-secondary text-white">Checked Out</span>
+                            {% elif item.status == 'pending' %}
+                                <span class="badge bg-gradient-warning text-white">Pending</span>
+                            {% elif item.status == 'cancelled' %}
+                                <span class="badge bg-gradient-danger text-white">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-gradient-dark text-white">{{ item.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle text-center">
+                            <span class="text-xs font-weight-bold">{{ item.check_in_date }} &rarr; {{ item.check_out_date }}</span>
+                            <small class="d-block text-muted">{{ item.nights }} night(s)</small>
+                        </td>
+                        <td class="align-middle text-center">
+                            <span class="text-xs font-weight-bold">NGN {{ item.total_amount|default:"0.00" }}</span>
+                        </td>
+                        <td class="align-middle text-center">
+                            {% if item.invoice %}<span class="badge {% if item.invoice.balance <= 0 %}bg-gradient-success{% elif item.invoice.amount_paid > 0 %}bg-gradient-warning text-dark{% else %}bg-gradient-danger{% endif %}">{% if item.invoice.balance <= 0 %}Paid{% elif item.invoice.amount_paid > 0 %}Part-paid{% else %}Unpaid{% endif %}</span><small class="d-block text-muted">Balance ₦{{ item.invoice.balance|currency_format }}</small>{% else %}<span class="text-muted small">Not invoiced</span>{% endif %}
+                        </td>
+                        <td class="align-middle text-center">
+                            <div class="d-flex justify-content-center flex-wrap gap-1">
+                                {% if can_manage_reservations %}
+                                    <a class="btn btn-outline-dark btn-xs mb-0" href="{% url 'frontend:portal-reservation-manage' item.id %}" title="Manage Details &amp; Room Moves">Manage</a>
+                                {% endif %}
+                                {% if item.status == 'pending' and can_manage_reservations %}
+                                    <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'confirm' %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-primary btn-xs mb-0">Confirm</button></form>
+                                {% endif %}
+                                {% if item.status == 'confirmed' and can_manage_reservations %}
+                                    <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_in' %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-success btn-xs mb-0">Check In</button></form>
+                                    <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'no_show' %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-secondary btn-xs mb-0">No-show</button></form>
+                                {% endif %}
+                                {% if item.status == 'checked_in' and can_manage_reservations %}
+                                    <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'check_out' %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-warning btn-xs mb-0">Check Out</button></form>
+                                {% endif %}
+                                {% if item.status == 'pending' or item.status == 'confirmed' %}
+                                    {% if can_manage_reservations or request.user.id == item.guest.id %}
+                                        <form method="post" action="{% url 'frontend:portal-reservation-action' item.id 'cancel' %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-danger btn-xs mb-0" onclick="return confirm('Cancel this reservation?')">Cancel</button></form>
+                                    {% endif %}
+                                {% endif %}
+                                {% if item.invoice %}
+                                    <button type="button" class="btn btn-outline-info btn-xs mb-0" onclick="openPrintOptionsModal({{ item.invoice.id }}, '{{ item.invoice.invoice_number }}', '{{ item.guest.get_full_name|default:item.guest.username|escapejs }}', '₦{{ item.invoice.total|currency_format }}', '₦{{ item.invoice.balance|currency_format }}', '{% if item.invoice.balance > 0 %}{% url "frontend:portal-payments" %}?invoice_id={{ item.invoice.id }}{% endif %}')" title="Invoice Print Options">
+                                        <i class="fa fa-print me-1"></i> Invoice
+                                    </button>
+                                    {% if item.invoice.balance > 0 %}
+                                        <a href="{% url 'frontend:portal-payments' %}?invoice_id={{ item.invoice.id }}" class="btn btn-success btn-xs mb-0 ms-1" title="Pay Outstanding Balance (₦{{ item.invoice.balance|currency_format }})">
+                                            <i class="fa fa-credit-card me-1"></i> Pay (₦{{ item.invoice.balance|currency_format }})
+                                        </a>
+                                    {% else %}
+                                        <span class="badge bg-gradient-success text-xxs ms-1" title="Fully Paid"><i class="fa fa-check"></i> Paid</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="fa fa-calendar-times-o fa-2x mb-2 d-block text-secondary"></i>
+                            No matching reservations found.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var checkIn = document.getElementById('{{ reservation_form.check_in_date.id_for_label }}');
+    var checkOut = document.getElementById('{{ reservation_form.check_out_date.id_for_label }}');
+    var roomSelect = document.getElementById('{{ reservation_form.room.id_for_label }}');
+    var costPreview = document.getElementById('cost-preview');
+    var costAmount = document.getElementById('cost-amount');
+    
+    var roomPrices = {{ room_prices_json|safe|default:"{}" }};
+    
+    function updateCost() {
+        if (checkIn && checkOut && roomSelect && checkIn.value && checkOut.value && roomSelect.value) {
+            var start = new Date(checkIn.value);
+            var end = new Date(checkOut.value);
+            var nights = (end - start) / (1000 * 60 * 60 * 24);
+            var pricePerNight = roomPrices[roomSelect.value] || 0;
+            
+            if (nights > 0 && pricePerNight > 0) {
+                var total = (nights * pricePerNight).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                costAmount.innerText = total;
+                costPreview.style.display = 'block';
+            } else {
+                costPreview.style.display = 'none';
+            }
+        } else if (costPreview) {
+            costPreview.style.display = 'none';
+        }
+    }
+    
+    if (checkIn && checkOut && roomSelect) {
+        checkIn.addEventListener('change', updateCost);
+        checkOut.addEventListener('change', updateCost);
+        roomSelect.addEventListener('change', updateCost);
+        updateCost();
+    }
+});
+</script>
 {% endblock %}

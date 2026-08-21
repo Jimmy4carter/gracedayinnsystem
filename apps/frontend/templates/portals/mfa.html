@@ -1,0 +1,29 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Staff MFA | GRACEDAY INN</title>
+  <link href="{% static 'admin/assets/css/soft-ui-dashboard.css' %}" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+<main class="container py-5"><div class="row justify-content-center"><div class="col-lg-6"><div class="card"><div class="card-body p-4">
+  <h1 class="h3">Staff account security</h1>
+  {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}{% endif %}
+  {% if mode == 'challenge' %}
+    <p>Enter the current six-digit authenticator code or one unused recovery code for <strong>{{ mfa_user.username }}</strong>.</p>
+    <form method="post">{% csrf_token %}<label for="mfa-code">Authenticator or recovery code</label><input id="mfa-code" class="form-control mb-3" name="code" autocomplete="one-time-code" required autofocus><button class="btn bg-gradient-dark w-100">Verify and sign in</button></form>
+  {% elif mode == 'enroll' %}
+    <p>Add a new time-based one-time password account in your authenticator application.</p>
+    <ol><li>Choose &quot;enter setup key&quot; in the authenticator.</li><li>Account: <strong>{{ mfa_user.username }}</strong></li><li>Setup key: <code class="user-select-all">{{ mfa_secret }}</code></li><li>Type: time based, six digits, 30 seconds.</li></ol>
+    <details class="mb-3"><summary>Provisioning URI for compatible tools</summary><code class="text-break user-select-all">{{ provisioning_uri }}</code></details>
+    <form method="post">{% csrf_token %}<label for="mfa-code">Current six-digit code</label><input id="mfa-code" class="form-control mb-3" name="code" inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" required><button class="btn bg-gradient-dark w-100">Confirm MFA</button></form>
+  {% elif mode == 'status' %}
+    <div class="alert alert-success">MFA is enabled for this account.</div><p>Enrolled: {{ mfa_device.confirmed_at|date:"Y-m-d H:i" }}</p><p>Unused recovery codes: <strong>{{ recovery_codes_remaining }}</strong></p><p>Contact an administrator if the authenticator or recovery codes are lost. Resets are recorded in the security audit trail.</p><a class="btn bg-gradient-dark w-100" href="{% url 'frontend:portal-dashboard' %}">Return to dashboard</a>
+  {% else %}
+    <div class="alert alert-success">MFA is enabled.</div><p>Store these one-time recovery codes in an approved password manager. They will not be displayed again.</p><ul>{% for code in recovery_codes %}<li><code>{{ code }}</code></li>{% endfor %}</ul><a class="btn bg-gradient-dark w-100" href="{% url 'frontend:portal-dashboard' %}">I saved the codes</a>
+  {% endif %}
+</div></div></div></div></main>
+</body>
+</html>

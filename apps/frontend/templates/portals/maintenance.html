@@ -1,0 +1,16 @@
+{% extends 'base_portal.html' %}
+{% block title %}Maintenance | GRACEDAY INN{% endblock %}
+{% block page_title %}Maintenance & Downtime{% endblock %}
+{% block content %}
+<div class="card mb-4"><div class="card-body"><h5>Report maintenance issue</h5>
+<form method="post" enctype="multipart/form-data" class="row g-3">{% csrf_token %}
+{% for field in ticket_form %}<div class="{% if field.name == 'description' %}col-12{% else %}col-md-4{% endif %}">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}</div>{% endfor %}
+<div class="col-12"><button class="btn bg-gradient-dark" type="submit">Report issue</button></div></form></div></div>
+<div class="card"><div class="card-body"><h5>Maintenance tickets</h5><div class="table-responsive"><table class="table align-items-center"><thead><tr><th>Room / Issue</th><th>Priority</th><th>Status</th><th>Cost</th><th>Actions</th></tr></thead><tbody>
+{% for ticket in tickets %}<tr><td><strong>Room {{ ticket.room.number }} — {{ ticket.title }}</strong><br><small>{{ ticket.description|truncatechars:80 }}</small></td><td>{{ ticket.get_priority_display }}</td><td>{{ ticket.get_status_display }}{% if ticket.downtime_required %}<br><span class="badge bg-gradient-danger">Downtime</span>{% endif %}</td><td>₦{{ ticket.actual_cost }}</td><td><div class="d-flex gap-1 flex-wrap">
+{% if ticket.status == 'reported' %}<form method="post" action="{% url 'frontend:portal-maintenance-action' ticket.id 'start' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-warning">Start</button></form>{% endif %}
+{% if ticket.status == 'in_progress' %}<form method="post" action="{% url 'frontend:portal-maintenance-action' ticket.id 'resolve' %}">{% csrf_token %}<input type="number" step="0.01" min="0" name="actual_cost" placeholder="Actual cost" class="form-control form-control-sm mb-1"><input name="notes" placeholder="Resolution notes" class="form-control form-control-sm mb-1"><button class="btn btn-sm btn-outline-success">Resolve</button></form>{% endif %}
+{% if ticket.status == 'resolved' and request.user.role == 'manager' or ticket.status == 'resolved' and request.user.role == 'admin' %}<form method="post" action="{% url 'frontend:portal-maintenance-action' ticket.id 'approve' %}">{% csrf_token %}<button class="btn btn-sm bg-gradient-success">Approve return</button></form>{% endif %}
+</div></td></tr>{% empty %}<tr><td colspan="5">No maintenance tickets.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+{% endblock %}
