@@ -109,10 +109,6 @@ urlpatterns = [
     path('portal/mfa/challenge/', views.portal_mfa_challenge, name='portal-mfa-challenge'),
     path('portal/mfa/enroll/', views.portal_mfa_enroll, name='portal-mfa-enroll'),
     path('booking/quote/', views.public_quote_confirm, name='public-quote-confirm'),
-    path('chat/start/', views.chat_start, name='chat-start'),
-    path('chat/<uuid:reference>/messages/', views.chat_messages, name='chat-messages'),
-    path('chat/<uuid:reference>/send/', views.chat_send, name='chat-send'),
-    path('chat/<uuid:reference>/feedback/', views.chat_feedback, name='chat-feedback'),
 
     path(
         'portal/password-reset/',
@@ -343,6 +339,12 @@ path(
         name='portal-reports'
     ),
     path('portal/financial-audit/', views.portal_financial_audit, name='portal-financial-audit'),
+    path('portal/expenditures/', views.portal_expenditures, name='portal-expenditures'),
+    path(
+        'portal/expenditures/<int:pk>/evidence/', views.portal_expenditure_evidence,
+        name='portal-expenditure-evidence',
+    ),
+    path('portal/finance-controls/', views.portal_finance_controls, name='portal-finance-controls'),
 
     path(
         'portal/reports/export/csv/',
@@ -372,6 +374,11 @@ path(
         views.portal_notifications,
         name='portal-notifications'
     ),
+    path(
+        'portal/reports/export/xlsx/',
+        views.portal_reports_export_xlsx,
+        name='portal-reports-export-xlsx'
+    ),
     path('portal/management/', views.portal_management, name='portal-management'),
     path('portal/management/packs/<int:pk>/<str:file_format>/', views.portal_management_pack_download, name='portal-management-pack-download'),
     path('portal/management/queries/<int:pk>/', views.portal_management_query, name='portal-management-query'),
@@ -380,14 +387,13 @@ path(
     path('portal/inquiries/', views.portal_inquiries, name='portal-inquiries'),
     path('portal/inquiries/<int:pk>/', views.portal_inquiry_detail, name='portal-inquiry-detail'),
     path('portal/inquiry-attachments/<int:pk>/download/', views.portal_inquiry_attachment_download, name='portal-inquiry-attachment-download'),
-    path('portal/chat/', views.portal_chat, name='portal-chat'),
-    path('portal/chat/<uuid:reference>/', views.portal_chat_detail, name='portal-chat-detail'),
 
     path(
         'portal/settings/',
         views.portal_settings,
         name='portal-settings'
     ),
+    path('portal/vat/', views.portal_vat, name='portal-vat'),
 
 
     # =====================================================

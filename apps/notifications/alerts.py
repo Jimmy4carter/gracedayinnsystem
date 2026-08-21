@@ -10,7 +10,7 @@ from apps.housekeeping.models import HousekeepingTask, MaintenanceTicket
 from apps.rooms.models import Room
 
 from .models import (
-    AlertRule, ChatConversation, InquiryCase, Notification, OperationalAlert,
+    AlertRule, InquiryCase, Notification, OperationalAlert,
     OperationalAlertHistory, ScheduledJob,
 )
 
@@ -71,20 +71,6 @@ def _overdue_maintenance_findings(rule, now):
     } for item in tickets]
 
 
-def _unanswered_chat_findings(rule, now):
-    cutoff = now - timedelta(minutes=rule.threshold_minutes)
-    conversations = ChatConversation.objects.filter(
-        status__in=['queued', 'open'], first_agent_response_at__isnull=True,
-        created_at__lt=cutoff,
-    )
-    return [{
-        'key': f'{rule.key}:chat:{item.id}', 'title': 'Unanswered live chat',
-        'detail': f'Conversation {item.reference} has not received an agent response.',
-        'source_model': 'ChatConversation', 'source_id': str(item.id),
-        'link': f'/portal/chat/{item.reference}/',
-    } for item in conversations]
-
-
 def _inquiry_sla_findings(rule, now):
     cases = InquiryCase.objects.filter(status__in=['new', 'acknowledged', 'in_progress']).filter(
         Q(first_responded_at__isnull=True, first_response_due_at__lt=now)
@@ -119,7 +105,7 @@ EVALUATORS = {
     'room_state': _room_state_findings,
     'overdue_housekeeping': _overdue_housekeeping_findings,
     'overdue_maintenance': _overdue_maintenance_findings,
-    'unanswered_chat': _unanswered_chat_findings,
+    'unanswered_chat': lambda rule, now: [],
     'inquiry_sla': _inquiry_sla_findings,
     'job_failure': _job_failure_findings,
 }

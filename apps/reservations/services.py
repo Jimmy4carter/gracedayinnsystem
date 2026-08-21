@@ -5,7 +5,7 @@ from django.utils import timezone
 from decimal import Decimal
 from datetime import datetime, time, timedelta
 
-from apps.billing.models import Invoice, InvoiceItem
+from apps.billing.models import Invoice
 from apps.housekeeping.models import HousekeepingTask
 from apps.notifications.models import Notification
 from apps.rooms.models import Room
@@ -72,6 +72,36 @@ def create_reservation(*, guest, room, check_in_date, check_out_date, created_by
         exclude_quote_id=exclude_quote_id,
     )
     nights = (check_out_date - check_in_date).days
+    if price_snapshot is None:
+        from apps.billing.vat import current_vat_change
+        subtotal = locked_room.current_price * nights
+        vat_change = current_vat_change()
+        vat_rate = vat_change.rate if vat_change else Decimal('0.00')
+        vat_amount = (subtotal * vat_rate / Decimal('100')).quantize(Decimal('0.01'))
+        taxes = []
+        if vat_amount > 0:
+            taxes.append({
+                'code': 'vat', 'name': f'VAT ({vat_rate}%)', 'calculation': 'percentage',
+                'rate_or_amount': str(vat_rate), 'amount': str(vat_amount),
+                'source': 'central_vat', 'change_id': vat_change.id,
+            })
+        price_snapshot = {
+            'currency': settings.HOTEL_CURRENCY,
+            'nightly_rate': str(locked_room.current_price),
+            'nights': nights,
+            'subtotal': str(subtotal),
+            'taxable_base': str(subtotal),
+            'taxes': taxes,
+            'tax_total': str(vat_amount),
+            'vat_rate': str(vat_rate),
+            'vat_amount': str(vat_amount),
+            'vat_change_id': vat_change.id if vat_change else None,
+            'room_type_id': locked_room.room_type_id,
+            'room_type_name': locked_room.room_type.name,
+            'total': str(subtotal + vat_amount),
+        }
+    if total_amount is None:
+        total_amount = Decimal(str(price_snapshot.get('total', 0)))
     reservation = Reservation.objects.create(
         guest=guest,
         room=locked_room,
@@ -82,7 +112,7 @@ def create_reservation(*, guest, room, check_in_date, check_out_date, created_by
         special_requests=special_requests,
         notes=notes,
         nightly_rate=nightly_rate or locked_room.current_price,
-        total_amount=total_amount or 0,
+        total_amount=total_amount,
         rate_plan=rate_plan,
         status='pending',
         created_by=created_by,
@@ -90,15 +120,7 @@ def create_reservation(*, guest, room, check_in_date, check_out_date, created_by
         channel_reference=channel_reference,
         corporate_account=corporate_account,
         group_booking=group_booking,
-        price_snapshot=price_snapshot or {
-            'currency': settings.HOTEL_CURRENCY,
-            'nightly_rate': str(locked_room.current_price),
-            'nights': nights,
-            'subtotal': str(locked_room.current_price * nights),
-            'room_type_id': locked_room.room_type_id,
-            'room_type_name': locked_room.room_type.name,
-            'total': str(locked_room.current_price * nights),
-        },
+        price_snapshot=price_snapshot,
         policy_snapshot=policy_snapshot or {},
     )
     ReservationStatusHistory.objects.create(
@@ -119,30 +141,8 @@ def create_reservation(*, guest, room, check_in_date, check_out_date, created_by
 
 
 def _ensure_invoice(reservation):
-    from apps.billing.services import ensure_folio_for_reservation
-    invoice, created = Invoice.objects.get_or_create(
-        reservation=reservation,
-        defaults={
-            'guest': reservation.guest,
-            'status': 'sent',
-            'due_date': reservation.check_in_date,
-            'notes': f'Generated for reservation {reservation.reservation_number}.',
-            'tax_rate': 0,
-        },
-    )
-    if created:
-        snapshot = reservation.price_snapshot or {}
-        InvoiceItem.objects.create(
-            invoice=invoice,
-            description=f'Accommodation charge ({reservation.reservation_number})',
-            quantity=1,
-            unit_price=snapshot.get('subtotal', reservation.total_amount),
-        )
-        for tax in snapshot.get('taxes', []):
-            InvoiceItem.objects.create(
-                invoice=invoice, description=tax['name'], quantity=1, unit_price=tax['amount']
-            )
-        invoice.save()
+    from apps.billing.services import ensure_folio_for_reservation, ensure_invoice_for_reservation
+    invoice = ensure_invoice_for_reservation(reservation)
     ensure_folio_for_reservation(reservation, actor=reservation.created_by)
     return invoice
 
@@ -150,7 +150,7 @@ def _ensure_invoice(reservation):
 @transaction.atomic
 def transition_reservation(*, reservation_id, action, actor=None):
     reservation = Reservation.objects.select_for_update().select_related(
-        'guest', 'room', 'room__room_type'
+        'guest', 'room', 'room__room_type', 'invoice'
     ).get(pk=reservation_id)
     room = Room.objects.select_for_update().get(pk=reservation.room_id)
 
@@ -192,6 +192,18 @@ def transition_reservation(*, reservation_id, action, actor=None):
             link='/portal/billing/',
         )
     elif action == 'check_in':
+        invoice = getattr(reservation, 'invoice', None)
+        required_payment = (
+            invoice.total * Decimal('0.50') if invoice and invoice.total > 0 else None
+        )
+        if required_payment is None:
+            raise ValidationError(
+                'This reservation has no payable invoice. Confirm it and resolve its invoice before check-in.'
+            )
+        if invoice.amount_paid < required_payment:
+            raise ValidationError(
+                f'At least 50% of the invoice total ({required_payment:.2f}) must be paid before check-in.'
+            )
         reservation.actual_check_in = timezone.now()
         room.status = 'occupied'
         room.save(update_fields=['status'])

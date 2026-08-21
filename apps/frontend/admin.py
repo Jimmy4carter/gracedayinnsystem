@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from .models import (
-    AnalyticsEvent, AuditLog, FAQItem, FeatureFlag, GuestTestimonial, LocalGuidePlace,
+    AnalyticsEvent, AuditLog, BillboardContent, FAQItem, FeatureFlag, GuestTestimonial, LocalGuidePlace,
     LocalGuidePlaceTranslation, ManagementPack, NewsletterSubscription, OperationalSetting,
     PolicyDocument, SitePage, SitePageTranslation,
 )
@@ -147,6 +147,22 @@ class AnalyticsEventAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
 
     def has_add_permission(self, request): return False
     def has_delete_permission(self, request, obj=None): return False
+
+
+@admin.register(BillboardContent)
+class BillboardContentAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
+    list_display = ('title', 'content_type', 'priority', 'layout_variant', 'duration_seconds', 'is_active', 'start_at', 'end_at')
+    list_filter = ('content_type', 'priority', 'layout_variant', 'transition_variant', 'is_active')
+    list_editable = ('priority', 'duration_seconds', 'is_active')
+    search_fields = ('title', 'subtitle', 'body')
+    readonly_fields = ('updated_at',)
+    fieldsets = (
+        ('Programme', {'fields': ('title', 'subtitle', 'body', 'content_type', 'icon')}),
+        ('Media', {'fields': ('image', 'video', 'fallback_image')}),
+        ('Broadcast rules', {'fields': ('priority', 'layout_variant', 'transition_variant', 'duration_seconds', 'display_order', 'start_at', 'end_at', 'is_active')}),
+        ('Call to action', {'fields': ('cta_text', 'cta_url')}),
+        ('System', {'fields': ('updated_at',)}),
+    )
 
 
 @admin.register(ManagementPack)

@@ -17,7 +17,7 @@ from django.utils import timezone
 from .models import StaffMFADevice
 
 
-STAFF_ROLES = {'admin', 'manager', 'receptionist', 'housekeeping'}
+STAFF_ROLES = {'admin', 'manager', 'receptionist', 'accountant', 'housekeeping'}
 
 
 def _fernet():

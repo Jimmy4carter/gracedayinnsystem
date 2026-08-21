@@ -600,3 +600,15 @@ This log records accepted delivery increments after the verified baseline. The m
 - Live console-exporter smoke evidence confirmed a real `/health/live/` Django server span with the supplied request ID, valid trace identity, route/status, service name and OpenTelemetry SDK/auto-instrumentation versions.
 - Added medium/high-confidence Bandit analysis locally and in CI. The first scan found two unsafe generic URL-open boundaries; replaced them with an HTTPS/host/port/credential allowlist plus redirect validation for Brevo, covered by three SSRF-boundary tests. The repeated scan returned no medium/high findings.
 - Accepted local baseline: 186 tests ran in 684.158 seconds with 185 passing and only the PostgreSQL-only contract skipped; migration drift, dependency integrity/vulnerability audit, production settings, audit chain, system reconciliation and medium/high static security analysis all passed.
+
+## 2026-08-17 - Namecheap launch, WhatsApp and controlled finance
+
+- Rebased the production contract on Namecheap Passenger WSGI and MariaDB, added Git deployment/preflight/cron scripts, encrypted MySQL backup support, a `production`-branch workflow and a fresh-database launch-readiness gate.
+- Added six idempotent canonical deployment accounts with environment-only strong passwords, production staff MFA enforcement and role/account readiness verification.
+- Retired the active live-chat routes, widget, portal, alerts and WebSocket runtime. Added a configurable, audited WhatsApp Business action while retaining historical chat tables to avoid destructive data loss.
+- Added manager-submitted expenditure records with protected evidence, independent maker/checker review, append-only lifecycle events, controlled payment/void actions and balanced expense/input-VAT/cash-or-bank journals.
+- Added accountant finance controls for the chart of accounts, bank/POS mappings and period reconciliation, output/input/net VAT, approved-unpaid obligations, daily metrics, financial audit and Excel/PDF exports. The reporting surface labels its operating result as cash-basis rather than statutory accrual reporting.
+- Extended reconciliation and launch gates to formal journals, expenditure invariants, expense categories, cashier terminals, WhatsApp, Brevo, scheduler health, writable storage and the canonical accounts.
+- Rebranded all HTML email templates around the hotel logo and kept outbound delivery/events auditable through Brevo.
+- Rechecked public desktop/mobile pages and the 21-scene billboard for imagery, overflow and the retired chat surface; no broken images or horizontal overflow were found.
+- Accepted baseline: 208 tests ran in 1277.515 seconds with 207 passing and only the MariaDB-only contention contract skipped on local SQLite; migration drift, static collection, dependency integrity/vulnerability audit, production settings, audit reconciliation and medium/high static security analysis passed.

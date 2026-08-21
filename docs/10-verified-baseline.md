@@ -1,59 +1,52 @@
-# Verified Development Baseline
+# Verified Development and Launch Baseline
 
-Baseline date: 2026-08-10
+Baseline date: 2026-08-17
 
 ## Current checkpoint
 
-- Django system check: passed.
-- Production deployment check with PostgreSQL configuration: passed.
+- Django system check: passed with no issues.
+- Production deployment check with Namecheap MariaDB configuration: passed. The only advisories are the intentionally deferred HSTS subdomain and preload flags; enable them only after every subdomain is permanently HTTPS.
 - Migration consistency (`makemigrations --check --dry-run`): passed.
+- Static collection: passed; the canonical public CSS, JavaScript and hotel logos are present in the collected output.
 - Dependency integrity (`pip check`): passed.
-- Dependency vulnerability audit (`pip-audit -r requirements.txt`): no known vulnerabilities after upgrading to Django 5.2.17.
-- System reconciliation: passed with no pending migration, inventory conflict, unledgered completed payment, refund overage, negative stock balance or audit-chain variance. Two legacy completed payments were backfilled idempotently into folios by `payments.0004`.
-- Full automated suite under Django 5.2.17: 186 tests ran in 684.158 seconds; 185 passed and the real PostgreSQL multi-connection contention contract was intentionally skipped on local SQLite. Coverage includes OTLP trace/log correlation, Brevo SSRF/redirect boundaries, migration/system reconciliation, idempotent legacy-payment ledger backfill, route-wide portal/API authorization and controlled exports, governed FAQ/policy approval and draft isolation, public-search privacy, keyboard-first front-desk navigation, immutable operational and financial ledgers, controlled incident/lost-item lifecycles, managed room galleries, encrypted staff MFA, JWT revocation, tamper-evident audit verification, privacy governance, public quality gates, live-chat controls and operational escalation.
-- Static application security (`bandit -ll` excluding test/migration fixtures): no medium/high findings after hardening Brevo HTTPS and redirect validation.
-- Live telemetry smoke: the OpenTelemetry-wrapped Django/ASGI server exported a valid `/health/live/` server span with route/status, service identity and SDK/auto-instrumentation versions while preserving the supplied request ID.
-- Focused inventory/extras/guest-identity suite: 10 tests passed in 21.297 seconds; commercial suite: 5 tests passed; reporting/worker suite: 8 tests passed; focused frontend/public suite: 38 tests passed.
-- Rendered browser checks: homepage, rooms and room-detail handoff plus itemized quote review at desktop and 390 px mobile widths; no console warnings/errors observed.
-- Covered foundations now include centralized authorization; secure onboarding and mandatory production staff MFA; short-lived JWTs with rotating, revocable refresh tokens; transactional inventory/occupancy rates/quotes/holds; date-bound sellable inventory; taxable bookable extras; audited guest deduplication; immutable folios and manager-authorized corrections; ledger tax summaries; cashiering/POS; a verified booking-to-checkout/shift-close journey; audited print failure/retry plus A4/58/80 mm document contracts; front-desk stay management; housekeeping/maintenance; Brevo-logged email and contact synchronization; SLA-routed inquiries with protected evidence; business-hours-aware live chat; management reporting/night audit; guest self-service; governed public FAQs and version-approved policies; public SEO/accessibility/privacy controls; encrypted PostgreSQL backup verification; role-specific operational runbooks; correlated JSON request logs; and dependency readiness probes.
+- Dependency vulnerability audit (`pip-audit -r requirements.txt`): no known vulnerabilities.
+- Static application security (`bandit -ll` excluding tests and migrations): no medium/high findings.
+- System reconciliation: passed on the current local data with no pending migrations, booking/hold conflicts, missing payment/refund/folio/expenditure journals, unbalanced journals, expenditure total mismatch, missing expenditure status event, refund overage, negative stock balance or audit-chain variance.
+- Full automated suite: 208 tests ran in 1277.515 seconds; 207 passed and the MariaDB-only multi-connection contention contract was intentionally skipped on local SQLite.
+- Browser checks: public home, rooms, about, contact and billboard were inspected at desktop and 390 × 844 mobile. There was no horizontal overflow or broken imagery. WhatsApp was present, retired chat routes/UI were absent, and the billboard rendered 21 varied scenes with five randomly selected room scenes.
+
+## Implemented launch foundation
+
+- Transactional room search, availability holds, booking/OTP, reservation confirmation, invoices, VAT snapshots, the 50%-minimum check-in rule and guest/staff booking continuity.
+- Cashier terminals and shifts, cash/POS reservation payments, A4 and thermal receipts, reprint audit evidence, append-only payment status events and balanced journals.
+- Formal chart of accounts, journal lines, output/input VAT reporting, manager expenditure submission, independent accountant approval/payment, protected evidence, bank reconciliation, financial audit and Excel/PDF exports.
+- Role-scoped administrator, manager, reception, accountant, housekeeping and guest portals; mandatory production staff MFA and six canonical deployment accounts.
+- Brevo transactional delivery/contact/event logging with branded email templates and a configurable `noreply@gracedayinn.com` sender.
+- Direct configurable WhatsApp support suitable for shared WSGI hosting; no active Channels, Daphne, Redis or WebSocket chat dependency.
+- Namecheap Git deployment from the `production` branch, Passenger restart, MariaDB preflight, scheduled cron runner, encrypted database backup/verification and launch-readiness gates.
 
 ## Supported local setup
 
-- Python 3.12.4
-- Project-local virtual environment: `.venv`
-- Dependencies installed from `requirements.txt`
+- Python 3.12
 - Django 5.2.17
-- Development database: SQLite
+- Dependencies from `requirements.txt`
+- SQLite for local development and MariaDB 11.4 in CI/production
 
-Activate the environment in PowerShell:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-## Baseline commands
-
-Run these before beginning a feature and before handing it off:
+Run the repeatable local gate:
 
 ```powershell
-.\.venv\Scripts\python.exe manage.py check
-.\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
-.\.venv\Scripts\python.exe manage.py test
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test --noinput
+python manage.py collectstatic --noinput
+python manage.py reconcile_system --json
+python -m pip check
 ```
 
-Optional dependency verification:
+Production and fresh-database CI additionally run `ensure_default_users`, `launch_readiness`, the MariaDB two-connection contention contract, `check --deploy`, Bandit and `pip-audit`.
 
-```powershell
-.\.venv\Scripts\python.exe -m pip check
-```
+## Scope and external launch gates
 
-## Repairs made to establish the baseline
+A green local baseline proves the implemented contracts and current local data are internally consistent. Final production acceptance still requires a green GitHub Actions run against MariaDB, cPanel environment/database/media/cron configuration, an encrypted backup and restore rehearsal, physical 58/80 mm printer certification, approved legal/brand/retention content, real-device user acceptance and operational sign-off.
 
-- Corrected the invalid `AbstractUser` import in `apps/accounts/models.py` that prevented Django from loading.
-- Rebuilt `.venv`, which referenced a removed Microsoft Store Python installation.
-- Added standard local/generated Python paths to `.gitignore`.
-- Updated the service-order lifecycle test to submit the username expected by `ServiceOrderCreateForm`; the test had retained the obsolete numeric guest-ID contract.
-
-## Scope and limitations
-
-A green baseline means the implemented behavior is internally consistent. Launch acceptance still requires staging PostgreSQL concurrency/migration and backup-restore rehearsals, physical printer certification, owner-approved legal/brand content, provider credentials, UAT/training and operational sign-off recorded in the master backlog.
+The finance controls are bank-style internal controls, not a claim of bank certification or audited statutory accounts. A qualified accountant must approve the chart of accounts, VAT treatment, reporting basis and statutory procedures before live financial use.

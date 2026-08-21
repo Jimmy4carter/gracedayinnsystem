@@ -1,13 +1,82 @@
+from datetime import timedelta
+
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import (
-    AnalyticsEvent, FeatureFlag, GuestTestimonial, LocalGuidePlace,
+    AnalyticsEvent, BillboardContent, FAQItem, FeatureFlag, GuestTestimonial, LocalGuidePlace,
     LocalGuidePlaceTranslation, SitePage, SitePageTranslation,
 )
 
 
 class PublicExperienceTests(TestCase):
+    def test_billboard_renders_real_content_qr_and_status_feed(self):
+        FAQItem.objects.create(
+            category='stay', question='Can I request a late checkout?',
+            answer='Please ask reception and we will check availability.', is_published=True,
+        )
+        BillboardContent.objects.create(
+            title='Welcome home', subtitle='A GraceDay moment', body='Enjoy your stay.',
+            content_type='brand', is_active=True,
+        )
+        response = self.client.get(reverse('frontend:public-billboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-graceday-tv')
+        self.assertContains(response, 'Welcome home')
+        self.assertContains(response, 'Can I request a late checkout?')
+        self.assertContains(response, 'data:image/png;base64,')
+
+        status = self.client.get(reverse('frontend:public-billboard'), {'status': '1'})
+        self.assertEqual(status.status_code, 200)
+        self.assertIn('version', status.json())
+
+    def test_billboard_randomizes_a_small_cross_category_room_spotlight(self):
+        from apps.rooms.models import Room, RoomType
+
+        for category_index in range(7):
+            room_type = RoomType.objects.create(
+                name=f'Billboard type {category_index}', base_price='50000.00', max_occupancy=2
+            )
+            for room_index in range(3):
+                Room.objects.create(
+                    number=f'BB-{category_index}-{room_index}', room_type=room_type
+                )
+
+        response = self.client.get(reverse('frontend:public-billboard'))
+
+        self.assertEqual(len(response.context['rooms']), 5)
+        self.assertEqual(len({room.room_type_id for room in response.context['rooms']}), 5)
+        self.assertEqual(response.content.count(b'data-category="room"'), 5)
+
+    def test_billboard_excludes_inactive_and_out_of_window_content(self):
+        now = timezone.now()
+        BillboardContent.objects.create(
+            title='Currently showing', content_type='information', is_active=True,
+            start_at=now - timedelta(hours=1), end_at=now + timedelta(hours=1),
+        )
+        BillboardContent.objects.create(
+            title='Future campaign', content_type='promotion', is_active=True,
+            start_at=now + timedelta(days=1),
+        )
+        BillboardContent.objects.create(
+            title='Disabled campaign', content_type='promotion', is_active=False,
+        )
+        response = self.client.get(reverse('frontend:public-billboard'))
+        self.assertContains(response, 'Currently showing')
+        self.assertNotContains(response, 'Future campaign')
+        self.assertNotContains(response, 'Disabled campaign')
+
+    def test_billboard_content_rejects_invalid_schedule(self):
+        now = timezone.now()
+        content = BillboardContent(
+            title='Invalid campaign', content_type='promotion',
+            start_at=now, end_at=now - timedelta(minutes=1),
+        )
+        with self.assertRaises(ValidationError):
+            content.full_clean()
+
     def test_public_shell_has_accessibility_and_seo_basics(self):
         response = self.client.get(reverse('frontend:public-home'))
         self.assertEqual(response.status_code, 200)

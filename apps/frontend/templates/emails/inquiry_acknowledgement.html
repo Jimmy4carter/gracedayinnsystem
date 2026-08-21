@@ -1,0 +1,14 @@
+{% extends 'emails/base_email.html' %}
+{% block email_title %}Inquiry Received | GraceDay Inn{% endblock %}
+{% block email_content %}
+<h2>We received your inquiry</h2>
+<p>Hello {{ case.requester_name }},</p>
+<p>Thank you for contacting GraceDay Inn. Your message is safely in our guest-service queue.</p>
+<div class="panel">
+    <p style="margin:0 0 8px"><strong>Reference:</strong> {{ case.reference }}</p>
+    <p style="margin:0 0 8px"><strong>Subject:</strong> {{ case.subject }}</p>
+    <p style="margin:0"><strong>Priority:</strong> {{ case.get_priority_display }}</p>
+</div>
+<p>Our team will respond as soon as possible. Keep the reference above if you contact reception about this request.</p>
+<p>Warm regards,<br>The GraceDay Inn Guest Services Team</p>
+{% endblock %}

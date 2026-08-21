@@ -12,7 +12,6 @@ from apps.rooms.models import Room, RoomType
 from apps.frontend.models import AuditLog
 
 from .alerts import evaluate_alert_rule, transition_alert
-from .chat import start_conversation
 from .inquiries import create_inquiry
 from .jobs import run_due_jobs
 from .models import AlertRule, Notification, OperationalAlert, ScheduledJob
@@ -119,9 +118,6 @@ class OperationalAlertTests(TestCase):
             downtime_required=False, reported_by=self.manager,
         )
         MaintenanceTicket.objects.filter(pk=maintenance.pk).update(updated_at=old)
-        chat = start_conversation(name='Waiting Guest', body='Is anyone there?')
-        ChatConversation = chat.__class__
-        ChatConversation.objects.filter(pk=chat.pk).update(created_at=old)
         inquiry = create_inquiry(
             requester_name='SLA Guest', requester_email='sla@example.com',
             subject='Late reply', message='Please respond', category='general',
@@ -138,7 +134,6 @@ class OperationalAlertTests(TestCase):
         expected_sources = {
             'housekeeping-overdue': 'HousekeepingTask',
             'maintenance-overdue': 'MaintenanceTicket',
-            'chat-unanswered': 'ChatConversation',
             'inquiry-sla': 'InquiryCase',
             'job-failures': 'ScheduledJob',
         }
@@ -149,3 +144,6 @@ class OperationalAlertTests(TestCase):
                 self.assertTrue(OperationalAlert.objects.filter(
                     rule__key=key, source_model=source_model, status='open',
                 ).exists())
+        retired_chat_rule = AlertRule.objects.get(key='chat-unanswered')
+        self.assertFalse(retired_chat_rule.is_enabled)
+        self.assertEqual(evaluate_alert_rule(retired_chat_rule)['opened'], 0)

@@ -17,7 +17,7 @@
 - Provision least privilege; only administrators assign roles. Disable departed staff and retain history.
 - Use named accounts. Production requires native staff MFA; verify enrollment before granting operational access.
 - Reset a lost staff MFA device only after identity verification, using the MFA device admin action. The stated recovery reason and actor are retained in the tamper-evident audit chain.
-- Maintain rates, taxes, extras, rooms, routing, chat hours, templates, flags and jobs through controlled surfaces.
+- Maintain rates, VAT, extras, rooms, inquiry routing, WhatsApp contact, email templates, flags and jobs through controlled surfaces.
 - Publish local-guide entries and locale variants through the Frontend administration area. Verify journey estimates and outbound links before publishing.
 - Moderate testimonials only when publication consent is recorded; reject content containing personal, sensitive, abusive or unverifiable claims. Never edit a guest's words to change their meaning.
 - Maintain guest policies in Frontend > Policy documents. Replace placeholder text, set the effective date, record qualified review, then use Approve followed by Publish; never publish a placeholder or unreviewed legal wording. Any content, version or effective-date edit automatically withdraws the document and clears its approval, so repeat review and approval before republishing.

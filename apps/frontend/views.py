@@ -3,6 +3,7 @@ import base64
 from io import BytesIO
 import json
 import logging
+from secrets import SystemRandom
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
@@ -30,6 +31,7 @@ from django.utils.dateparse import parse_date
 
 from apps.accounts.models import DataPrivacyRequest, GuestProfile, StaffMFADevice, UserProfile
 from apps.accounts.mfa import (
+    STAFF_ROLES as MFA_STAFF_ROLES,
     begin_mfa_enrollment, confirm_mfa_enrollment, staff_mfa_required, verify_mfa_code,
 )
 from apps.accounts.privacy import (
@@ -41,8 +43,13 @@ from apps.accounts.security import (
     record_authentication_event,
     record_login_failure,
 )
-from apps.billing.models import FinancialAuditRun, Folio, Invoice, Receipt, VATRateChange
+from apps.billing.models import (
+    BankAccount, BankReconciliation, Expenditure, ExpenseCategory, FinancialAuditRun,
+    Folio, Invoice, JournalEntry, LedgerAccount, Receipt, TaxLiability, VATRateChange,
+)
+from apps.billing.expenditures import submit_expenditure, transition_expenditure
 from apps.billing.financial_audit import approve_financial_audit, prepare_financial_audit
+from apps.billing.ledger import prepare_tax_liability, reconcile_bank_account
 from apps.billing.services import ensure_invoice_for_reservation, post_financial_correction, tax_summary
 from apps.billing.vat import current_vat_rate, set_vat_rate
 from apps.housekeeping.models import (
@@ -56,12 +63,8 @@ from apps.housekeeping.services import (
     transition_lost_found_item, transition_maintenance_ticket,
 )
 from apps.notifications.models import (
-    BrevoContactSync, ChatCannedReply, ChatConversation, ContactPreference, InquiryCase, JobExecution, Notification,
+    BrevoContactSync, ContactPreference, InquiryCase, JobExecution, Notification,
     OperationalAlert, ScheduledJob, Suppression,
-)
-from apps.notifications.chat import (
-    can_access_conversation, send_chat_message, start_conversation,
-    submit_chat_satisfaction, transition_chat,
 )
 from apps.notifications.inquiries import (
     add_inquiry_attachment, add_inquiry_reply, create_inquiry, transition_inquiry,
@@ -306,6 +309,7 @@ def _render_report_pdf(report, trend, days=14):
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="graceday-inn-report-{days}d.pdf"'
+
     pdf = canvas.Canvas(response, pagesize=A4)
     _, height = A4
     y = height - 48
@@ -319,7 +323,15 @@ def _render_report_pdf(report, trend, days=14):
     y -= 28
 
     for label, value in [
-        ('Total Revenue', report['total_revenue']),
+        ('Net Revenue (excluding tax)', report['total_revenue']),
+        ('Operating Expenses', report['operating_expenses']),
+        ('Expense Cash Outflow (including input tax)', report['expense_cash_outflow']),
+        ('Cash-basis Operating Result', report['operating_profit']),
+        ('Approved Unpaid Expenses', report['approved_expenses']),
+        ('VAT / Tax Liability', report['tax_collected']),
+        ('Input VAT Paid (subject to recovery)', report['input_tax_paid']),
+        ('Net VAT Payable', report['net_tax_payable']),
+        ('Gross Guest Billings', report['gross_billings']),
         ('Open Balance', report['open_balance']),
         ('Total Reservations', report['total_reservations']),
         ('Confirmed Reservations', report['confirmed_reservations']),
@@ -343,119 +355,7 @@ def _render_report_pdf(report, trend, days=14):
         y = height - 48
     y -= 10
     pdf.setFont('Helvetica-Bold', 11)
-    pdf.drawString(40, y, '14-Day Trend Snapshot')
-    y -= 18
-    pdf.setFont('Helvetica', 9)
-    rows = zip(
-        trend['labels'],
-        trend['occupancy_trend'],
-        trend['revenue_trend'],
-        trend['service_sla_trend'],
-    )
-    for day, occupancy, revenue, sla in rows:
-        if y < 40:
-            pdf.showPage()
-            y = height - 40
-            pdf.setFont('Helvetica', 9)
-        pdf.drawString(
-            40,
-            y,
-            f'{day}  |  Occupancy: {occupancy}%  |  Revenue: N{revenue}  |  Service SLA: {sla} min',
-        )
-        y -= 14
-
-    pdf.showPage()
-    pdf.save()
-    return response
-
-
-def _build_report_data(days=14):
-    reservations = Reservation.objects.all()
-    service_sla_duration = ServiceOrder.objects.filter(status='completed').aggregate(
-        avg_duration=Avg(
-            ExpressionWrapper(
-                F('updated_at') - F('created_at'),
-                output_field=DurationField(),
-            )
-        )
-    )['avg_duration']
-    housekeeping_turnaround_duration = HousekeepingTask.objects.filter(
-        status__in=['completed', 'verified'],
-        completed_at__isnull=False,
-    ).aggregate(
-        avg_duration=Avg(
-            ExpressionWrapper(
-                F('completed_at') - Coalesce(F('started_at'), F('created_at')),
-                output_field=DurationField(),
-            )
-        )
-    )['avg_duration']
-
-    report = {
-        **calculate_financial_report(days=days),
-        'occupied_rooms': Room.objects.filter(status='occupied').count(),
-        'available_rooms': Room.objects.filter(status='available').count(),
-        'pending_housekeeping': HousekeepingTask.objects.filter(status='pending').count(),
-        'total_reservations': reservations.count(),
-        'confirmed_reservations': reservations.filter(status='confirmed').count(),
-        'service_sla_minutes': _duration_to_minutes(service_sla_duration),
-        'housekeeping_turnaround_minutes': _duration_to_minutes(housekeeping_turnaround_duration),
-        'completed_service_orders': ServiceOrder.objects.filter(status='completed').count(),
-        'completed_housekeeping_tasks': HousekeepingTask.objects.filter(status__in=['completed', 'verified']).count(),
-    }
-    return report, _build_trend_series(days=days)
-
-
-def _render_report_pdf(report, trend, days=14):
-    try:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
-    except ImportError:
-        response = HttpResponse('PDF export dependency is missing. Install reportlab.', status=501)
-        response['Content-Type'] = 'text/plain; charset=utf-8'
-        return response
-
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="graceday-inn-report-{days}d.pdf"'
-
-    pdf = canvas.Canvas(response, pagesize=A4)
-    _, height = A4
-    y = height - 48
-
-    pdf.setFont('Helvetica-Bold', 14)
-    pdf.drawString(40, y, 'GRACEDAY INN - Performance Report')
-    y -= 24
-
-    pdf.setFont('Helvetica', 10)
-    pdf.drawString(40, y, f'Generated: {timezone.localtime().strftime("%Y-%m-%d %H:%M") }')
-    y -= 28
-
-    for label, value in [
-        ('Total Revenue', report['total_revenue']),
-        ('Open Balance', report['open_balance']),
-        ('Total Reservations', report['total_reservations']),
-        ('Confirmed Reservations', report['confirmed_reservations']),
-        ('Occupied Rooms', report['occupied_rooms']),
-        ('Available Rooms', report['available_rooms']),
-        ('Pending Housekeeping', report['pending_housekeeping']),
-        ('Service SLA (Avg Min)', report['service_sla_minutes']),
-        ('Housekeeping Turnaround (Avg Min)', report['housekeeping_turnaround_minutes']),
-        ('Completed Service Orders', report['completed_service_orders']),
-        ('Completed Housekeeping Tasks', report['completed_housekeeping_tasks']),
-    ]:
-        if y < 56:
-            pdf.showPage()
-            y = height - 48
-            pdf.setFont('Helvetica', 10)
-        pdf.drawString(40, y, f'{label}: {value}')
-        y -= 16
-
-    if y < 120:
-        pdf.showPage()
-        y = height - 48
-    y -= 10
-    pdf.setFont('Helvetica-Bold', 11)
-    pdf.drawString(40, y, '14-Day Trend Snapshot')
+    pdf.drawString(40, y, f'{days}-Day Trend Snapshot')
     y -= 18
     pdf.setFont('Helvetica', 9)
     rows = zip(
@@ -1140,90 +1040,6 @@ def contact(request):
     return render(request, 'publicsite/contact.html', {'form': form})
 
 
-def chat_start(request):
-    if request.method != 'POST':
-        return JsonResponse({'detail': 'POST required.'}, status=405)
-    try:
-        payload = json.loads(request.body or '{}')
-    except ValueError:
-        return JsonResponse({'detail': 'Invalid JSON.'}, status=400)
-    body = (payload.get('message') or '').strip()
-    if not body:
-        return JsonResponse({'detail': 'A message is required.'}, status=400)
-    guest = request.user if request.user.is_authenticated and request.user.role == 'guest' else None
-    try:
-        conversation = start_conversation(
-            name=payload.get('name', guest.get_full_name() if guest else ''),
-            email=payload.get('email', guest.email if guest else ''), guest=guest, body=body,
-        )
-    except ValidationError as exc:
-        return JsonResponse({'errors': exc.messages}, status=400)
-    tokens = request.session.get('chat_tokens', {})
-    tokens[str(conversation.reference)] = str(conversation.visitor_token)
-    request.session['chat_tokens'] = tokens
-    return JsonResponse({
-        'reference': str(conversation.reference),
-        'status': conversation.status,
-        'websocket_url': f'/ws/chat/{conversation.reference}/',
-        'offline': conversation.is_offline_capture,
-        'inquiry_reference': str(conversation.inquiry.reference) if conversation.inquiry_id else None,
-    }, status=201)
-
-
-def _public_chat_access(request, reference):
-    conversation = get_object_or_404(ChatConversation, reference=reference)
-    token = request.session.get('chat_tokens', {}).get(str(reference)) or request.GET.get('token')
-    if not can_access_conversation(request.user, conversation, token):
-        return conversation, None
-    return conversation, token
-
-
-def chat_messages(request, reference):
-    conversation, token = _public_chat_access(request, reference)
-    if token is None and not can_access_conversation(request.user, conversation):
-        return JsonResponse({'detail': 'Access denied.'}, status=403)
-    after = request.GET.get('after', 0)
-    queryset = conversation.messages.filter(id__gt=after).exclude(sender_type='internal')[:100]
-    return JsonResponse({'messages': [{
-        'id': item.id, 'body': item.body, 'sender_type': item.sender_type,
-        'created_at': item.created_at.isoformat(),
-    } for item in queryset], 'status': conversation.status})
-
-
-def chat_send(request, reference):
-    if request.method != 'POST':
-        return JsonResponse({'detail': 'POST required.'}, status=405)
-    conversation, token = _public_chat_access(request, reference)
-    if token is None and not can_access_conversation(request.user, conversation):
-        return JsonResponse({'detail': 'Access denied.'}, status=403)
-    try:
-        payload = json.loads(request.body or '{}')
-        message, created = send_chat_message(
-            conversation=conversation, actor=request.user, visitor_token=token,
-            body=payload.get('body', ''), client_message_id=payload.get('client_message_id'),
-        )
-    except (ValidationError, ValueError) as exc:
-        return JsonResponse({'errors': getattr(exc, 'messages', [str(exc)])}, status=400)
-    return JsonResponse({'id': message.id, 'created': created, 'sender_type': message.sender_type})
-
-
-def chat_feedback(request, reference):
-    if request.method != 'POST':
-        return JsonResponse({'detail': 'POST required.'}, status=405)
-    conversation, token = _public_chat_access(request, reference)
-    if token is None and not can_access_conversation(request.user, conversation):
-        return JsonResponse({'detail': 'Access denied.'}, status=403)
-    try:
-        payload = json.loads(request.body or '{}')
-        submit_chat_satisfaction(
-            conversation=conversation, rating=payload.get('rating'),
-            comment=payload.get('comment', ''), actor=request.user, visitor_token=token,
-        )
-    except (ValidationError, ValueError) as exc:
-        return JsonResponse({'errors': getattr(exc, 'messages', [str(exc)])}, status=400)
-    return JsonResponse({'detail': 'Thank you for your feedback.'})
-
-
 def portal_sign_in(request):
     if request.user.is_authenticated:
         return redirect(PORTAL_DASHBOARD_ROUTE)
@@ -1292,7 +1108,7 @@ def portal_mfa_challenge(request):
 
 def portal_mfa_enroll(request):
     user = request.user if request.user.is_authenticated else _pending_mfa_user(request)
-    if not user or user.role not in {'admin', 'manager', 'receptionist', 'housekeeping'}:
+    if not user or user.role not in MFA_STAFF_ROLES:
         messages.error(request, 'A valid staff sign-in is required for MFA enrollment.')
         return redirect('frontend:portal-sign-in')
     confirmed_device = StaffMFADevice.objects.filter(user=user, is_confirmed=True).first()
@@ -1429,6 +1245,8 @@ def portal_dashboard(request):
         'revenue_trend_json': json.dumps(trend_data['revenue_trend']),
         'service_sla_trend_json': json.dumps(trend_data['service_sla_trend']),
     }
+    if request.user.role in {'admin', 'manager', 'accountant'}:
+        context['finance_summary'] = calculate_financial_report(days=selected_days)
     return render(request, 'portals/dashboard.html', context)
 
 
@@ -1904,10 +1722,10 @@ def portal_reservation_action(request, pk, action):
     if action == 'cancel' and request.user.role == 'guest' and reservation.guest_id != request.user.id:
         messages.error(request, 'Guests can only cancel their own reservations.')
         return redirect(PORTAL_RESERVATIONS_ROUTE)
-    if action == 'confirm':
+    if action == 'check_in':
         invoice = getattr(reservation, 'invoice', None)
         if not invoice or invoice.total <= 0 or invoice.amount_paid < (invoice.total * Decimal('0.50')):
-            messages.error(request, 'At least a 50% payment is required before confirming this reservation.')
+            messages.error(request, 'At least a 50% payment is required before checking in this reservation.')
             return redirect(f'{PORTAL_PAYMENTS_ROUTE}?invoice_id={invoice.id}' if invoice else PORTAL_RESERVATIONS_ROUTE)
 
     try:
@@ -2604,8 +2422,6 @@ def portal_payment_receipt(request, receipt_id):
 @login_required
 @role_required(STAFF_ROLES)
 def portal_cashier(request):
-    if not CashierTerminal.objects.filter(is_active=True).exists():
-        CashierTerminal.objects.create(code='front-desk-1', name='Front Desk 1', location='Reception')
     open_shift = get_open_shift(request.user)
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -3100,10 +2916,18 @@ def portal_reports_export_csv(request):
     writer.writerow(['Window (Days)', selected_days])
     writer.writerow([])
     writer.writerow(['Metric', 'Value'])
-    writer.writerow(['Total Revenue', report['total_revenue']])
-    writer.writerow(['Gross Revenue', report['gross_revenue']])
+    writer.writerow(['Net Revenue (Excluding Tax)', report['total_revenue']])
+    writer.writerow(['Gross Revenue (Before Refunds, Excluding Tax)', report['gross_revenue']])
+    writer.writerow(['VAT / Tax Liability', report['tax_collected']])
+    writer.writerow(['Input VAT Paid (Subject to Recovery)', report['input_tax_paid']])
+    writer.writerow(['Net VAT Payable', report['net_tax_payable']])
+    writer.writerow(['Gross Guest Billings', report['gross_billings']])
     writer.writerow(['Payments Collected', report['payments_collected']])
     writer.writerow(['Refunds', report['refunds']])
+    writer.writerow(['Operating Expenses', report['operating_expenses']])
+    writer.writerow(['Expense Cash Outflow (Including Input Tax)', report['expense_cash_outflow']])
+    writer.writerow(['Cash-basis Operating Result', report['operating_profit']])
+    writer.writerow(['Approved Unpaid Expenses', report['approved_expenses']])
     writer.writerow(['Open Balance', report['open_balance']])
     writer.writerow(['Cash Variance', report['cash_variance']])
     writer.writerow(['Open Cashier Shifts', report['open_shifts']])
@@ -3127,6 +2951,90 @@ def portal_reports_export_csv(request):
                 trend['service_sla_trend'][index],
             ]
         )
+    writer.writerow([])
+    writer.writerow(['Paid Expenditure by Category', 'Amount'])
+    for item in report['expense_by_category']:
+        writer.writerow([item['category__name'], item['total']])
+    return response
+
+
+@login_required
+@role_required({'admin', 'manager', 'accountant'})
+def portal_reports_export_xlsx(request):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+
+    selected_days = _selected_window_days(request)
+    report, trend = _build_report_data(days=selected_days)
+    workbook = Workbook()
+    summary = workbook.active
+    summary.title = 'Financial Summary'
+    summary.append(['GRACEDAY INN', f'{selected_days}-day financial control report'])
+    summary.append(['Generated', timezone.localtime().strftime('%Y-%m-%d %H:%M')])
+    summary.append(['Period', f"{report['period_start']} to {report['period_end']}"])
+    summary.append([])
+    metrics = [
+        ('Net Revenue (excluding tax)', report['total_revenue']),
+        ('Operating Expenses', report['operating_expenses']),
+        ('Expense Cash Outflow (including input tax)', report['expense_cash_outflow']),
+        ('Cash-basis Operating Result', report['operating_profit']),
+        ('Approved Unpaid Expenses', report['approved_expenses']),
+        ('VAT / Tax Liability', report['tax_collected']),
+        ('Input VAT Paid (subject to recovery)', report['input_tax_paid']),
+        ('Net VAT Payable', report['net_tax_payable']),
+        ('Gross Guest Billings', report['gross_billings']),
+        ('Payments Collected', report['payments_collected']),
+        ('Refunds', report['refunds']), ('Open Receivables', report['open_balance']),
+        ('Cash Variance', report['cash_variance']),
+    ]
+    summary.append(['Metric', 'NGN Amount'])
+    for label, value in metrics:
+        summary.append([label, float(value)])
+    summary.append([])
+    summary.append(['Paid Expenditure Category', 'NGN Amount'])
+    for item in report['expense_by_category']:
+        summary.append([item['category__name'], float(item['total'])])
+
+    daily = workbook.create_sheet('Daily Trends')
+    daily.append(['Date', 'Occupancy %', 'Collections (NGN)', 'Service SLA (minutes)'])
+    for index, label in enumerate(trend['labels']):
+        daily.append([
+            label, trend['occupancy_trend'][index], trend['revenue_trend'][index],
+            trend['service_sla_trend'][index],
+        ])
+
+    expenses = workbook.create_sheet('Expenditure Register')
+    expenses.append([
+        'Reference', 'Business Date', 'Vendor', 'Category', 'Net Amount', 'Tax Amount',
+        'Total Amount', 'Payment Method', 'Status', 'Submitted By', 'Approved By',
+        'Paid By', 'Supplier Reference', 'Journal Reference',
+    ])
+    for item in Expenditure.objects.filter(
+        business_date__range=(report['period_start'], report['period_end'])
+    ).select_related('category', 'submitted_by', 'approved_by', 'paid_by', 'journal'):
+        expenses.append([
+            str(item.reference), item.business_date.isoformat(), item.vendor, item.category.name,
+            float(item.net_amount), float(item.tax_amount), float(item.total_amount),
+            item.get_payment_method_display(), item.get_status_display(), item.submitted_by.username,
+            item.approved_by.username if item.approved_by else '',
+            item.paid_by.username if item.paid_by else '', item.external_reference,
+            str(item.journal.reference) if item.journal else '',
+        ])
+
+    for sheet in workbook.worksheets:
+        for cell in sheet[1]:
+            cell.font = Font(bold=True, color='FFFFFF')
+            cell.fill = PatternFill('solid', fgColor='183B56')
+        sheet.freeze_panes = 'A2'
+        sheet.auto_filter.ref = sheet.dimensions
+        for column in sheet.columns:
+            width = min(max(len(str(cell.value or '')) for cell in column) + 2, 40)
+            sheet.column_dimensions[column[0].column_letter].width = width
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="graceday-inn-report-{selected_days}d.xlsx"'
+    workbook.save(response)
     return response
 
 
@@ -3169,6 +3077,149 @@ def portal_financial_audit(request):
     })
 
 
+@login_required
+@role_required({'admin', 'manager', 'accountant'})
+def portal_expenditures(request):
+    if request.method == 'POST':
+        action = request.POST.get('action', 'submit')
+        try:
+            if action == 'submit':
+                category = get_object_or_404(
+                    ExpenseCategory, pk=request.POST.get('category_id'), is_active=True,
+                )
+                expenditure = submit_expenditure(
+                    actor=request.user, category=category,
+                    business_date=parse_date(request.POST.get('business_date', '')),
+                    vendor=request.POST.get('vendor', ''),
+                    description=request.POST.get('description', ''),
+                    net_amount=Decimal(request.POST.get('net_amount', '')),
+                    tax_amount=Decimal(request.POST.get('tax_amount') or '0'),
+                    payment_method=request.POST.get('payment_method', ''),
+                    external_reference=request.POST.get('external_reference', ''),
+                    evidence=request.FILES.get('evidence'),
+                )
+                _log_audit(
+                    request, 'payment', 'submit_expenditure', 'Expenditure', expenditure.id,
+                    {'reference': str(expenditure.reference), 'total_amount': str(expenditure.total_amount)},
+                )
+                messages.success(request, 'Expenditure submitted for independent accounting review.')
+            else:
+                expenditure = transition_expenditure(
+                    expenditure_id=request.POST.get('expenditure_id'), action=action,
+                    actor=request.user, note=request.POST.get('note', ''),
+                )
+                _log_audit(
+                    request, 'payment', f'{action}_expenditure', 'Expenditure', expenditure.id,
+                    {'reference': str(expenditure.reference), 'status': expenditure.status},
+                )
+                messages.success(request, f'Expenditure moved to {expenditure.get_status_display()}.')
+            return redirect('frontend:portal-expenditures')
+        except (ValidationError, InvalidOperation, TypeError, ValueError) as exc:
+            messages.error(request, '; '.join(getattr(exc, 'messages', [str(exc)])))
+
+    expenditures = Expenditure.objects.select_related(
+        'category', 'submitted_by', 'approved_by', 'paid_by', 'journal'
+    )
+    period_start = timezone.localdate() - timedelta(days=29)
+    recent = expenditures.filter(business_date__gte=period_start)
+    totals = recent.aggregate(
+        submitted=Sum('total_amount', filter=Q(status='submitted')),
+        approved=Sum('total_amount', filter=Q(status='approved')),
+        paid=Sum('total_amount', filter=Q(status='paid')),
+    )
+    return render(request, 'portals/expenditures.html', {
+        'expenditures': expenditures[:100],
+        'categories': ExpenseCategory.objects.filter(is_active=True).select_related('ledger_account'),
+        'payment_methods': Expenditure.PAYMENT_METHOD_CHOICES,
+        'today': timezone.localdate(), 'period_start': period_start,
+        'expense_totals': {key: value or Decimal('0') for key, value in totals.items()},
+        'can_submit': request.user.role in {'admin', 'manager'},
+        'can_review': request.user.role in {'admin', 'accountant'},
+        'can_void': request.user.role == 'admin',
+    })
+
+
+@login_required
+@role_required({'admin', 'manager', 'accountant'})
+def portal_expenditure_evidence(request, pk):
+    expenditure = get_object_or_404(Expenditure, pk=pk)
+    if not expenditure.evidence:
+        raise Http404('No evidence is attached to this expenditure.')
+    filename = expenditure.evidence.name.rsplit('/', 1)[-1]
+    return FileResponse(expenditure.evidence.open('rb'), as_attachment=True, filename=filename)
+
+
+@login_required
+@role_required({'admin', 'manager', 'accountant'})
+def portal_finance_controls(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            if action == 'create_bank':
+                if request.user.role != 'admin':
+                    raise ValidationError('Only an administrator can configure bank accounts.')
+                ledger_account = get_object_or_404(
+                    LedgerAccount, pk=request.POST.get('ledger_account_id'),
+                    account_type='asset', is_active=True,
+                )
+                last_four = ''.join(
+                    character for character in request.POST.get('account_last_four', '')
+                    if character.isdigit()
+                )
+                if len(last_four) != 4:
+                    raise ValidationError('Enter exactly the last four account digits.')
+                bank_account = BankAccount(
+                    name=request.POST.get('name', '').strip(),
+                    bank_name=request.POST.get('bank_name', '').strip(),
+                    account_last_four=last_four, ledger_account=ledger_account,
+                )
+                bank_account.full_clean()
+                bank_account.save()
+                _log_audit(request, 'payment', 'configure_bank_account', 'BankAccount', bank_account.id)
+                messages.success(request, 'Bank account mapped to the chart of accounts.')
+            elif action == 'tax':
+                start = parse_date(request.POST.get('period_start', ''))
+                end = parse_date(request.POST.get('period_end', ''))
+                liability = prepare_tax_liability(
+                    tax_code=(request.POST.get('tax_code') or 'VAT').strip(),
+                    period_start=start, period_end=end, actor=request.user,
+                )
+                _log_audit(request, 'payment', 'prepare_tax_liability', 'TaxLiability', liability.id)
+                messages.success(request, 'Tax liability snapshot prepared.')
+            elif action == 'reconcile':
+                start = parse_date(request.POST.get('period_start', ''))
+                end = parse_date(request.POST.get('period_end', ''))
+                bank_account = get_object_or_404(BankAccount, pk=request.POST.get('bank_account_id'), is_active=True)
+                reconciliation = reconcile_bank_account(
+                    bank_account=bank_account, period_start=start, period_end=end,
+                    statement_balance=Decimal(request.POST.get('statement_balance', '')),
+                    actor=request.user, notes=request.POST.get('notes', ''),
+                )
+                _log_audit(
+                    request, 'payment', 'reconcile_bank_account', 'BankReconciliation',
+                    reconciliation.id, {'difference': str(reconciliation.difference)},
+                )
+                messages.success(request, f'Bank reconciliation recorded as {reconciliation.status}.')
+            else:
+                raise ValidationError('Unknown finance-control action.')
+            return redirect('frontend:portal-finance-controls')
+        except (ValidationError, InvalidOperation, TypeError, ValueError) as exc:
+            messages.error(request, '; '.join(getattr(exc, 'messages', [str(exc)])))
+
+    return render(request, 'portals/finance-controls.html', {
+        'accounts': LedgerAccount.objects.filter(is_active=True),
+        'journals': JournalEntry.objects.prefetch_related('lines__account')[:50],
+        'bank_accounts': BankAccount.objects.filter(is_active=True).select_related('ledger_account'),
+        'available_bank_ledgers': LedgerAccount.objects.filter(
+            is_active=True, account_type='asset', bank_account__isnull=True,
+        ),
+        'reconciliations': BankReconciliation.objects.select_related('bank_account', 'prepared_by')[:30],
+        'tax_liabilities': TaxLiability.objects.select_related('prepared_by')[:30],
+        'today': timezone.localdate(),
+        'can_configure': request.user.role == 'admin',
+    })
+
+
 def public_billboard(request):
     """GraceDay TV: public, unattended reception signage using approved content only."""
     now = timezone.now()
@@ -3182,9 +3233,29 @@ def public_billboard(request):
     promotions = Promotion.objects.filter(
         is_active=True, valid_from__lte=timezone.now(), valid_to__gte=timezone.now()
     ).prefetch_related('room_types')[:8]
-    rooms = list(Room.objects.filter(is_active=True, is_sellable=True).select_related(
-        'room_type'
-    ).prefetch_related('amenities', 'room_type__amenities', 'gallery_images').order_by('number'))
+    eligible_rooms = list(
+        Room.objects.filter(is_active=True, is_sellable=True)
+        .values_list('room_type_id', 'id')
+    )
+    randomizer = SystemRandom()
+    by_type = {}
+    for room_type_id, room_id in eligible_rooms:
+        by_type.setdefault(room_type_id, []).append(room_id)
+    type_ids = list(by_type)
+    randomizer.shuffle(type_ids)
+    selected_room_ids = [randomizer.choice(by_type[item]) for item in type_ids[:5]]
+    if len(selected_room_ids) < 5:
+        remaining = [room_id for _type_id, room_id in eligible_rooms if room_id not in selected_room_ids]
+        selected_room_ids.extend(
+            randomizer.sample(remaining, min(5 - len(selected_room_ids), len(remaining)))
+        )
+    rooms = list(
+        Room.objects.filter(pk__in=selected_room_ids).select_related('room_type')
+        .prefetch_related(
+            'amenities', 'room_type__amenities', 'gallery_images', 'room_type__gallery_images'
+        )
+    )
+    randomizer.shuffle(rooms)
     announcements = NewsletterMessage.objects.filter(status='sent').order_by('-sent_at')[:8]
     faqs = FAQItem.objects.filter(is_published=True).order_by('display_order', 'id')[:8]
     guide_places = LocalGuidePlace.objects.filter(is_published=True).order_by('display_order', 'name')[:8]
@@ -3451,66 +3522,32 @@ def portal_night_audit(request):
 
 
 @login_required
-@role_required({'admin', 'manager', 'receptionist'})
-def portal_chat(request):
-    from django.conf import settings
-    conversations = ChatConversation.objects.select_related('guest', 'assigned_to').prefetch_related('messages')
-    status_filter = request.GET.get('status')
-    if status_filter:
-        conversations = conversations.filter(status=status_filter)
-    return render(request, 'portals/chat.html', {
-        'conversations': conversations, 'status_filter': status_filter,
-        'status_choices': ChatConversation.STATUS_CHOICES,
-        'tawkto_active': bool(getattr(settings, 'TAWKTO_EMBED_URL', '')),
-    })
-
-
-@login_required
-@role_required({'admin', 'manager', 'receptionist'})
-def portal_chat_detail(request, reference):
-    conversation = get_object_or_404(
-        ChatConversation.objects.select_related('guest', 'assigned_to').prefetch_related('messages__sender'),
-        reference=reference,
-    )
-    if request.method == 'POST':
-        command = request.POST.get('command')
-        try:
-            if command in {'reply', 'note'}:
-                body = request.POST.get('body', '')
-                canned_reply_id = request.POST.get('canned_reply_id')
-                if command == 'reply' and canned_reply_id:
-                    canned_reply = ChatCannedReply.objects.filter(
-                        pk=canned_reply_id, status='approved',
-                    ).first()
-                    if not canned_reply:
-                        raise ValidationError('That canned reply is unavailable or not approved.')
-                    body = canned_reply.body
-                send_chat_message(
-                    conversation=conversation, actor=request.user,
-                    body=body, internal=command == 'note',
-                )
-                if command == 'reply' and canned_reply_id:
-                    ChatCannedReply.objects.filter(pk=canned_reply.id).update(use_count=F('use_count') + 1)
-            else:
-                conversation = transition_chat(
-                    conversation_id=conversation.id, action=command, actor=request.user,
-                    disposition=request.POST.get('disposition', ''),
-                )
-        except ValidationError as exc:
-            messages.error(request, '; '.join(exc.messages))
-        else:
-            messages.success(request, 'Conversation updated.')
-        return redirect('frontend:portal-chat-detail', reference=conversation.reference)
-    return render(request, 'portals/chat-detail.html', {
-        'conversation': conversation,
-        'canned_replies': ChatCannedReply.objects.filter(status='approved'),
-    })
-
-
-@login_required
 def portal_settings(request):
     can_manage = request.user.is_superuser or request.user.role == 'admin'
     if request.method == 'POST' and can_manage:
+        if request.POST.get('action') == 'whatsapp':
+            number = ''.join(character for character in request.POST.get('whatsapp_number', '') if character.isdigit())
+            message = request.POST.get('whatsapp_message', '').strip()
+            if not 8 <= len(number) <= 15:
+                messages.error(request, 'Enter a WhatsApp number with country code (8 to 15 digits).')
+            elif not message:
+                messages.error(request, 'Enter the default WhatsApp greeting.')
+            else:
+                setting, _ = OperationalSetting.objects.update_or_create(
+                    key='whatsapp-contact',
+                    defaults={
+                        'value': {'number': number, 'message': message},
+                        'description': 'Public WhatsApp contact number and pre-filled greeting.',
+                        'is_secret': False,
+                    },
+                )
+                _log_audit(
+                    request, event_type='system', action='update_whatsapp_contact',
+                    target_model='OperationalSetting', target_id=setting.id,
+                    details={'number_last_four': number[-4:]},
+                )
+                messages.success(request, 'Public WhatsApp contact updated.')
+                return redirect('frontend:portal-settings')
         flag_id = request.POST.get('flag_id')
         if flag_id:
             flag = FeatureFlag.objects.filter(pk=flag_id).first()
@@ -3527,11 +3564,18 @@ def portal_settings(request):
 
     flags = FeatureFlag.objects.all().order_by('key')
     settings_qs = OperationalSetting.objects.filter(is_secret=False).order_by('key') if (request.user.is_superuser or request.user.role in {'admin', 'manager'}) else []
+    whatsapp_setting = OperationalSetting.objects.filter(key='whatsapp-contact').first()
+    from django.conf import settings as django_settings
+    whatsapp_value = whatsapp_setting.value if whatsapp_setting and isinstance(whatsapp_setting.value, dict) else {}
     return render(request, 'portals/settings.html', {
         'feature_flags': flags,
         'operational_settings': settings_qs,
         'can_manage_settings': can_manage,
         'stats': _portal_stats(request.user),
+        'whatsapp_number': whatsapp_value.get('number', getattr(django_settings, 'WHATSAPP_NUMBER', '')),
+        'whatsapp_message': whatsapp_value.get(
+            'message', getattr(django_settings, 'WHATSAPP_DEFAULT_MESSAGE', '')
+        ),
     })
 
 

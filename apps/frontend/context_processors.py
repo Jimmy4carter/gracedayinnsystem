@@ -1,6 +1,6 @@
 from django.db import OperationalError, ProgrammingError
 
-from .models import SitePage
+from .models import OperationalSetting, SitePage
 from .feature_flags import flag_enabled
 
 
@@ -26,14 +26,28 @@ def public_site_page(request):
             language_code=requested_language, is_published=True,
         ).first()
     from django.conf import settings
+    whatsapp_number = getattr(settings, 'WHATSAPP_NUMBER', '')
+    whatsapp_message = getattr(settings, 'WHATSAPP_DEFAULT_MESSAGE', '')
+    try:
+        whatsapp = OperationalSetting.objects.filter(key='whatsapp-contact').first()
+        if whatsapp and isinstance(whatsapp.value, dict):
+            whatsapp_number = whatsapp.value.get('number') or whatsapp_number
+            whatsapp_message = whatsapp.value.get('message') or whatsapp_message
+    except (OperationalError, ProgrammingError):
+        pass
+    whatsapp_number = ''.join(character for character in str(whatsapp_number) if character.isdigit())
+    from urllib.parse import quote
     return {
         'site_page': page,
         'site_page_translation': translation,
         'public_language': requested_language,
         'public_languages': supported_languages,
-        'tawkto_embed_url': getattr(settings, 'TAWKTO_EMBED_URL', ''),
+        'whatsapp_url': (
+            f'https://wa.me/{whatsapp_number}?text={quote(whatsapp_message)}'
+            if whatsapp_number else ''
+        ),
+        'whatsapp_number': whatsapp_number,
         'public_features': {
-            'live_chat': flag_enabled('public-live-chat', user=request.user, default=True),
             'booking': flag_enabled('public-booking', user=request.user, default=True),
         },
     }

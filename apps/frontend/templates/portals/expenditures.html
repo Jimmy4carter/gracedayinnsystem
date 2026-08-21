@@ -1,0 +1,49 @@
+{% extends 'base_portal.html' %}
+{% load custom_filters %}
+{% block title %}Expenditure control | GraceDay Inn{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div><p class="text-uppercase text-muted small mb-1">Management → independent accounting review</p><h1 class="h3 mb-1">Expenditure control</h1><p class="text-muted mb-0">Every expense follows an append-only approval trail and paid items post to the general ledger.</p></div>
+    <div class="d-flex gap-2"><a class="btn btn-outline-primary" href="{% url 'frontend:portal-finance-controls' %}">Finance controls</a><a class="btn btn-outline-dark" href="{% url 'frontend:portal-reports' %}">Reports</a></div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><p class="text-xs text-uppercase text-muted mb-1">Awaiting review</p><h3 class="mb-0">NGN {{ expense_totals.submitted|currency_format }}</h3><small class="text-muted">Last 30 days</small></div></div></div>
+    <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><p class="text-xs text-uppercase text-muted mb-1">Approved, unpaid</p><h3 class="mb-0">NGN {{ expense_totals.approved|currency_format }}</h3><small class="text-muted">Payment obligation</small></div></div></div>
+    <div class="col-md-4"><div class="card shadow-sm h-100"><div class="card-body"><p class="text-xs text-uppercase text-muted mb-1">Paid expenditure</p><h3 class="mb-0">NGN {{ expense_totals.paid|currency_format }}</h3><small class="text-muted">Last 30 days</small></div></div></div>
+  </div>
+
+  {% if can_submit %}
+  <div class="card shadow-sm mb-4"><div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3"><div><h2 class="h5 mb-1">Submit expenditure</h2><p class="text-muted small mb-0">The accountant must review it before payment can be recorded.</p></div><span class="badge bg-warning text-dark">Maker</span></div>
+    <form method="post" enctype="multipart/form-data" class="row g-3">{% csrf_token %}<input type="hidden" name="action" value="submit">
+      <div class="col-md-3"><label class="form-label" for="expense-date">Business date</label><input class="form-control" id="expense-date" type="date" name="business_date" value="{{ today|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}" required></div>
+      <div class="col-md-5"><label class="form-label" for="expense-category">Category</label><select class="form-select" id="expense-category" name="category_id" required><option value="">Select category and ledger account</option>{% for category in categories %}<option value="{{ category.id }}">{{ category.name }} · {{ category.ledger_account.code }} {{ category.ledger_account.name }}</option>{% endfor %}</select></div>
+      <div class="col-md-4"><label class="form-label" for="expense-vendor">Vendor / payee</label><input class="form-control" id="expense-vendor" name="vendor" maxlength="160" required></div>
+      <div class="col-md-3"><label class="form-label" for="expense-net">Net amount (NGN)</label><input class="form-control" id="expense-net" type="number" name="net_amount" min="0.01" step="0.01" required></div>
+      <div class="col-md-3"><label class="form-label" for="expense-tax">Tax paid (NGN)</label><input class="form-control" id="expense-tax" type="number" name="tax_amount" min="0" step="0.01" value="0"></div>
+      <div class="col-md-3"><label class="form-label" for="expense-method">Payment method</label><select class="form-select" id="expense-method" name="payment_method" required><option value="">Select tender</option>{% for value,label in payment_methods %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="form-label" for="expense-reference">Supplier reference</label><input class="form-control" id="expense-reference" name="external_reference" maxlength="120" placeholder="Invoice / receipt number"></div>
+      <div class="col-md-8"><label class="form-label" for="expense-description">Business purpose</label><textarea class="form-control" id="expense-description" name="description" rows="2" maxlength="1000" required></textarea></div>
+      <div class="col-md-4"><label class="form-label" for="expense-evidence">Evidence</label><input class="form-control" id="expense-evidence" type="file" name="evidence" accept=".pdf,.jpg,.jpeg,.png,.webp"><small class="text-muted">PDF or image, maximum 5 MB.</small></div>
+      <div class="col-12"><button class="btn btn-primary mb-0" type="submit">Submit for accounting review</button></div>
+    </form>
+  </div></div>
+  {% endif %}
+
+  <div class="card shadow-sm"><div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3"><div><h2 class="h5 mb-1">Expenditure register</h2><p class="text-muted small mb-0">Newest 100 records; journal links appear after payment.</p></div><span class="badge bg-light text-dark">Checker-controlled</span></div>
+    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Date / ref</th><th>Vendor &amp; purpose</th><th>Category</th><th class="text-end">Amount</th><th>Status / control trail</th><th>Action</th></tr></thead><tbody>
+      {% for expense in expenditures %}<tr>
+        <td>{{ expense.business_date }}<br><small class="text-muted">{{ expense.reference|stringformat:'s'|slice:':8'|upper }}</small></td>
+        <td><strong>{{ expense.vendor }}</strong><br><small class="text-muted">{{ expense.description|truncatechars:85 }}</small>{% if expense.evidence %}<br><a class="small" href="{% url 'frontend:portal-expenditure-evidence' expense.id %}">Download protected evidence</a>{% endif %}</td>
+        <td>{{ expense.category.name }}<br><small class="text-muted">{{ expense.category.ledger_account.code }}</small></td>
+        <td class="text-end"><strong>NGN {{ expense.total_amount|currency_format }}</strong><br><small class="text-muted">Net {{ expense.net_amount|currency_format }} · tax {{ expense.tax_amount|currency_format }}</small></td>
+        <td><span class="badge {% if expense.status == 'paid' %}bg-success{% elif expense.status == 'rejected' or expense.status == 'void' %}bg-danger{% elif expense.status == 'approved' %}bg-info{% else %}bg-warning text-dark{% endif %}">{{ expense.get_status_display }}</span><br><small class="text-muted">By {{ expense.submitted_by.get_full_name|default:expense.submitted_by.username }}{% if expense.journal %} · journal {{ expense.journal.reference|stringformat:'s'|slice:':8' }}{% endif %}</small></td>
+        <td>{% if can_review and expense.status == 'submitted' %}<form method="post" class="d-flex flex-wrap gap-1">{% csrf_token %}<input type="hidden" name="expenditure_id" value="{{ expense.id }}"><input class="form-control form-control-sm" name="note" placeholder="Review note / rejection reason" required><button class="btn btn-sm btn-success mb-0" name="action" value="approve">Approve</button><button class="btn btn-sm btn-outline-danger mb-0" name="action" value="reject">Reject</button></form>{% elif can_review and expense.status == 'approved' %}<form method="post" class="d-flex gap-1">{% csrf_token %}<input type="hidden" name="expenditure_id" value="{{ expense.id }}"><input class="form-control form-control-sm" name="note" placeholder="Payment confirmation" required><button class="btn btn-sm btn-primary mb-0" name="action" value="pay">Record paid</button></form>{% elif can_void and expense.status != 'paid' and expense.status != 'void' %}<form method="post" class="d-flex gap-1">{% csrf_token %}<input type="hidden" name="expenditure_id" value="{{ expense.id }}"><input class="form-control form-control-sm" name="note" placeholder="Void reason" required><button class="btn btn-sm btn-outline-danger mb-0" name="action" value="void">Void</button></form>{% else %}<span class="small text-muted">No action</span>{% endif %}</td>
+      </tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-5">No expenditure has been submitted.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div></div>
+</div>
+{% endblock %}

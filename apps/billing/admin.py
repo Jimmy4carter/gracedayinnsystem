@@ -1,8 +1,9 @@
 from django.contrib import admin
 from .models import (
     BankAccount, BankReconciliation, BankStatementLine, FinancialAuditRun,
-    FinancialCorrection, Folio, FolioEntry, Invoice, InvoiceItem, JournalEntry,
-    JournalLine, LedgerAccount, Receipt, TaxLiability,
+    Expenditure, ExpenditureStatusEvent, ExpenseCategory, FinancialCorrection,
+    Folio, FolioEntry, Invoice, InvoiceItem, JournalEntry, JournalLine,
+    LedgerAccount, Receipt, TaxLiability, VATRateChange,
 )
 from apps.accounts.admin_permissions import HotelAdminPermissionMixin
 
@@ -17,7 +18,7 @@ class InvoiceAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
     list_display = ['invoice_number', 'guest', 'status', 'total', 'amount_paid', 'balance']
     list_filter = ['status']
     search_fields = ['invoice_number', 'guest__username']
-    readonly_fields = ['invoice_number', 'subtotal', 'tax_amount', 'total', 'balance']
+    readonly_fields = ['invoice_number', 'subtotal', 'tax_amount', 'vat_amount', 'total', 'balance']
     inlines = [InvoiceItemInline]
 
 
@@ -101,3 +102,47 @@ class FinanceReadOnlyAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
 
 for model in (BankAccount, BankReconciliation, BankStatementLine, TaxLiability):
     admin.site.register(model, FinanceReadOnlyAdmin)
+
+
+@admin.register(ExpenseCategory)
+class ExpenseCategoryAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
+    list_display = ('code', 'name', 'ledger_account', 'is_active')
+    list_filter = ('is_active',)
+
+
+@admin.register(Expenditure)
+class ExpenditureAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
+    list_display = ('reference', 'business_date', 'vendor', 'category', 'total_amount', 'status')
+    list_filter = ('status', 'category', 'payment_method')
+    search_fields = ('reference', 'vendor', 'description', 'external_reference')
+    readonly_fields = [field.name for field in Expenditure._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ExpenditureStatusEvent)
+class ExpenditureStatusEventAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
+    list_display = ('expenditure', 'from_status', 'to_status', 'actor', 'created_at')
+    readonly_fields = [field.name for field in ExpenditureStatusEvent._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(VATRateChange)
+class VATRateChangeAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
+    list_display = ('rate', 'previous_rate', 'effective_at', 'changed_by', 'reason')
+    readonly_fields = [field.name for field in VATRateChange._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

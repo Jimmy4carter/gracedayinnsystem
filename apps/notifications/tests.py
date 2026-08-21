@@ -6,9 +6,7 @@ from unittest.mock import MagicMock, patch
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from asgiref.sync import async_to_sync
-from channels.testing import WebsocketCommunicator
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -16,9 +14,8 @@ from apps.accounts.models import UserProfile
 from apps.frontend.models import NewsletterSubscription
 from .contacts import enqueue_contact_sync, process_contact_sync
 from .inquiries import add_inquiry_attachment, add_inquiry_reply, create_inquiry, transition_inquiry
-from .chat import send_chat_message, start_conversation, submit_chat_satisfaction, transition_chat
 from .models import (
-    BrevoContactSync, ChatCannedReply, ChatOperatingHour, ContactPreference, DeliveryEvent, InquiryAttachment, InquiryRoutingRule,
+    BrevoContactSync, ContactPreference, DeliveryEvent, InquiryAttachment, InquiryRoutingRule,
     OutboundMessage, Suppression,
 )
 from .services import enqueue_email
@@ -200,159 +197,3 @@ class InquiryWorkflowTests(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response['Content-Disposition'], 'attachment; filename="evidence.pdf"')
             response.close()
-
-
-class LiveChatWorkflowTests(TestCase):
-    def setUp(self):
-        self.agent = UserProfile.objects.create_user(
-            username='chat-agent', role='receptionist', password='test-pass'
-        )
-
-    def test_visitor_token_agent_assignment_and_idempotent_messages(self):
-        conversation = start_conversation(
-            name='Visitor', email='visitor@example.com', body='<b>Hello</b>'
-        )
-        self.assertEqual(conversation.messages.get().body, 'Hello')
-        client_id = 'ba167f70-58d6-42f4-8dca-e5a907e489b4'
-        message, created = send_chat_message(
-            conversation=conversation, visitor_token=conversation.visitor_token,
-            body='Need a room', client_message_id=client_id,
-        )
-        replay, replay_created = send_chat_message(
-            conversation=conversation, visitor_token=conversation.visitor_token,
-            body='Need a room', client_message_id=client_id,
-        )
-        self.assertTrue(created)
-        self.assertFalse(replay_created)
-        self.assertEqual(message.pk, replay.pk)
-        conversation = transition_chat(
-            conversation_id=conversation.id, action='assign', actor=self.agent
-        )
-        self.assertEqual(conversation.assigned_to, self.agent)
-        reply, _ = send_chat_message(
-            conversation=conversation, actor=self.agent, body='I can help.'
-        )
-        self.assertEqual(reply.sender_type, 'agent')
-        conversation = transition_chat(
-            conversation_id=conversation.id, action='close', actor=self.agent,
-            disposition='booking_assisted',
-        )
-        self.assertEqual(conversation.status, 'closed')
-
-    def test_offline_chat_requires_email_and_creates_routed_case(self):
-        ChatOperatingHour.objects.create(weekday=timezone.localdate().weekday(), is_closed=True)
-        with self.assertRaises(ValidationError):
-            start_conversation(name='Anonymous', body='Call me')
-        conversation = start_conversation(
-            name='Offline Visitor', email='offline@example.com', body='Please contact me'
-        )
-        self.assertTrue(conversation.is_offline_capture)
-        self.assertEqual(conversation.status, 'waiting')
-        self.assertIsNotNone(conversation.inquiry_id)
-        self.assertEqual(conversation.inquiry.source, 'chat_offline')
-
-    def test_closed_chat_accepts_one_sanitized_satisfaction_response(self):
-        conversation = start_conversation(
-            name='Feedback Visitor', email='feedback@example.com', body='Hello'
-        )
-        conversation = transition_chat(conversation_id=conversation.id, action='assign', actor=self.agent)
-        conversation = transition_chat(
-            conversation_id=conversation.id, action='close', actor=self.agent, disposition='resolved'
-        )
-        conversation = submit_chat_satisfaction(
-            conversation=conversation, rating=5, comment='<b>Excellent</b>',
-            visitor_token=conversation.visitor_token,
-        )
-        self.assertEqual(conversation.satisfaction_rating, 5)
-        self.assertEqual(conversation.satisfaction_comment, 'Excellent')
-        with self.assertRaises(ValidationError):
-            submit_chat_satisfaction(
-                conversation=conversation, rating=4, visitor_token=conversation.visitor_token,
-            )
-
-    def test_portal_uses_only_approved_canned_reply_and_tracks_usage(self):
-        conversation = start_conversation(name='Reply Visitor', body='Do you have parking?')
-        approved = ChatCannedReply.objects.create(
-            title='Parking', category='facilities', body='Yes, secure parking is available.',
-            status='approved', approved_by=self.agent, approved_at=timezone.now(),
-        )
-        draft = ChatCannedReply.objects.create(
-            title='Draft answer', body='Unapproved content', status='draft',
-        )
-        self.client.force_login(self.agent)
-        url = reverse('frontend:portal-chat-detail', args=[conversation.reference])
-        page = self.client.get(url)
-        self.assertContains(page, approved.title)
-        self.assertNotContains(page, draft.title)
-        response = self.client.post(url, {
-            'command': 'reply', 'canned_reply_id': approved.id, 'body': 'Tampered browser value',
-        })
-        self.assertRedirects(response, url)
-        approved.refresh_from_db()
-        self.assertEqual(approved.use_count, 1)
-        self.assertTrue(conversation.messages.filter(
-            sender_type='agent', body='Yes, secure parking is available.',
-        ).exists())
-        response = self.client.post(url, {
-            'command': 'reply', 'canned_reply_id': draft.id, 'body': 'Unapproved content',
-        }, follow=True)
-        self.assertContains(response, 'unavailable or not approved')
-        self.assertFalse(conversation.messages.filter(body='Unapproved content').exists())
-
-
-class LiveChatWebSocketTests(TransactionTestCase):
-    def test_authorized_visitor_can_connect_and_send(self):
-        conversation = start_conversation(name='Socket Visitor', body='Start')
-
-        async def exercise():
-            from gracedayinn.asgi import application
-            communicator = WebsocketCommunicator(
-                application,
-                f'/ws/chat/{conversation.reference}/?token={conversation.visitor_token}',
-            )
-            connected, _ = await communicator.connect()
-            self.assertTrue(connected)
-            await communicator.send_json_to({
-                'body': 'WebSocket message',
-                'client_message_id': '88e0c498-aa02-4ca8-b209-1a054dc95845',
-            })
-            response = await communicator.receive_json_from()
-            self.assertEqual(response['type'], 'message')
-            self.assertEqual(response['body'], 'WebSocket message')
-            await communicator.disconnect()
-
-            denied = WebsocketCommunicator(application, f'/ws/chat/{conversation.reference}/?token=wrong')
-            denied_connected, close_code = await denied.connect()
-            self.assertFalse(denied_connected)
-            self.assertEqual(close_code, 4403)
-
-        async_to_sync(exercise)()
-
-    def test_typing_and_presence_are_ephemeral_peer_events(self):
-        conversation = start_conversation(name='Presence Visitor', body='Start')
-
-        async def exercise():
-            from gracedayinn.asgi import application
-            url = f'/ws/chat/{conversation.reference}/?token={conversation.visitor_token}'
-            first = WebsocketCommunicator(application, url)
-            second = WebsocketCommunicator(application, url)
-            self.assertTrue((await first.connect())[0])
-            self.assertTrue((await second.connect())[0])
-            presence = await first.receive_json_from()
-            self.assertEqual(presence, {
-                'type': 'presence', 'state': 'joined', 'participant': 'visitor',
-            })
-            await first.send_json_to({'type': 'typing', 'is_typing': True})
-            typing = await second.receive_json_from()
-            self.assertEqual(typing, {
-                'type': 'typing', 'is_typing': True, 'participant': 'visitor',
-            })
-            await first.disconnect()
-            left = await second.receive_json_from()
-            self.assertEqual(left['type'], 'presence')
-            self.assertEqual(left['state'], 'left')
-            await second.disconnect()
-
-        before = conversation.messages.count()
-        async_to_sync(exercise)()
-        self.assertEqual(conversation.messages.count(), before)

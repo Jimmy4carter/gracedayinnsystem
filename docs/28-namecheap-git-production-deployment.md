@@ -16,7 +16,7 @@ The repository includes:
 - `passenger_wsgi.py`, the WSGI startup file required by Namecheap shared hosting;
 - WhiteNoise static-file serving for collected CSS, JavaScript, fonts, and images.
 
-Namecheap shared hosting supports WSGI Python applications. It does not support ASGI applications on shared hosting, so WebSocket-only capabilities must retain their HTTP polling/fallback behavior or move to VPS/Dedicated hosting.
+Namecheap shared hosting supports WSGI Python applications. GraceDay Inn therefore uses a direct WhatsApp action for public messaging and does not require WebSockets, Redis, Daphne, or an ASGI process.
 
 ## 1. Prepare the remote repository
 
@@ -75,10 +75,11 @@ Required production groups are:
 - persistent files: `MEDIA_ROOT=/home/CPANEL_USERNAME/gracedayinn_media` and an application-local `STATIC_ROOT`;
 - staff security: `MFA_ENCRYPTION_KEY` and the six `DEFAULT_*_PASSWORD` values;
 - sender: `DEFAULT_FROM_EMAIL=noreply@gracedayinn.com` and `SERVER_EMAIL=noreply@gracedayinn.com`;
-- Brevo SMTP: `EMAIL_DELIVERY_PROVIDER=brevo_smtp`, SMTP backend, `smtp-relay.brevo.com`, port `587`, TLS, SMTP login, and SMTP key;
+- Brevo REST (recommended): `EMAIL_DELIVERY_PROVIDER=brevo` and a new production `BREVO_API_KEY`;
 - Brevo webhook verification: a new random `BREVO_WEBHOOK_TOKEN`.
+- public contact: `WHATSAPP_NUMBER` (country code plus digits) and `WHATSAPP_DEFAULT_MESSAGE`.
 
-An SMTP key is not a Brevo REST API key. If you later choose REST delivery, set `EMAIL_DELIVERY_PROVIDER=brevo` and supply a separately generated `BREVO_API_KEY` beginning with Brevo's API-key prefix.
+SMTP delivery remains available, but an SMTP key is not a Brevo REST API key. Even in SMTP mode, configure a REST API key because contact synchronization and reporting use the API.
 
 The SMTP key shared during development must be rotated before production. Store the replacement only in cPanel or the ignored server `.env`; Git history is not a secret store.
 
@@ -86,7 +87,7 @@ The SMTP key shared during development must be rotated before production. Store 
 
 Create a MySQL/MariaDB database and user through cPanel, grant that user all privileges on the application database, and use the cPanel-prefixed database and username in `DATABASE_URL`.
 
-Uploaded room and billboard media must survive releases. Keep `MEDIA_ROOT` outside the repository. Configure the domain/LiteSpeed mapping or a safe web-root symlink so `/media/` resolves to that directory. Do not serve private guest documents from this public media location.
+Uploaded room, billboard, and protected financial evidence must survive releases. Keep `MEDIA_ROOT` outside the repository. Configure domain/LiteSpeed mappings only for approved public image subdirectories. Explicitly deny `/media/private/`; expenditure evidence is downloaded only through the authenticated portal endpoint. Do not expose private guest identity documents or financial evidence through a public media mapping.
 
 Take a cPanel database backup before any release that contains schema or financial-ledger migrations. Code rollback does not reverse a migrated database automatically.
 
@@ -99,7 +100,7 @@ cd /home/CPANEL_USERNAME/gracedayinnsystem
 bash deploy/namecheap_deploy.sh
 ```
 
-The hook installs requirements, runs Django's production checks, applies migrations, creates the database cache table, reconciles system data, verifies the standard accounts, collects static assets, and touches `tmp/restart.txt` to restart Passenger.
+The hook installs requirements, runs Django's production and migration-drift checks, collects static assets, previews and applies migrations, creates the database cache table, verifies the standard accounts, runs launch readiness and full reconciliation, and touches `tmp/restart.txt` to restart Passenger.
 
 If cPanel cannot auto-detect the virtual environment:
 
@@ -138,10 +139,10 @@ Use the exact URL shown in cPanel. With push deployment enabled, cPanel runs the
 
 ## 8. Cron and operational checks
 
-Add a five-minute cPanel cron job using the virtual environment Python:
+Add a five-minute cPanel cron job through the committed wrapper. The wrapper discovers the virtual environment and explicitly selects production settings. cPanel Python App variables are not guaranteed to be inherited by Git deployment hooks or cron, so keep the same secrets in the ignored project `.env` (mode `600`) unless your hosting environment explicitly exports them to both processes:
 
 ```cron
-*/5 * * * * /home/CPANEL_USERNAME/virtualenv/gracedayinnsystem/3.12/bin/python /home/CPANEL_USERNAME/gracedayinnsystem/manage.py run_scheduled_jobs >> /home/CPANEL_USERNAME/graceday_cron.log 2>&1
+*/5 * * * * /bin/bash /home/CPANEL_USERNAME/gracedayinnsystem/deploy/namecheap_cron.sh >> /home/CPANEL_USERNAME/graceday_cron.log 2>&1
 ```
 
 After every release verify:
@@ -150,6 +151,8 @@ After every release verify:
 - `/static/` assets load and a public room image loads from persistent media;
 - a test reservation can proceed through invoice and payment state;
 - a Brevo test email appears in the portal email log and reaches the recipient;
+- the WhatsApp action opens the verified hotel number;
+- manager expenditure submission, accountant approval/payment, Excel export and balanced journal posting pass a smoke test;
 - the deployed SHA in cPanel matches `origin/production`;
 - cron processing is current and has no repeated errors.
 

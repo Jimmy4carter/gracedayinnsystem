@@ -146,7 +146,7 @@
                                 <tr><td class="r-o">Services:</td><td>{{ room_type.description|default:'Wifi, Television, Bathroom, AC' }}</td></tr>
                                 </tbody>
                             </table>
-                            <a href="{% url 'frontend:public-rooms' %}" class="primary-btn">More Details</a>
+                            <a href="{% url 'frontend:public-rooms' %}?category={{ room_type.slug }}" class="primary-btn">Explore {{ room_type.name }}</a>
                         </div>
                     </div>
                 </div>

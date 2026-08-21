@@ -9,6 +9,7 @@ from .models import BankReconciliation, JournalEntry, JournalLine, LedgerAccount
 
 DEFAULT_ACCOUNTS = {
     '1100': ('Guest receivables', 'asset'),
+    '1150': ('Input VAT recoverable', 'asset'),
     '1010': ('Cash on hand', 'asset'),
     '1020': ('Bank / POS clearing', 'asset'),
     '2100': ('Tax payable', 'liability'),
@@ -20,8 +21,15 @@ DEFAULT_ACCOUNTS = {
 
 
 def account(code):
+    existing = LedgerAccount.objects.filter(code=code, is_active=True).first()
+    if existing:
+        return existing
+    if code not in DEFAULT_ACCOUNTS:
+        raise ValidationError(f'Active ledger account {code} does not exist.')
     name, kind = DEFAULT_ACCOUNTS[code]
-    return LedgerAccount.objects.get_or_create(code=code, defaults={'name': name, 'account_type': kind})[0]
+    return LedgerAccount.objects.get_or_create(
+        code=code, defaults={'name': name, 'account_type': kind}
+    )[0]
 
 
 @transaction.atomic
@@ -60,7 +68,7 @@ def post_folio_journal(*, entry, actor=None):
     )
 
 
-def post_payment_journal(*, payment, actor=None, refund=False, amount=None):
+def post_payment_journal(*, payment, actor=None, refund=False, amount=None, event_key=None):
     amount = Decimal(str(amount if amount is not None else payment.amount))
     debit_account = '1010' if payment.method == 'cash' else '1020'
     if refund:
@@ -70,26 +78,55 @@ def post_payment_journal(*, payment, actor=None, refund=False, amount=None):
     return post_balanced_journal(
         business_date=payment.created_at.date(), source_type='Payment', source_id=payment.id,
         description=f'{"Refund" if refund else "Payment"} {payment.reference}',
-        external_key=f'payment-journal:{payment.id}:{"refund" if refund else "receipt"}:{amount}', lines=lines, actor=actor,
+        external_key=(
+            f'payment-journal:{payment.id}:{"refund" if refund else "receipt"}:'
+            f'{event_key if event_key is not None else amount}'
+        ),
+        lines=lines, actor=actor,
     )
 
 
 @transaction.atomic
 def prepare_tax_liability(*, tax_code, period_start, period_end, actor):
-    from .models import FolioEntry
-    taxable = FolioEntry.objects.filter(entry_type='tax', direction='debit', posted_at__date__range=(period_start, period_end)).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-    if taxable <= 0:
-        raise ValidationError('No tax entries exist in the selected period.')
-    journal = post_balanced_journal(
-        business_date=period_end, source_type='TaxLiability', source_id=f'{tax_code}:{period_end}',
-        description=f'Tax liability {tax_code} {period_start} to {period_end}', external_key=f'tax-liability:{tax_code}:{period_start}:{period_end}',
-        lines=[{'account': '2100', 'credit': taxable}, {'account': '4200', 'debit': taxable}], actor=actor,
+    from .models import FolioEntry, Invoice
+    if not period_start or not period_end or period_end < period_start:
+        raise ValidationError('A valid tax period is required.')
+    if actor.role not in {'admin', 'accountant'}:
+        raise ValidationError('Only accounting or an administrator can prepare tax liabilities.')
+    existing = TaxLiability.objects.filter(
+        tax_code__iexact=tax_code, period_start=period_start, period_end=period_end,
+    ).first()
+    if existing:
+        return existing
+    tax_entries = FolioEntry.objects.filter(
+        entry_type='tax', direction='debit', posted_at__date__range=(period_start, period_end),
     )
-    return TaxLiability.objects.create(tax_code=tax_code, period_start=period_start, period_end=period_end, taxable_amount=taxable, tax_amount=taxable, journal=journal, prepared_by=actor)
+    if tax_code:
+        tax_entries = tax_entries.filter(description__icontains=tax_code)
+    tax_amount = tax_entries.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    if tax_amount <= 0:
+        raise ValidationError('No tax entries exist in the selected period.')
+    taxable_amount = Invoice.objects.filter(
+        created_at__date__range=(period_start, period_end), tax_amount__gt=0,
+    ).aggregate(total=Sum('subtotal'))['total'] or Decimal('0')
+    return TaxLiability.objects.create(
+        tax_code=tax_code, period_start=period_start, period_end=period_end,
+        taxable_amount=taxable_amount, tax_amount=tax_amount, prepared_by=actor,
+    )
 
 
 def reconcile_bank_account(*, bank_account, period_start, period_end, statement_balance, actor, notes=''):
-    total = JournalLine.objects.filter(account=bank_account.ledger_account, journal__business_date__range=(period_start, period_end)).aggregate(debit=Sum('debit'), credit=Sum('credit'))
+    if not period_start or not period_end or period_end < period_start:
+        raise ValidationError('A valid bank reconciliation period is required.')
+    if actor.role not in {'admin', 'accountant'}:
+        raise ValidationError('Only accounting or an administrator can prepare bank reconciliations.')
+    if BankReconciliation.objects.filter(
+        bank_account=bank_account, period_start=period_start, period_end=period_end,
+    ).exists():
+        raise ValidationError('This bank account has already been reconciled for that period.')
+    total = JournalLine.objects.filter(
+        account=bank_account.ledger_account, journal__business_date__lte=period_end,
+    ).aggregate(debit=Sum('debit'), credit=Sum('credit'))
     ledger_balance = (total['debit'] or Decimal('0')) - (total['credit'] or Decimal('0'))
     difference = Decimal(str(statement_balance)) - ledger_balance
     return BankReconciliation.objects.create(

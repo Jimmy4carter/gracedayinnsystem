@@ -1,12 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from threading import Barrier
+from unittest import skipUnless
 
 from django.core.exceptions import ValidationError
 from django.db import close_old_connections, connection
 from django.test import TransactionTestCase
 from django.utils import timezone
-from unittest import skipUnless
 
 from apps.accounts.models import UserProfile
 from apps.reservations.models import InventoryHold
@@ -15,8 +15,8 @@ from apps.reservations.pricing import create_quote
 from .models import RatePlan, Room, RoomType
 
 
-@skipUnless(connection.vendor == 'postgresql', 'PostgreSQL row-lock contract')
-class PostgreSQLInventoryConcurrencyTests(TransactionTestCase):
+@skipUnless(connection.vendor in {'mysql', 'postgresql'}, 'Transactional row-lock contract')
+class DatabaseInventoryConcurrencyTests(TransactionTestCase):
     reset_sequences = True
 
     def setUp(self):

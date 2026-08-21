@@ -86,7 +86,7 @@
             </li>
             {% endif %}
 
-            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'accountant' %}
+            {% if request.user.role == 'admin' or request.user.role == 'manager' %}
             <li class="nav-item">
                 <a class="nav-link {% if 'portal/management' in request.path and 'night-audit' not in request.path %}active{% endif %}" href="{% url 'frontend:portal-management' %}">
                     <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -197,6 +197,30 @@
                     <span class="nav-link-text ms-1">Payment Log</span>
                 </a>
             </li>
+            {% if request.user.role == 'admin' or request.user.is_superuser %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/vat' in request.path %}active{% endif %}" href="{% url 'frontend:portal-vat' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-percent text-dark"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">VAT</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'accountant' %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/expenditures' in request.path %}active{% endif %}" href="{% url 'frontend:portal-expenditures' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-file-text-o text-dark"></i></div>
+                    <span class="nav-link-text ms-1">Expenditure</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'portal/finance-controls' in request.path %}active{% endif %}" href="{% url 'frontend:portal-finance-controls' %}">
+                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center"><i class="fa fa-balance-scale text-dark"></i></div>
+                    <span class="nav-link-text ms-1">Ledger &amp; Reconciliation</span>
+                </a>
+            </li>
+            {% endif %}
             {% endif %}
 
             {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'receptionist' or request.user.role == 'accountant' %}
@@ -271,14 +295,6 @@
                     <span class="nav-link-text ms-1">Inquiry Inbox</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'portal/chat' in request.path %}active{% endif %}" href="{% url 'frontend:portal-chat' %}">
-                    <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="fa fa-comments text-dark"></i>
-                    </div>
-                    <span class="nav-link-text ms-1">Live Chat Support</span>
-                </a>
-            </li>
             {% endif %}
 
             <!-- ADMINISTRATION & SYSTEM -->
@@ -286,7 +302,8 @@
                 <h6 class="ps-4 ms-2 text-uppercase text-xs font-weight-bolder opacity-6">Administration &amp; System</h6>
             </li>
 
-            {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'accountant' %}
+            {% if request.user.role != 'accountant' %}
             <li class="nav-item">
                 <a class="nav-link {% if 'portal/staff' in request.path %}active{% endif %}" href="{% url 'frontend:portal-staff' %}">
                     <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -303,6 +320,7 @@
                     <span class="nav-link-text ms-1">Newsletter Broadcasts</span>
                 </a>
             </li>
+            {% endif %}
             <li class="nav-item">
                 <a class="nav-link {% if 'portal/reports' in request.path %}active{% endif %}" href="{% url 'frontend:portal-reports' %}">
                     <div class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">

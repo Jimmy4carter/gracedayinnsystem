@@ -2,9 +2,9 @@
 
 ## Deployment contract
 
-- Start ASGI with `opentelemetry-instrument daphne -b 0.0.0.0 -p 8000 gracedayinn.asgi:application`.
+- Namecheap starts the WSGI application through `passenger_wsgi.py`. Keep application JSON logging enabled; use an OTLP collector only when the hosting plan provides a supported, supervised collector process.
 - Configure an HTTPS `OTEL_EXPORTER_OTLP_ENDPOINT`, `http/protobuf`, the service name, immutable release, environment resource attribute and collector authentication from the secret manager.
-- Preserve `X-Request-ID` at the proxy. Application JSON logs contain `request_id`, `trace_id`, `span_id` and `release`, allowing a request to be followed through Django, PostgreSQL, Redis and outbound Brevo/HTTP work.
+- Preserve `X-Request-ID` at the proxy. Application JSON logs contain `request_id`, `trace_id`, `span_id` and `release`, allowing a request to be followed through Django, MariaDB and outbound Brevo/HTTP work.
 - Collector failure must never block hotel requests. Buffer/retry at the collector or agent and retain JSON stdout independently.
 
 ## Release verification
@@ -12,7 +12,7 @@
 1. Deploy to staging with the production telemetry wrapper and a synthetic release ID.
 2. Request `/health/live/`, `/health/ready/`, public room search, one authenticated portal page and the Brevo sandbox flow.
 3. Confirm each request returns `X-Request-ID`, its JSON log has a valid 32-character `trace_id`, and the collector contains a trace with matching service, release and environment.
-4. Confirm PostgreSQL/Redis/client spans contain no passwords, tokens, email bodies, chat text or unapproved query parameters.
+4. Confirm MariaDB/client spans contain no passwords, tokens, email bodies, inquiry text or unapproved query parameters.
 5. Trigger a controlled application exception and confirm the exception trace/log reaches the error view with the release and linked runbook.
 6. Preserve screenshots/query links and timestamps as release evidence. Roll back telemetry configuration if it leaks data or materially affects request latency.
 

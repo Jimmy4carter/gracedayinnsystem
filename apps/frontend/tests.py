@@ -12,10 +12,11 @@ from django.utils import timezone
 
 from apps.accounts.models import GuestProfile, UserProfile
 from apps.billing.models import Invoice, InvoiceItem
+from apps.billing.services import ensure_invoice_for_reservation
 from apps.housekeeping.models import HousekeepingTask, MaintenanceTicket
 from apps.notifications.models import Notification
 from apps.payments.models import CashierTerminal, Payment
-from apps.payments.services import open_cashier_shift
+from apps.payments.services import open_cashier_shift, record_payment
 from apps.reservations.models import Reservation
 from apps.rooms.models import Room, RoomType
 from apps.services.models import MenuItem, ServiceCategory, ServiceOrder, ServiceOrderItem
@@ -292,6 +293,12 @@ class FrontendWorkflowTests(TestCase):
 			status='confirmed',
 			created_by=self.staff,
 		)
+		invoice = ensure_invoice_for_reservation(reservation)
+		record_payment(
+			invoice=invoice, amount=invoice.total * Decimal('0.50'),
+			method='bank_transfer', actor=self.staff,
+			idempotency_key='frontend-checkout-deposit',
+		)
 		self.client.force_login(self.staff)
 
 		check_in_url = reverse('frontend:portal-reservation-action', args=[reservation.id, 'check_in'])
@@ -438,6 +445,13 @@ class FrontendWorkflowTests(TestCase):
 					status=config['initial'],
 					created_by=self.staff,
 				)
+				if action == 'check_in' and role in config['allowed']:
+					invoice = ensure_invoice_for_reservation(reservation)
+					record_payment(
+						invoice=invoice, amount=invoice.total * Decimal('0.50'),
+						method='bank_transfer', actor=self.staff,
+						idempotency_key=f'permission-check-in-{case_index}',
+					)
 				self.client.force_login(user)
 				response = self.client.post(reverse('frontend:portal-reservation-action', args=[reservation.id, action]))
 				self.assertEqual(response.status_code, 302)
@@ -566,24 +580,20 @@ class FrontendWorkflowTests(TestCase):
 		self.assertEqual(case.category, 'reservation')
 		self.assertTrue(OutboundMessage.objects.filter(related_id=str(case.id)).exists())
 
-	def test_public_chat_session_is_scoped_and_has_polling_fallback(self):
-		from apps.notifications.models import ChatConversation
-		start = self.client.post(
-			reverse('frontend:chat-start'),
-			data=json.dumps({'name': 'Chat Guest', 'email': 'chat@example.com', 'message': '<b>Hello</b>'}),
-			content_type='application/json',
+	def test_public_contact_uses_configurable_whatsapp_and_chat_api_is_retired(self):
+		from apps.frontend.models import OperationalSetting
+		OperationalSetting.objects.update_or_create(
+			key='whatsapp-contact',
+			defaults={
+				'value': {'number': '+234 800 123 4567', 'message': 'Please help me book'},
+				'description': 'Public WhatsApp contact', 'is_secret': False,
+			},
 		)
-		self.assertEqual(start.status_code, 201)
-		reference = start.json()['reference']
-		conversation = ChatConversation.objects.get(reference=reference)
-		self.assertEqual(conversation.messages.get().body, 'Hello')
-		poll = self.client.get(reverse('frontend:chat-messages', args=[reference]))
-		self.assertEqual(poll.status_code, 200)
-		self.assertEqual(len(poll.json()['messages']), 1)
-		other_client = self.client_class()
-		self.assertEqual(
-			other_client.get(reverse('frontend:chat-messages', args=[reference])).status_code, 403
-		)
+		response = self.client.get(reverse('frontend:public-home'))
+		self.assertContains(response, 'https://wa.me/2348001234567?text=Please%20help%20me%20book')
+		self.assertContains(response, 'WhatsApp us')
+		self.assertNotContains(response, 'gdi-chat-toggle')
+		self.assertEqual(self.client.post('/chat/start/').status_code, 404)
 
 	def test_management_portal_is_role_scoped_and_can_raise_queries(self):
 		from apps.frontend.models import ManagementQuery

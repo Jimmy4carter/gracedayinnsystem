@@ -9,7 +9,7 @@ This document provides a step-by-step guide to deploying the GraceDay Inn bookin
 - [ ] A Namecheap shared hosting account with cPanel access.
 - [ ] SSH access enabled on your Namecheap account (you can request this from Namecheap support or enable it under cPanel).
 - [ ] A Brevo account with an API key, an authenticated `gracedayinn.com` sending domain, and verified `noreply@gracedayinn.com` sender.
-- [ ] A free [Tawk.to account](https://www.tawk.to) with a direct chat widget link.
+- [ ] A verified WhatsApp Business number for the public contact action.
 
 ---
 
@@ -59,16 +59,17 @@ In cPanel **Setup Python App**, scroll down to the **Configuration files** and *
 | `DATABASE_URL` | `mysql://graceday_user:PASSWORD@127.0.0.1:3306/graceday_db` | Your MySQL connection string. |
 | `CSRF_TRUSTED_ORIGINS` | `https://gracedayinn.com,https://www.gracedayinn.com` | Trusted origins for form safety. |
 | `CORS_ALLOWED_ORIGINS` | `https://gracedayinn.com` | Trusted origins for API calls. |
-| `EMAIL_DELIVERY_PROVIDER` | `brevo_smtp` | Use Brevo's SMTP relay with the supplied SMTP credentials. |
+| `EMAIL_DELIVERY_PROVIDER` | `brevo` | Recommended REST delivery with provider event logging. |
 | `EMAIL_BACKEND` | `django.core.mail.backends.smtp.EmailBackend` | Enables Django SMTP delivery. |
 | `EMAIL_HOST` | `smtp-relay.brevo.com` | Brevo SMTP relay host. |
 | `EMAIL_PORT` | `587` | Brevo TLS submission port. |
 | `EMAIL_HOST_USER` | Brevo SMTP login | Store only in cPanel/server `.env`, never Git. |
 | `EMAIL_HOST_PASSWORD` | Brevo SMTP key | Store only in cPanel/server `.env`, never Git. |
 | `EMAIL_USE_TLS` | `True` | Encrypts SMTP transport. |
-| `BREVO_API_KEY` | `xkeysib-...` | Needed only when using the `brevo` REST provider instead. |
+| `BREVO_API_KEY` | `xkeysib-...` | Required for delivery, contacts, and reporting; create a new production key. |
 | `BREVO_WEBHOOK_TOKEN` | `strong-32-character-random-secret` | For security validation. |
-| `TAWKTO_EMBED_URL` | `https://embed.tawk.to/64d.../default` | Extracted from your Tawk.to widget code. |
+| `WHATSAPP_NUMBER` | `2347080076496` | Hotel WhatsApp number with country code, digits only. |
+| `WHATSAPP_DEFAULT_MESSAGE` | `Hello GraceDay Inn, I would like help with a reservation.` | Pre-filled public greeting. |
 | `MFA_ENCRYPTION_KEY` | `strong-32-character-random-secret` | For staff login security. |
 | `HOTEL_CURRENCY` | `NGN` | Default currency code. |
 | `TIME_ZONE` | `Africa/Lagos` | Hotel timezone. |
@@ -139,7 +140,7 @@ To process automated tasks (outbound email queue, Brevo contact synchronization,
    - **Common Settings**: Select **Once Per Five Minutes** (`*/5 * * * *`). Namecheap shared-hosting policy does not allow intervals shorter than five minutes.
    - **Command**: Set the command to run `run_scheduled_jobs` using the absolute path to your virtual environment's python binary:
      ```bash
-     /home/cpanel_username/virtualenv/gracedayinnsystem/3.11/bin/python /home/cpanel_username/gracedayinnsystem/manage.py run_scheduled_jobs >/dev/null 2>&1
+     /bin/bash /home/cpanel_username/gracedayinnsystem/deploy/namecheap_cron.sh >> /home/cpanel_username/graceday_cron.log 2>&1
      ```
      *(Be sure to replace `cpanel_username` and version number `3.11` with your actual hosting path and Python version)*.
 3. Click **Add New Cron Job**.
@@ -149,13 +150,13 @@ To process automated tasks (outbound email queue, Brevo contact synchronization,
 ## Step 8: Start and Restart the App
 1. Go back to cPanel **Setup Python App**.
 2. Click **Restart** on your application.
-3. Visit your website URL. The site should load successfully using the MySQL database, and the Tawk.to chat widget should appear in the corner!
+3. Visit your website URL. Confirm the site uses the MySQL database and the WhatsApp action opens the verified hotel number with the configured greeting.
 
 ---
 
 ## Shared-hosting constraints and launch checks
 
-- Namecheap shared hosting supports WSGI applications, not ASGI. The Django site, portals, Brevo queue and normal chat HTTP endpoints work through `passenger_wsgi.py`; true WebSocket live chat requires VPS/Dedicated hosting. Keep the current polling/offline inquiry fallback enabled on shared hosting.
+- Namecheap shared hosting serves the Django application through WSGI and `passenger_wsgi.py`. The retired live-chat/WebSocket runtime is not part of production; the public support action opens the configured WhatsApp Business number and inquiries continue through the normal contact workflow.
 - Run `bash deploy/namecheap_preflight.sh` after environment variables are configured and before the first live release.
 - Run `python manage.py test apps.billing.tests_vat apps.notifications.tests` before packaging a release.
 - Confirm `/static/` maps to `collected_static` in the Python App configuration or web root, and `/media/` points to persistent storage outside each release archive.

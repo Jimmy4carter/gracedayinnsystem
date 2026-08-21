@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.accounts.models import UserProfile
-from apps.billing.models import FolioEntry, Invoice, InvoiceItem
+from apps.billing.models import FolioEntry, Invoice, InvoiceItem, JournalEntry
 from apps.reservations.models import Reservation
 from apps.rooms.models import Room, RoomType
 
@@ -90,6 +90,30 @@ class FinancialLedgerTests(TestCase):
         self.assertEqual(CashMovement.objects.filter(movement_type='refund').count(), 1)
         self.invoice.refresh_from_db()
         self.assertEqual(self.invoice.amount_paid, Decimal('4500.00'))
+
+    def test_equal_partial_refunds_each_receive_a_distinct_balanced_journal(self):
+        payment, _, _ = record_payment(
+            invoice=self.invoice, amount=Decimal('2000.00'), method='cash',
+            actor=self.cashier, idempotency_key='pay-equal-refunds'
+        )
+        first, _ = refund_payment(
+            payment=payment, amount=Decimal('500.00'), reason='First adjustment',
+            actor=self.cashier, idempotency_key='equal-refund-one'
+        )
+        second, _ = refund_payment(
+            payment=payment, amount=Decimal('500.00'), reason='Second adjustment',
+            actor=self.cashier, idempotency_key='equal-refund-two'
+        )
+
+        keys = {
+            f'payment-journal:{payment.id}:refund:{first.id}',
+            f'payment-journal:{payment.id}:refund:{second.id}',
+        }
+        journals = JournalEntry.objects.filter(external_key__in=keys)
+        self.assertEqual(journals.count(), 2)
+        for journal in journals:
+            self.assertEqual(journal.total_debits, Decimal('500.00'))
+            self.assertEqual(journal.total_credits, Decimal('500.00'))
 
     def test_financial_ledger_records_are_immutable(self):
         payment, _, _ = record_payment(

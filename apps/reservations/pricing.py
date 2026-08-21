@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.rooms.models import BookableExtra, DailyRate, Promotion, RatePlan, Room, TaxFee
+from apps.billing.vat import current_vat_change
 
 from .models import BookingQuote, BookingQuoteExtra, InventoryHold, Reservation
 from .services import INVENTORY_BLOCKING_STATUSES, _validate_stay, create_reservation
@@ -169,6 +170,11 @@ def calculate_quote(*, room, rate_plan, check_in_date, check_out_date, num_adult
         Q(effective_from__isnull=True) | Q(effective_from__lte=check_in_date),
         Q(effective_to__isnull=True) | Q(effective_to__gte=check_in_date),
     )
+    vat_change = current_vat_change()
+    if vat_change:
+        active_taxes = active_taxes.exclude(
+            Q(name__iexact='vat') | Q(code__iexact='vat') | Q(code__istartswith='vat-')
+        )
     taxes = []
     tax_total = Decimal('0.00')
     for tax in active_taxes:
@@ -180,6 +186,15 @@ def calculate_quote(*, room, rate_plan, check_in_date, check_out_date, num_adult
         taxes.append({
             'code': tax.code, 'name': tax.name, 'calculation': tax.calculation,
             'rate_or_amount': str(tax.amount), 'amount': str(calculated),
+        })
+    vat_rate = vat_change.rate if vat_change else Decimal('0.00')
+    vat_amount = _money(taxable_base * vat_rate / Decimal('100')) if vat_rate > 0 else Decimal('0.00')
+    if vat_amount > 0:
+        tax_total += vat_amount
+        taxes.append({
+            'code': 'vat', 'name': f'VAT ({vat_rate}%)', 'calculation': 'percentage',
+            'rate_or_amount': str(vat_rate), 'amount': str(vat_amount),
+            'source': 'central_vat', 'change_id': vat_change.id,
         })
     tax_total = _money(tax_total)
     total = _money(subtotal + extra_total + tax_total)
@@ -200,6 +215,9 @@ def calculate_quote(*, room, rate_plan, check_in_date, check_out_date, num_adult
         'taxable_base': str(_money(taxable_base)),
         'taxes': taxes,
         'tax_total': str(tax_total),
+        'vat_rate': str(vat_rate),
+        'vat_amount': str(vat_amount),
+        'vat_change_id': vat_change.id if vat_change else None,
         'total': str(total),
         'deposit_required': str(deposit),
         'room_type_id': room.room_type_id,

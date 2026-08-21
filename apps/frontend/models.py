@@ -443,6 +443,8 @@ class DailyMetricSnapshot(models.Model):
     room_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     service_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     total_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    operating_expenses = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    operating_profit = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     adr = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     revpar = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     receivables = models.DecimalField(max_digits=14, decimal_places=2, default=0)
@@ -517,6 +519,59 @@ class ManagementQuery(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class BillboardContent(models.Model):
+    CONTENT_TYPES = [
+        ('brand', 'Brand moment'), ('promotion', 'Promotion'),
+        ('announcement', 'Announcement'), ('service', 'Guest service'),
+        ('tip', 'Guest tip'), ('question', 'Question and answer'),
+        ('trivia', 'Trivia'), ('gallery', 'Gallery'), ('video', 'Video'),
+        ('information', 'Information'), ('celebration', 'Celebration'),
+    ]
+    PRIORITIES = [('normal', 'Normal'), ('featured', 'Featured'), ('important', 'Important')]
+    LAYOUTS = [
+        ('cinematic', 'Cinematic'), ('split', 'Split screen'), ('cards', 'Cards'),
+        ('minimal', 'Minimal'), ('broadcast', 'Broadcast'), ('mosaic', 'Mosaic'),
+        ('question', 'Question'), ('keycard', 'Room key card'),
+    ]
+    TRANSITIONS = [
+        ('cinematic', 'Cinematic fade'), ('wipe', 'Gold wipe'),
+        ('curtain', 'Curtain'), ('split', 'Split reveal'),
+        ('iris', 'Iris'), ('blur', 'Blur dissolve'), ('mosaic', 'Mosaic'),
+    ]
+
+    title = models.CharField(max_length=180)
+    subtitle = models.CharField(max_length=220, blank=True)
+    body = models.TextField(blank=True)
+    content_type = models.CharField(max_length=24, choices=CONTENT_TYPES)
+    icon = models.CharField(max_length=80, blank=True, help_text='Existing project icon class.')
+    image = models.ImageField(upload_to='billboard/images/%Y/%m/', blank=True, null=True)
+    video = models.FileField(upload_to='billboard/video/%Y/%m/', blank=True, null=True)
+    fallback_image = models.ImageField(upload_to='billboard/fallbacks/%Y/%m/', blank=True, null=True)
+    priority = models.CharField(max_length=12, choices=PRIORITIES, default='normal')
+    layout_variant = models.CharField(max_length=20, choices=LAYOUTS, default='cinematic')
+    transition_variant = models.CharField(max_length=20, choices=TRANSITIONS, default='cinematic')
+    duration_seconds = models.PositiveSmallIntegerField(default=10)
+    display_order = models.PositiveSmallIntegerField(default=0)
+    cta_text = models.CharField(max_length=80, blank=True)
+    cta_url = models.CharField(max_length=300, blank=True, help_text='Absolute URL or a public site path.')
+    start_at = models.DateTimeField(null=True, blank=True)
+    end_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-priority', 'display_order', 'id']
+
+    def clean(self):
+        if self.start_at and self.end_at and self.end_at <= self.start_at:
+            raise ValidationError({'end_at': 'End time must be later than start time.'})
+        if self.video and self.content_type != 'video':
+            raise ValidationError({'content_type': 'Select Video when a video file is attached.'})
+
+    def __str__(self):
+        return f'{self.get_content_type_display()}: {self.title}'
 
 
 class ManagementQueryNote(models.Model):

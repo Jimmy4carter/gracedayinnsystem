@@ -19,7 +19,7 @@ This runbook describes the controls implemented by GraceDay Inn. It is an operat
 5. Execute exports and anonymization only from the controlled management queue.
 6. Give the requester the outcome through an approved channel and close any linked case.
 
-Exports are generated as JSON and expire after seven days. They intentionally omit passwords, internal guest notes, internal inquiry notes, and internal chat messages. Treat every export as confidential, do not email it without an approved secure-delivery process, and remove expired artifacts from storage through the scheduled retention job once implemented.
+Exports are generated as JSON and expire after seven days. They intentionally omit passwords, internal guest notes and internal inquiry notes. Treat every export as confidential, do not email it without an approved secure-delivery process, and remove expired artifacts from storage through the scheduled retention job once implemented.
 
 ## Anonymization controls
 
@@ -29,7 +29,7 @@ Execution is blocked while any of the following exists:
 - a pending, confirmed, or checked-in reservation;
 - a non-zero open folio.
 
-When allowed, anonymization clears account identifiers, identity fragments, address, phone, profile preferences/notes, avatar, quote contact data, and linked inquiry/chat contact identifiers, sets an unusable password, and disables the account. Reservations, invoices, folios, payments, audit events, and their transaction references remain intact for operational and fiscal integrity. Marketing consent is withdrawn and the former address remains only in the suppression register to prevent accidental future contact.
+When allowed, anonymization clears account identifiers, identity fragments, address, phone, profile preferences/notes, avatar, quote contact data, and linked inquiry contact identifiers, sets an unusable password, and disables the account. Reservations, invoices, folios, payments, audit events, and their transaction references remain intact for operational and fiscal integrity. Marketing consent is withdrawn and the former address remains only in the suppression register to prevent accidental future contact.
 
 ## Proposed retention decision register
 
@@ -39,7 +39,7 @@ The owner and qualified advisers must replace every `TBD` before launch.
 |---|---|---|
 | Reservation, invoice, folio, payment and audit records | Retain for the approved fiscal/dispute period, then anonymize or dispose | TBD |
 | Guest operational profile | Keep while needed for active service and approved relationship period | TBD |
-| Inquiry and chat content | Short operational period, then delete or anonymize unless linked to a dispute | TBD |
+| Inquiry content | Short operational period, then delete or anonymize unless linked to a dispute | TBD |
 | Consent and suppression evidence | Retain minimum evidence needed to prove preference and prevent contact | TBD |
 | Privacy request history | Retain decision evidence for approved accountability period | TBD |
 | Export artifact | Seven-day application availability; storage cleanup schedule required | TBD |
@@ -53,4 +53,4 @@ The owner and qualified advisers must replace every `TBD` before launch.
 - Verify object storage is private, encrypted, access logged, and configured to delete expired artifacts.
 - Review legal holds at an approved cadence and record releases; never release a hold solely to complete anonymization.
 - Sample request history monthly for authorization, reasons, timeliness, and secure delivery.
-- Review all data processors, including Brevo, hosting, payment, analytics, chat, and backup providers, before launch and after material change.
+- Review all data processors, including Brevo, hosting, payment, analytics, WhatsApp/Meta, and backup providers, before launch and after material change.

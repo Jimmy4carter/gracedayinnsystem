@@ -1,132 +1,61 @@
-# Graceday Inn System
+# GraceDay Inn hotel management system
 
-Graceday Inn System is a Django-based hotel management platform with two major parts:
+GraceDay Inn is a Django 5.2 hotel website and property-management system. One transactional backend serves the public booking journey and the administrator, manager, reception, accountant, housekeeping, and guest portals.
 
-- a public-facing hotel website in `apps/frontend/`
-- a back-office style management system exposed through Django apps and API routes
+Implemented operational areas include room categories/galleries/amenities, availability quotes and inventory holds, email-verified guest booking, reservations and stay changes, 50%-minimum check-in control, folios/invoices/VAT, cashier shifts and thermal receipts, append-only payment events and balanced journals, chart of accounts, controlled expenditure with maker/checker approval, input-VAT tracking, bank reconciliation, financial audits plus Excel/PDF reporting, housekeeping/maintenance/stock, services, inquiries and configurable WhatsApp contact, Brevo email/contact/event logging, management packs, role permissions/MFA, and reception billboard content.
 
-The project is organized around hotel operations such as rooms, reservations, billing, payments, services, housekeeping, notifications, and account management.
+## Local start
 
-## What is in the project
+Prerequisites: Python 3.12 and `pip`.
 
-- `apps/accounts/` for user profiles and authentication-related work
-- `apps/rooms/` for room records and room-related API views
-- `apps/reservations/` for booking and reservation flows
-- `apps/billing/` and `apps/payments/` for invoices and payment handling
-- `apps/services/`, `apps/housekeeping/`, and `apps/notifications/` for operational workflows
-- `apps/frontend/` for the public site and hotel-style pages
-- `gracedayinn/` for project settings, URL routing, ASGI, and WSGI entry points
-
-## Public site pages
-
-The frontend already includes templates for:
-
-- home / landing page
-- login and registration
-- dashboard
-- rooms, reservations, and reservation details
-- guests
-- billing and invoice details
-- payments
-- services
-- restaurant
-- housekeeping
-- reports
-
-## Current gaps to be aware of
-
-This codebase has the structure of a hotel platform, but several parts still need product-level polish before it feels complete:
-
-- many frontend pages are still template shells and need real content, stronger layout hierarchy, and more hotel-specific copy
-- the homepage still relies on placeholder-style data in places and needs richer imagery and a stronger luxury brand presentation
-- the public site needs a more detailed booking journey, better room storytelling, and stronger calls to action
-- the visual design is still closer to a generic glassmorphism template than a finished hotel brand
-- there is no documented production deployment flow in this repository yet
-- tests exist as app placeholders, but there is no documented end-to-end test strategy in the README yet
-
-## What to look out for
-
-- SQLite is the default database in local development, so anything production-related should be migrated to a real hosted database
-- `DEBUG` defaults to `True` unless overridden in environment variables
-- secrets are expected from environment variables via `python-decouple`; do not hardcode production values
-- email is configured to use the console backend by default, so outbound email will print to the terminal during local development
-- application assets live in `apps/frontend/static/`, legacy vendor assets live in `staticfiles/`, and deployment output is generated into ignored `collected_static/`
-- CORS is currently limited to localhost origins in settings
-
-## Local setup
-
-### Prerequisites
-
-- Python 3.12 or another Python release supported by Django 5.2 LTS
-- `pip`
-
-### Install dependencies
-
-```bash
+```powershell
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### Configure environment variables
-
-Create a `.env` file in the project root with values such as:
-
-```env
-SECRET_KEY=your-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=
-EMAIL_HOST_PASSWORD=
-EMAIL_USE_TLS=True
-DEFAULT_FROM_EMAIL=noreply@gracedayinn.com
-```
-
-### Database setup
-
-```bash
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 python manage.py migrate
-```
-
-If you want an admin user for local testing:
-
-```bash
-python manage.py createsuperuser
-```
-
-### Run the project
-
-```bash
 python manage.py runserver
 ```
 
-Open the site at `http://127.0.0.1:8000/`.
+SQLite and console email are safe local defaults. Copy `.env.example` to the ignored `.env` only when you need local integration settings. Never commit credentials, generated accounts, databases, media, logs, or backup archives.
 
-## Project routes
+Create disposable local accounts for every role with unique generated passwords:
 
-- `/` public landing page
-- `/login/` sign-in page
-- `/register/` registration page
-- `/dashboard/` dashboard page
-- `/rooms/` room listing page
-- `/reservations/` reservation listing page
-- `/reservations/new/` new reservation page
-- `/guests/` guest list page
-- `/billing/` billing page
-- `/payments/` payments page
-- `/services/` services page
-- `/restaurant/` restaurant page
-- `/housekeeping/` housekeeping page
-- `/reports/` reports page
-- `/admin/` Django admin
+```powershell
+python manage.py ensure_default_users --generate-missing
+```
 
-## Recommended next improvements
+For production, supply all six `DEFAULT_*_PASSWORD` secrets instead; deployment never resets an existing usable password.
 
-- replace the generic public-site styling with a strong hotel brand system
-- add high-quality photography and room imagery across the landing pages
-- connect the frontend templates to real room, reservation, and offer data
-- add a clear booking funnel with availability checks and confirmation states
-- document API endpoints and environment variables in more detail
-- add tests for the most important booking, payment, and staff workflows
+## Quality gate
+
+```powershell
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test --noinput
+python -m pip check
+```
+
+GitHub Actions additionally runs migrations and the concurrent-inventory contract on MariaDB 11.4, Django's production checks, Bandit, and `pip-audit`.
+
+## Namecheap production
+
+Production is deployed only from the `production` branch through cPanel Git Version Control, `.cpanel.yml`, Passenger WSGI, MariaDB/MySQL, WhiteNoise, persistent media, Brevo, and a five-minute cPanel cron. Routine releases do not require File Manager edits.
+
+Start with:
+
+- [deployment plan](docs/deployment_plan.md)
+- [Git/cPanel release runbook](docs/28-namecheap-git-production-deployment.md)
+- [production configuration](docs/12-production-configuration.md)
+- [backup/restore](docs/17-backup-restore-runbook.md)
+- [deployment/rollback](docs/18-deployment-rollback-runbook.md)
+- [complete documentation index](docs/README.md)
+
+Namecheap shared hosting runs WSGI rather than ASGI. Public support opens the hotel WhatsApp account directly, so deployment does not require Redis, Daphne, Channels, or WebSockets.
+
+## Repository layout
+
+- `apps/` — accounts, rooms, reservations, billing, payments, services, housekeeping, notifications, and frontend domains
+- `gracedayinn/` — settings, URL routing, WSGI/ASGI entry points, and observability
+- `deploy/` — cPanel deployment, preflight, and cron wrappers
+- `docs/` — product, role, finance, security, launch, and operating runbooks
+- `passenger_wsgi.py` — Namecheap Passenger entry point

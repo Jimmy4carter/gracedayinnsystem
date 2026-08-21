@@ -5,7 +5,68 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Sum
 
-from .models import FinancialCorrection, Folio, FolioEntry
+from .models import FinancialCorrection, Folio, FolioEntry, Invoice, InvoiceItem
+
+
+def _ensure_folio_entry(*, external_key, defaults, actor=None):
+    entry, _created = FolioEntry.objects.get_or_create(
+        external_key=external_key, defaults=defaults,
+    )
+    from .ledger import post_folio_journal
+    post_folio_journal(entry=entry, actor=actor)
+    return entry
+
+
+@transaction.atomic
+def ensure_invoice_for_reservation(reservation):
+    """Create one invoice from the reservation's immutable commercial snapshot."""
+    snapshot = reservation.price_snapshot or {}
+    vat_rate = Decimal(str(snapshot.get('vat_rate', 0) or 0))
+    vat_amount = Decimal(str(snapshot.get('vat_amount', 0) or 0))
+    invoice, created = Invoice.objects.get_or_create(
+        reservation=reservation,
+        defaults={
+            'guest': reservation.guest,
+            'status': 'sent',
+            'due_date': reservation.check_in_date,
+            'notes': f'Generated for reservation {reservation.reservation_number}.',
+            'tax_rate': vat_rate,
+            'tax_amount': vat_amount,
+            'vat_amount': vat_amount,
+            'tax_amount_locked': True,
+        },
+    )
+    if not created:
+        return invoice
+
+    InvoiceItem.objects.create(
+        invoice=invoice,
+        description=f'Accommodation charge ({reservation.reservation_number})',
+        quantity=1,
+        unit_price=Decimal(str(snapshot.get('subtotal', reservation.total_amount))),
+    )
+    for extra in snapshot.get('extras', []):
+        amount = Decimal(str(extra.get('amount', 0)))
+        if amount > 0:
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                description=extra.get('name', 'Booking extra'),
+                quantity=1,
+                unit_price=amount,
+            )
+    for tax in snapshot.get('taxes', []):
+        if tax.get('source') == 'central_vat' or tax.get('code') == 'vat':
+            continue
+        amount = Decimal(str(tax.get('amount', 0)))
+        if amount > 0:
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                description=tax.get('name', 'Tax/Fee'),
+                quantity=1,
+                unit_price=amount,
+            )
+    invoice.save()
+    return invoice
 
 
 @transaction.atomic
@@ -20,35 +81,38 @@ def ensure_folio_for_reservation(reservation, actor=None):
     snapshot = reservation.price_snapshot or {}
     accommodation = Decimal(str(snapshot.get('subtotal', reservation.total_amount)))
     if accommodation > 0:
-        FolioEntry.objects.get_or_create(
+        _ensure_folio_entry(
             external_key=f'reservation:{reservation.id}:accommodation',
             defaults={
                 'folio': folio, 'direction': 'debit', 'entry_type': 'accommodation',
                 'description': f'Accommodation {reservation.reservation_number}',
                 'amount': accommodation, 'posted_by': actor,
             },
+            actor=actor,
         )
     for index, tax in enumerate(snapshot.get('taxes', [])):
         amount = Decimal(str(tax['amount']))
         if amount > 0:
-            FolioEntry.objects.get_or_create(
+            _ensure_folio_entry(
                 external_key=f'reservation:{reservation.id}:tax:{tax.get("code", index)}',
                 defaults={
                     'folio': folio, 'direction': 'debit', 'entry_type': 'tax',
                     'description': tax.get('name', 'Tax/Fee'), 'amount': amount,
                     'metadata': tax, 'posted_by': actor,
                 },
+                actor=actor,
             )
     for index, extra in enumerate(snapshot.get('extras', [])):
         amount = Decimal(str(extra['amount']))
         if amount > 0:
-            FolioEntry.objects.get_or_create(
+            _ensure_folio_entry(
                 external_key=f'reservation:{reservation.id}:extra:{extra.get("code", index)}',
                 defaults={
                     'folio': folio, 'direction': 'debit', 'entry_type': 'service',
                     'description': extra.get('name', 'Booking extra'), 'amount': amount,
                     'metadata': extra, 'posted_by': actor,
                 },
+                actor=actor,
             )
     return folio
 

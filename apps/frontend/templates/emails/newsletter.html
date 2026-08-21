@@ -1,5 +1,5 @@
 {% extends 'emails/base_email.html' %}
-{% block content %}
+{% block email_content %}
 <h1 style="margin:0 0 16px;color:#1f2937">{{ newsletter.title }}</h1>
 {% if newsletter.featured_image %}<img src="{{ newsletter.featured_image.url }}" alt="" style="max-width:100%;height:auto;border-radius:12px;margin-bottom:16px">{% endif %}
 <div style="font-size:16px;line-height:1.7;color:#4b5563">{{ newsletter.message|linebreaks }}</div>

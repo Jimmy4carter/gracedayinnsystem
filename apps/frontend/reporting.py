@@ -12,9 +12,9 @@ from django.db import transaction
 from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Q, Sum
 from django.utils import timezone
 
-from apps.billing.models import Folio, FolioEntry
+from apps.billing.models import Expenditure, Folio, FolioEntry
 from apps.housekeeping.models import HousekeepingTask, MaintenanceTicket
-from apps.notifications.models import ChatConversation, InquiryCase, OutboundMessage
+from apps.notifications.models import InquiryCase, OutboundMessage
 from apps.payments.models import CashierShift, Payment, PaymentRefund
 from apps.reservations.models import Reservation
 from apps.rooms.models import Room
@@ -46,15 +46,34 @@ def calculate_financial_report(*, days=14):
     open_receivables = sum((max(f.balance, Decimal('0')) for f in Folio.objects.filter(status='open')), Decimal('0'))
     shifts = CashierShift.objects.filter(opened_at__date__range=(start, end))
     variance = shifts.filter(status__in=['closed', 'approved']).aggregate(total=Sum('variance'))['total'] or 0
+    expense_scope = Expenditure.objects.filter(business_date__range=(start, end))
+    operating_expenses = expense_scope.filter(status='paid').aggregate(total=Sum('net_amount'))['total'] or 0
+    expense_cash_outflow = expense_scope.filter(status='paid').aggregate(total=Sum('total_amount'))['total'] or 0
+    input_tax_paid = expense_scope.filter(status='paid').aggregate(total=Sum('tax_amount'))['total'] or 0
+    approved_expenses = expense_scope.filter(status='approved').aggregate(total=Sum('total_amount'))['total'] or 0
+    expense_by_category = list(
+        expense_scope.filter(status='paid').values('category__name').annotate(total=Sum('net_amount')).order_by('-total')
+    )
+    net_revenue = money(room + service - refund_total)
     return {
         'period_start': start, 'period_end': end, 'days': days,
-        'total_revenue': money(room + service + tax - refund_total),
-        'gross_revenue': money(room + service + tax), 'room_revenue': money(room),
-        'service_revenue': money(service), 'tax_revenue': money(tax),
+        'total_revenue': net_revenue,
+        'gross_revenue': money(room + service),
+        'gross_billings': money(room + service + tax),
+        'room_revenue': money(room), 'service_revenue': money(service),
+        'tax_collected': money(tax), 'tax_revenue': money(tax),
+        'input_tax_paid': money(input_tax_paid),
+        'net_tax_payable': money(tax - input_tax_paid),
         'refunds': money(refund_total), 'payments_collected': money(sum(tender.values())),
         'open_balance': money(open_receivables), 'cash_variance': money(variance),
         'open_shifts': shifts.filter(status='open').count(),
         'payment_count': completed.count(), 'refund_count': refunds.count(),
+        'operating_expenses': money(operating_expenses),
+        'expense_cash_outflow': money(expense_cash_outflow),
+        'approved_expenses': money(approved_expenses),
+        'operating_profit': money(net_revenue - operating_expenses),
+        'expense_count': expense_scope.filter(status='paid').count(),
+        'expense_by_category': expense_by_category,
         'tender': tender,
     }
 
@@ -71,6 +90,9 @@ def calculate_daily_metrics(business_date):
     service_revenue = entries.filter(direction='debit', entry_type='service').aggregate(total=Sum('amount'))['total'] or 0
     refunds = entries.filter(direction='debit', entry_type='refund').aggregate(total=Sum('amount'))['total'] or 0
     total_revenue = money(room_revenue + service_revenue - refunds)
+    operating_expenses = Expenditure.objects.filter(
+        business_date=business_date, status='paid',
+    ).aggregate(total=Sum('net_amount'))['total'] or 0
     receivables = sum((max(folio.balance, Decimal('0')) for folio in Folio.objects.filter(status='open')), Decimal('0'))
     variance = CashierShift.objects.filter(closed_at__date=business_date).aggregate(total=Sum('variance'))['total'] or 0
     sources = dict(
@@ -90,6 +112,8 @@ def calculate_daily_metrics(business_date):
         'available_rooms': available_rooms, 'occupied_rooms': occupied_rooms,
         'occupancy_percent': occupancy, 'room_revenue': money(room_revenue),
         'service_revenue': money(service_revenue), 'total_revenue': total_revenue,
+        'operating_expenses': money(operating_expenses),
+        'operating_profit': money(total_revenue - operating_expenses),
         'adr': adr, 'revpar': revpar, 'receivables': money(receivables),
         'cash_variance': money(variance), 'reservation_sources': sources,
         'operational_sla': {
@@ -144,9 +168,6 @@ def calculate_management_exceptions(*, now=None):
             Q(first_response_due_at__lt=now, first_responded_at__isnull=True)
             | Q(resolution_due_at__lt=now, resolved_at__isnull=True)
         ).exclude(status__in=['resolved', 'closed', 'spam']).count(),
-        'chat_queue_over_five_minutes': ChatConversation.objects.filter(
-            status='queued', created_at__lt=now - timedelta(minutes=5)
-        ).count(),
     }
 
 
@@ -198,6 +219,8 @@ def generate_management_pack(*, business_date, actor=None, retention_days=30):
         ('Occupancy', f"{metrics['occupancy_percent']}%"),
         ('Room revenue', f"{metrics['currency']} {metrics['room_revenue']}"),
         ('Total revenue', f"{metrics['currency']} {metrics['total_revenue']}"),
+        ('Operating expenses', f"{metrics['currency']} {metrics['operating_expenses']}"),
+        ('Operating profit', f"{metrics['currency']} {metrics['operating_profit']}"),
         ('ADR', f"{metrics['currency']} {metrics['adr']}"),
         ('RevPAR', f"{metrics['currency']} {metrics['revpar']}"),
         ('Receivables', f"{metrics['currency']} {metrics['receivables']}"),

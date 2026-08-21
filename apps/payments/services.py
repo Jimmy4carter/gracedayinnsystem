@@ -182,7 +182,10 @@ def refund_payment(*, payment, amount, reason, actor, idempotency_key):
         to_status='refunded' if refunded + amount == locked_payment.amount else locked_payment.status,
         actor=actor, reason=reason,
     )
-    post_payment_journal(payment=locked_payment, actor=actor, refund=True, amount=amount)
+    post_payment_journal(
+        payment=locked_payment, actor=actor, refund=True, amount=amount,
+        event_key=refund.id,
+    )
     post_folio_entry(
         folio=locked_payment.folio, direction='debit', entry_type='refund',
         description=f'Refund {refund.reference}', amount=amount, actor=actor,

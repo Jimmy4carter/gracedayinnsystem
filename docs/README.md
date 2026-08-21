@@ -16,11 +16,12 @@ This folder is the source of truth for completing GraceDay Inn as a production-g
 10. Configure and validate deployment using [12-production-configuration.md](12-production-configuration.md).
 11. Operate the service with the [front-desk](13-operator-runbook.md), [admin](14-admin-runbook.md), [management](15-management-runbook.md), [incident](16-incident-response-runbook.md), [backup/restore](17-backup-restore-runbook.md), and [deployment/rollback](18-deployment-rollback-runbook.md) runbooks.
 12. Activate and verify vendor-neutral tracing, metrics and alert routing with the [observability runbook](22-observability-runbook.md).
-12. Certify each physical front-desk combination with the [printer checklist](19-printer-certification-checklist.md).
-13. Operate access, correction, anonymization, retention, and legal-hold workflows with the [privacy governance runbook](20-privacy-governance-runbook.md).
-14. Enroll staff MFA, revoke JWTs, and perform controlled account recovery with the [MFA and token operations runbook](21-mfa-and-token-operations.md).
-15. Use the [current-state review](23-current-state-review.md) for the finance controls, frontend/backend alignment, and explicitly remaining boundaries.
-16. Use the [finance and experience upgrade](24-finance-and-experience-upgrade.md) for the ledger, reconciliation, payment-event, continuity, and reception billboard procedures.
+13. Certify each physical front-desk combination with the [printer checklist](19-printer-certification-checklist.md).
+14. Operate access, correction, anonymization, retention, and legal-hold workflows with the [privacy governance runbook](20-privacy-governance-runbook.md).
+15. Enroll staff MFA, revoke JWTs, and perform controlled account recovery with the [MFA and token operations runbook](21-mfa-and-token-operations.md).
+16. Use the [current-state review](23-current-state-review.md) for the finance controls, frontend/backend alignment, and explicitly remaining boundaries.
+17. Use the [finance and experience upgrade](24-finance-and-experience-upgrade.md) for the ledger, reconciliation, payment-event, continuity, and reception billboard procedures.
+18. Deploy from Git with the [Namecheap production runbook](28-namecheap-git-production-deployment.md), configure [WhatsApp](whatsapp_contact_setup.md), and operate maker/checker finance with the [expenditure and accounting controls](29-expenditure-and-accounting-controls.md).
 
 ## Delivery principles
 
@@ -31,7 +32,7 @@ This folder is the source of truth for completing GraceDay Inn as a production-g
 - Availability and price are revalidated inside a database transaction before confirmation.
 - The front desk must remain fast on modest hardware and support 80 mm thermal receipts.
 - Management sees trusted, explainable metrics with drill-down to source transactions.
-- Email and chat activity are logged without storing unnecessary secrets or sensitive message data.
+- Email and inquiry activity are logged without storing unnecessary secrets or sensitive message data; public messaging opens the approved WhatsApp Business account.
 
 ## Definition of “complete”
 

@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import (
@@ -34,12 +35,12 @@ def create_inquiry(*, requester_name, requester_email, subject, message, request
     InquiryStatusHistory.objects.create(
         case=case, from_status='', to_status='new', action='create', actor=requester,
     )
+    acknowledgement_html = render_to_string('emails/inquiry_acknowledgement.html', {'case': case})
     enqueue_email(
         purpose='inquiry_acknowledgement', recipient_email=requester_email,
         recipient=requester, recipient_name=requester_name,
         subject=f'We received your inquiry — {case.reference}',
-        html_body=(f'<h1>Thank you for contacting GRACEDAY INN</h1><p>Your inquiry reference is '
-                   f'<strong>{case.reference}</strong>.</p><p>Our team will respond shortly.</p>'),
+        html_body=acknowledgement_html,
         text_body=f'We received your inquiry. Reference: {case.reference}.',
         related_model='InquiryCase', related_id=case.id,
         idempotency_key=f'inquiry-ack:{case.reference}',
@@ -94,11 +95,14 @@ def add_inquiry_reply(*, case_id, actor, body, internal=False):
         sender_email=actor.email, body=body, is_internal=internal,
     )
     if not internal:
+        reply_html = render_to_string('emails/inquiry_reply.html', {
+            'case': case, 'reply': reply, 'agent_name': actor.get_full_name() or actor.username,
+        })
         enqueue_email(
             purpose='inquiry_reply', recipient_email=case.requester_email,
             recipient=case.requester, recipient_name=case.requester_name,
             subject=f'Re: {case.subject} — {case.reference}',
-            html_body=f'<p>{body}</p>', text_body=body,
+            html_body=reply_html, text_body=body,
             related_model='InquiryCase', related_id=case.id,
             idempotency_key=f'inquiry-reply:{reply.id}',
         )

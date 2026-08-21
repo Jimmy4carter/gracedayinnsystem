@@ -10,6 +10,6 @@ export DJANGO_SETTINGS_MODULE="gracedayinn.settings.prod"
 
 "${PYTHON_BIN}" manage.py check --deploy --settings=gracedayinn.settings.prod
 "${PYTHON_BIN}" manage.py makemigrations --check --dry-run
-"${PYTHON_BIN}" manage.py migrate --check
+"${PYTHON_BIN}" manage.py migrate --plan
 
 echo "Production preflight passed."

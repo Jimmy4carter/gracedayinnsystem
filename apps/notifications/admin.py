@@ -1,7 +1,6 @@
 from django.contrib import admin
-from django.utils import timezone
 from .models import (
-    AlertRule, BrevoContactSync, ChatCannedReply, ChatConversation, ChatMessage, ChatOperatingHour, ChatStatusHistory, CommunicationTemplate,
+    AlertRule, BrevoContactSync, CommunicationTemplate,
     ContactPreference, DeliveryAttempt, DeliveryEvent,
     InquiryAttachment, InquiryCase, InquiryMessage, InquiryRoutingRule, InquiryStatusHistory, JobExecution, Notification,
     OperationalAlert, OperationalAlertHistory, OutboundMessage, ScheduledJob, Suppression,
@@ -19,6 +18,9 @@ class NotificationAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
 class AlertRuleAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
     list_display = ['key', 'name', 'rule_type', 'severity', 'threshold_minutes', 'is_enabled']
     list_filter = ['rule_type', 'severity', 'is_enabled']
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).exclude(rule_type='unanswered_chat')
 
 
 @admin.register(OperationalAlert)
@@ -118,54 +120,6 @@ class InquiryRoutingRuleAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
 class InquiryStatusHistoryAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
     list_display = ['case', 'action', 'from_status', 'to_status', 'actor', 'created_at']
     readonly_fields = [field.name for field in InquiryStatusHistory._meta.fields]
-
-    def has_add_permission(self, request): return False
-    def has_delete_permission(self, request, obj=None): return False
-
-
-class ChatMessageInline(admin.TabularInline):
-    model = ChatMessage
-    extra = 0
-    readonly_fields = ['sender', 'sender_type', 'body', 'client_message_id', 'read_at', 'created_at']
-
-    def has_add_permission(self, request, obj=None): return False
-    def has_delete_permission(self, request, obj=None): return False
-
-
-@admin.register(ChatConversation)
-class ChatConversationAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
-    list_display = ['reference', 'visitor_name', 'guest', 'queue', 'status', 'is_offline_capture', 'satisfaction_rating', 'assigned_to', 'last_message_at']
-    list_filter = ['status', 'queue']
-    readonly_fields = ['reference', 'visitor_token', 'created_at', 'updated_at']
-    inlines = [ChatMessageInline]
-
-
-@admin.register(ChatOperatingHour)
-class ChatOperatingHourAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
-    list_display = ['get_weekday_display', 'opens_at', 'closes_at', 'is_closed']
-
-
-@admin.register(ChatCannedReply)
-class ChatCannedReplyAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
-    list_display = ['title', 'category', 'status', 'approved_by', 'approved_at', 'use_count']
-    list_filter = ['status', 'category']
-    search_fields = ['title', 'body']
-    readonly_fields = ['approved_by', 'approved_at', 'use_count', 'created_at', 'updated_at']
-    actions = ['approve_replies', 'retire_replies']
-
-    @admin.action(description='Approve selected canned replies')
-    def approve_replies(self, request, queryset):
-        queryset.update(status='approved', approved_by=request.user, approved_at=timezone.now())
-
-    @admin.action(description='Retire selected canned replies')
-    def retire_replies(self, request, queryset):
-        queryset.update(status='retired')
-
-
-@admin.register(ChatStatusHistory)
-class ChatStatusHistoryAdmin(HotelAdminPermissionMixin, admin.ModelAdmin):
-    list_display = ['conversation', 'action', 'from_status', 'to_status', 'actor', 'created_at']
-    readonly_fields = [field.name for field in ChatStatusHistory._meta.fields]
 
     def has_add_permission(self, request): return False
     def has_delete_permission(self, request, obj=None): return False

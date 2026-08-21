@@ -12,8 +12,7 @@
 - Search dates before selecting a room. Housekeeping state does not replace a date-bound sales block.
 - Capture minimum identity data; store only the last four identity characters.
 - Read the itemized rate, supplements, extras, taxes, deposit and cancellation policy before confirmation.
-- In live chat, use only approved canned replies shown in the conversation screen. Review the inserted wording before sending, use a custom reply when context requires it, and keep private staff discussion in an internal note.
-- Presence and typing indicators are advisory and ephemeral. Do not assume a guest has read a message until they respond or the approved workflow records acknowledgement.
+- Public visitors contact the hotel through WhatsApp or the inquiry form. Handle the message in the approved hotel WhatsApp Business account, and record booking/payment actions in the management system rather than treating a chat message as transaction evidence.
 - Use explicit check-in, move, extend, no-show and checkout commands. Never edit history directly.
 - On the today board, press `/` to focus reservation search, `Alt+N` to open the new-reservation form, and `Alt+T` to open the tape chart. Search accepts reservation number, guest name/username, phone or room number.
 

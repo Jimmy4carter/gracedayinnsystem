@@ -10,7 +10,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from apps.frontend.models import AuditLog
 
 from .mfa import (
-    begin_mfa_enrollment, confirm_mfa_enrollment, current_totp,
+    STAFF_ROLES, begin_mfa_enrollment, confirm_mfa_enrollment, current_totp,
     reset_mfa, verify_mfa_code,
 )
 from .models import StaffMFADevice, UserProfile
@@ -39,6 +39,10 @@ class MFAServiceTests(TestCase):
         return secret, confirm_mfa_enrollment(
             user=self.staff, code=current_totp(secret), actor=self.staff,
         )[1]
+
+    def test_every_non_guest_role_is_protected_by_staff_mfa(self):
+        expected = {value for value, _label in UserProfile.ROLE_CHOICES} - {'guest'}
+        self.assertEqual(STAFF_ROLES, expected)
 
     def test_secret_is_encrypted_and_recovery_codes_are_hashed_and_single_use(self):
         secret, recovery_codes = self.enroll()

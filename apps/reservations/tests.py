@@ -9,6 +9,7 @@ from django.utils import timezone
 from apps.accounts.models import UserProfile
 from apps.billing.models import Invoice
 from apps.housekeeping.models import HousekeepingTask
+from apps.payments.services import record_payment
 from apps.rooms.models import DailyRate, RatePlan, Room, RoomType, TaxFee
 
 from .models import BookingQuote, InventoryHold, Reservation, WaitlistEntry
@@ -46,6 +47,16 @@ class ReservationCommandTests(TestCase):
             **kwargs,
         )
 
+    def _pay_half(self, reservation, suffix):
+        invoice = Invoice.objects.get(reservation=reservation)
+        record_payment(
+            invoice=invoice,
+            amount=invoice.total * Decimal('0.50'),
+            method='bank_transfer',
+            actor=self.staff,
+            idempotency_key=f'reservation-test-{suffix}',
+        )
+
     def test_pending_reservation_blocks_overlapping_inventory(self):
         self._create()
         with self.assertRaises(ReservationConflict):
@@ -81,6 +92,7 @@ class ReservationCommandTests(TestCase):
         )
         self.assertEqual(reservation.status, 'confirmed')
         self.assertTrue(Invoice.objects.filter(reservation=reservation).exists())
+        self._pay_half(reservation, 'state-machine')
 
         reservation = transition_reservation(
             reservation_id=reservation.id, action='check_in', actor=self.staff
@@ -106,6 +118,23 @@ class ReservationCommandTests(TestCase):
             transition_reservation(
                 reservation_id=reservation.id, action='confirm', actor=self.staff
             )
+
+    def test_check_in_requires_half_of_invoice_total_to_be_paid(self):
+        reservation = self._create(start=0, end=1)
+        transition_reservation(
+            reservation_id=reservation.id, action='confirm', actor=self.staff
+        )
+
+        with self.assertRaisesMessage(ValidationError, 'At least 50%'):
+            transition_reservation(
+                reservation_id=reservation.id, action='check_in', actor=self.staff
+            )
+
+        self._pay_half(reservation, 'minimum-deposit')
+        reservation = transition_reservation(
+            reservation_id=reservation.id, action='check_in', actor=self.staff
+        )
+        self.assertEqual(reservation.status, 'checked_in')
 
     def test_reservation_references_are_unique_and_not_count_based(self):
         first = self._create(start=10, end=11)
@@ -199,6 +228,7 @@ class ReservationCommandTests(TestCase):
         second_room = Room.objects.create(number='CMD-2', room_type=self.room_type)
         reservation = self._create(start=0, end=1)
         transition_reservation(reservation_id=reservation.id, action='confirm', actor=self.staff)
+        self._pay_half(reservation, 'room-move')
         transition_reservation(reservation_id=reservation.id, action='check_in', actor=self.staff)
         moved = move_reservation_room(
             reservation_id=reservation.id, new_room=second_room, actor=self.staff,

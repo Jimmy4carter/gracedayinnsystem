@@ -1,0 +1,16 @@
+{% extends 'emails/base_email.html' %}
+{% block email_title %}Payment Receipt {{ receipt.receipt_number }} | GraceDay Inn{% endblock %}
+{% block email_content %}
+<h2>Payment received</h2>
+<p>Hello {{ guest_name }},</p>
+<p>Thank you. Your payment has been recorded successfully.</p>
+<div class="panel">
+    <p style="margin:0 0 8px"><strong>Receipt:</strong> {{ receipt.receipt_number }}</p>
+    <p style="margin:0 0 8px"><strong>Invoice:</strong> {{ receipt.invoice.invoice_number }}</p>
+    <p style="margin:0 0 8px"><strong>Amount paid:</strong> NGN {{ receipt.amount }}</p>
+    {% if receipt.invoice.displays_vat %}<p style="margin:0 0 8px"><strong>VAT:</strong> {{ receipt.invoice.tax_rate }}% (NGN {{ receipt.invoice.vat_amount }})</p>{% endif %}
+    <p style="margin:0"><strong>Balance remaining:</strong> NGN {{ receipt.invoice.balance }}</p>
+</div>
+<p style="text-align:center"><a href="{{ receipt_url }}" class="btn">View official receipt</a></p>
+<p>Warm regards,<br>The GraceDay Inn Team</p>
+{% endblock %}

@@ -313,7 +313,7 @@
             <tr>
                 <td><strong>{{ item.description }}</strong></td>
                 <td class="text-right">{{ item.quantity|default:1 }}</td>
-                <td class="text-right">₦{{ item.total|currency_format }}</td>
+                <td class="text-right">NGN {{ item.total|currency_format }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -328,29 +328,31 @@
         <div class="summary-box">
             <div class="summary-row">
                 <span>Subtotal:</span>
-                <span>₦{{ invoice.subtotal|currency_format }}</span>
+                <span>NGN {{ invoice.subtotal|currency_format }}</span>
             </div>
+            {% if invoice.displays_vat %}
             <div class="summary-row">
-                <span>Tax &amp; Service Charges:</span>
-                <span>₦{{ invoice.tax_amount|currency_format }}</span>
+                <span>VAT ({{ invoice.tax_rate }}%):</span>
+                <span>NGN {{ invoice.vat_amount|currency_format }}</span>
             </div>
+            {% endif %}
             <div class="summary-row total-row">
                 <span>Total Charge:</span>
-                <span>₦{{ invoice.total|currency_format }}</span>
+                <span>NGN {{ invoice.total|currency_format }}</span>
             </div>
             <div class="summary-row paid-row">
                 <span>Amount Paid:</span>
-                <span>₦{{ invoice.amount_paid|currency_format }}</span>
+                <span>NGN {{ invoice.amount_paid|currency_format }}</span>
             </div>
             {% if invoice.balance > 0 %}
             <div class="summary-row balance-row">
                 <span>Balance Due:</span>
-                <span>₦{{ invoice.balance|currency_format }}</span>
+                <span>NGN {{ invoice.balance|currency_format }}</span>
             </div>
             {% else %}
             <div class="summary-row" style="color: #166534; font-weight: 700; padding-top: 6px;">
                 <span>Balance Due:</span>
-                <span>₦0.00</span>
+                <span>NGN 0.00</span>
             </div>
             {% endif %}
         </div>

@@ -39,7 +39,10 @@ Staff members log in via `/portal/sign-in/` and have access partitioned by their
 | **Refund Payment** | Yes | Yes | Yes | No | No | No |
 | **Create Financial Correction** | Yes | Yes | Yes | No | No | No |
 | **Update Housekeeping Status** | Yes | Yes | No | Yes | Yes | No |
-| **Live Chat Console** | Yes | Yes | No | Yes | No | Chat Client |
+| **WhatsApp Contact Configuration** | Yes | No | No | No | No | Public WhatsApp action |
+| **Expenditure Submission** | Yes | Yes | No | No | No | No |
+| **Expenditure Review & Payment** | Yes | No | No | Yes | No | No |
+| **Ledger, Reconciliation & Tax Controls** | Yes | View | No | Yes | No | No |
 | **Delete Payments / Receipts** | **NO** | **NO** | **NO** | **NO** | **NO** | **NO** |
 
 ---

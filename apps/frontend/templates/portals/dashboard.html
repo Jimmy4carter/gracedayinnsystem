@@ -3,6 +3,7 @@
 {% block title %}Dashboard | GRACEDAY INN{% endblock %}
 {% block page_title %}Operations Dashboard{% endblock %}
 {% block content %}
+{% if finance_summary %}<div class="card stat-card mb-4 border-0 bg-gradient-dark text-white"><div class="card-body"><div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"><div><small class="text-uppercase opacity-8">Finance command strip · last {{ selected_days }} days</small><h4 class="text-white mb-0">Revenue, spending and obligations at a glance</h4></div><div class="d-flex gap-2">{% if request.user.role == 'admin' or request.user.role == 'manager' %}<a class="btn btn-light btn-sm mb-0" href="{% url 'frontend:portal-expenditures' %}"><i class="fa fa-plus me-1"></i> Add expenditure</a>{% endif %}<a class="btn btn-outline-light btn-sm mb-0" href="{% url 'frontend:portal-reports' %}">Full reports</a></div></div><div class="row g-3"><div class="col-lg-3 col-6"><small class="opacity-8">Net revenue</small><h4 class="text-white">NGN {{ finance_summary.total_revenue|currency_format }}</h4></div><div class="col-lg-3 col-6"><small class="opacity-8">Paid expenditure</small><h4 class="text-white">NGN {{ finance_summary.operating_expenses|currency_format }}</h4></div><div class="col-lg-3 col-6"><small class="opacity-8">Cash-basis result</small><h4 class="text-white">NGN {{ finance_summary.operating_profit|currency_format }}</h4></div><div class="col-lg-3 col-6"><small class="opacity-8">Approved unpaid expenses</small><h4 class="text-white">NGN {{ finance_summary.approved_expenses|currency_format }}</h4></div></div></div></div>{% endif %}
 <div class="row g-3 mb-4">
     <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Reservations</small><h4>{{ stats.reservation_count }}</h4></div></div></div>
     <div class="col-md-3"><div class="card stat-card"><div class="card-body"><small>Check-ins Today</small><h4>{{ stats.checkin_today }}</h4></div></div></div>
@@ -84,8 +85,10 @@
 
     const ctx = document.getElementById('operationsTrendChart');
     if (ctx) {
-        if (window.operationsTrendChart) window.operationsTrendChart.destroy();
-        window.operationsTrendChart = new Chart(ctx, {
+        if (window.graceDayOperationsTrendChart && typeof window.graceDayOperationsTrendChart.destroy === 'function') {
+            window.graceDayOperationsTrendChart.destroy();
+        }
+        window.graceDayOperationsTrendChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: trendLabels,

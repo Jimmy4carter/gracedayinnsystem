@@ -9,8 +9,7 @@
     <style>
         @page { size: {% if terminal %}{{ terminal.receipt_width_mm }}{% else %}80{% endif %}mm auto; margin: 2mm; }
         * { box-sizing: border-box; }
-        body {
-            width: {% if terminal and terminal.receipt_width_mm == 58 %}52{% else %}74{% endif %}mm;
+        body { width: {% if terminal and terminal.receipt_width_mm == 58 %}52{% else %}72{% endif %}mm;
             margin: 0 auto;
             font-family: 'Courier New', Courier, monospace;
             font-size: 12px;
@@ -94,16 +93,24 @@
 {% for item in receipt.invoice.items.all %}
 <div class="row">
     <span>{{ item.description|truncatechars:20 }}</span>
-    <span>₦{{ item.total|currency_format }}</span>
+    <span>NGN {{ item.total|currency_format }}</span>
 </div>
 {% empty %}
 <div class="row">
     <span>Payment Received</span>
-    <span>₦{{ receipt.amount|currency_format }}</span>
+    <span>NGN {{ receipt.amount|currency_format }}</span>
 </div>
 {% endfor %}
 
 <div class="rule-double"></div>
+
+{% if receipt.invoice.displays_vat %}
+<div class="row">
+    <span>VAT ({{ receipt.invoice.tax_rate }}%):</span>
+    <span>NGN {{ receipt.invoice.vat_amount|currency_format }}</span>
+</div>
+<div class="rule"></div>
+{% endif %}
 
 <div class="row bold" style="font-size: 14px;">
     <span>AMOUNT PAID</span>

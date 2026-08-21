@@ -15,7 +15,10 @@ class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = '__all__'
-        read_only_fields = ['invoice_number', 'subtotal', 'tax_amount', 'total', 'balance']
+        read_only_fields = [
+            'invoice_number', 'subtotal', 'tax_rate', 'tax_amount', 'vat_amount',
+            'tax_amount_locked', 'total', 'balance',
+        ]
 
 
 class ReceiptSerializer(serializers.ModelSerializer):

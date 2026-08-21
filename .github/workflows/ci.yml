@@ -11,27 +11,21 @@ jobs:
   django:
     runs-on: ubuntu-latest
     services:
-      postgres:
-        image: postgres:16-alpine
+      mariadb:
+        image: mariadb:11.4
         env:
-          POSTGRES_DB: gracedayinn_test
-          POSTGRES_USER: gracedayinn
-          POSTGRES_PASSWORD: test-only-password
-        ports: ["5432:5432"]
+          MARIADB_DATABASE: gracedayinn_test
+          MARIADB_USER: gracedayinn
+          MARIADB_PASSWORD: test-only-password
+          MARIADB_ROOT_PASSWORD: root-test-only-password
+        ports: ["3306:3306"]
         options: >-
-          --health-cmd "pg_isready -U gracedayinn -d gracedayinn_test"
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
           --health-interval 10s --health-timeout 5s --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports: ["6379:6379"]
-        options: >-
-          --health-cmd "redis-cli ping" --health-interval 10s
-          --health-timeout 5s --health-retries 5
     env:
       SECRET_KEY: ci-only-secret-key-that-is-longer-than-forty-characters
       ALLOWED_HOSTS: testserver,localhost
-      DATABASE_URL: postgres://gracedayinn:test-only-password@127.0.0.1:5432/gracedayinn_test
-      REDIS_URL: redis://127.0.0.1:6379/0
+      DATABASE_URL: mysql://gracedayinn:test-only-password@127.0.0.1:3306/gracedayinn_test
       EMAIL_DELIVERY_PROVIDER: brevo
       BREVO_API_KEY: ci-placeholder-key
       BREVO_WEBHOOK_TOKEN: ci-placeholder-webhook-token-long-enough
@@ -56,9 +50,11 @@ jobs:
       - run: pip install -r requirements.txt pip-audit bandit
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py migrate --noinput
+      - run: python manage.py ensure_default_users
       - run: python manage.py reconcile_system --json
-      - run: python -c "import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gracedayinn.settings.base'); import django; django.setup(); from django.db import connection; assert connection.vendor == 'postgresql', connection.vendor"
-      - run: python manage.py test apps.rooms.tests_postgresql_concurrency --verbosity 2 --noinput
+      - run: python manage.py launch_readiness --prepare-storage
+      - run: python -c "import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gracedayinn.settings.base'); import django; django.setup(); from django.db import connection; assert connection.vendor == 'mysql', connection.vendor"
+      - run: python manage.py test apps.rooms.tests_database_concurrency --verbosity 2 --noinput
       - run: python manage.py test --noinput
       - run: python manage.py check --deploy --settings=gracedayinn.settings.prod
       - run: bandit -r apps gracedayinn -x "*/migrations/*,*/tests*.py" -ll -q
