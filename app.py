@@ -1,14 +1,11 @@
-"""CloudLinux/cPanel startup module for the GraceDay Inn WSGI application."""
-
 import os
 import sys
-from pathlib import Path
 
+# Add the project root directory to the python path
+sys.path.insert(0, os.path.dirname(__file__))
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+# Set the Django settings module for production
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gracedayinn.settings.prod")
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gracedayinn.settings.prod')
-
-from gracedayinn.wsgi import application  # noqa: E402,F401
+# Expose the WSGI application for Passenger
+from gracedayinn.wsgi import application
