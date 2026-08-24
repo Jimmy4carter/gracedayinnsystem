@@ -152,6 +152,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = Path(config('STATIC_ROOT', default=str(BASE_DIR / 'collected_static')))
 STATICFILES_DIRS = [
+    ('admin', BASE_DIR / 'staticfiles' / 'admin'),
     ('css', BASE_DIR / 'staticfiles' / 'css'),
     ('fonts', BASE_DIR / 'staticfiles' / 'fonts'),
     ('img', BASE_DIR / 'staticfiles' / 'img'),
